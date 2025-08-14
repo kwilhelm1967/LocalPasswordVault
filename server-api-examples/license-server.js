@@ -202,9 +202,9 @@ app.post(
     ) {
       const session = event.data.object;
 
-      console.log(session, "payment info");
-
       const paymentId = session.payment_intent;
+
+      const amount = (session.amount_total / 100).toFixed(2);
 
       // Retrieve the product id using session line items
       const sessionWithLineItems =
@@ -214,15 +214,10 @@ app.post(
 
       // Get the first line item to extract product information
       const lineItem = sessionWithLineItems.line_items.data[0];
-      const priceId = lineItem.price.id;
       const productId = lineItem.price.product;
 
       // Get customer email and product info
       const customerEmail = session.customer_details.email;
-
-      console.log(
-        `Checkout completed for ${customerEmail}, product: ${productId}, price: ${priceId}`
-      );
 
       // Determine license type based on product
       let licenseType = "single";
@@ -257,10 +252,6 @@ app.post(
         licenses.push(generateLicenseKey());
       }
 
-      console.log(
-        `Generated ${quantity} ${licenseType} license(s) for ${customerEmail}`
-      );
-
       try {
         // Generate download package
         const downloadInfo = await downloadHandler.generateDownloadLink(
@@ -276,18 +267,17 @@ app.post(
           licenseType,
           session.id,
           "active",
-          paymentId
+          paymentId,
+          amount
         );
 
         // In a real implementation, send email with license keys
-        /*
         await emailService.sendWelcomeEmail(
           customerEmail,
           licenses,
           licenseType,
           downloadInfo
         );
-        */
 
         // For now, just log the licenses
         console.log("Generated licenses:", licenses);

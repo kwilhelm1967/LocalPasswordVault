@@ -1,8 +1,13 @@
 import nodemailer from "nodemailer";
 import SibApiV3Sdk from "sib-api-v3-sdk";
+import dotenv from "dotenv";
 
-var defaultClient = SibApiV3Sdk.ApiClient.instance;
-var apiKey = defaultClient.authentications["api-key"];
+// Load environment variables early so BREVO_API_KEY is available
+dotenv.config();
+
+// Configure Brevo API client with API key (will also be re-applied before send)
+const defaultClient = SibApiV3Sdk.ApiClient.instance;
+const apiKey = defaultClient.authentications["api-key"];
 apiKey.apiKey = process.env.BREVO_API_KEY; // must be the full xkeysib-... string
 
 class EmailService {
@@ -15,8 +20,8 @@ class EmailService {
     } else {
       this.transporter = nodemailer.createTransport({
         host: process.env.EMAIL_HOST,
-        port: process.env.EMAIL_PORT,
-        secure: process.env.EMAIL_PORT === 465,
+        port: Number(process.env.EMAIL_PORT),
+        secure: Number(process.env.EMAIL_PORT) === 465,
         auth: {
           user: process.env.EMAIL_USER,
           pass: process.env.EMAIL_PASS,
@@ -104,35 +109,67 @@ class EmailService {
   // }
 
   // Get email template based on license type
+  // ...existing code...
   async sendWelcomeEmail(customerEmail, licenses, licenseType, downloadInfo) {
+    if (!process.env.BREVO_API_KEY) {
+      console.error("BREVO_API_KEY is missing");
+      throw new Error("Brevo API key not configured");
+    }
+    // Ensure Brevo client has the latest API key (handles late env loading)
+    try {
+      const dc = SibApiV3Sdk.ApiClient.instance;
+      dc.authentications["api-key"].apiKey = process.env.BREVO_API_KEY;
+    } catch (e) {
+      console.warn("Unable to set Brevo API key on client:", e?.message || e);
+    }
+    const templateId = Number(process.env.BREVO_TEMPLATE_ID || 0);
+    if (!templateId) {
+      console.error("BREVO_TEMPLATE_ID is missing/invalid");
+      throw new Error("Brevo templateId not configured");
+    }
+
+    const base = (process.env.SERVER_URL || "").replace(/\/$/, "");
+    const rawUrl = downloadInfo?.downloadUrl || downloadInfo?.link || "";
+    const downloadUrl = base + rawUrl;
+
     const payload = new SibApiV3Sdk.SendSmtpEmail();
-
     payload.to = [{ email: customerEmail, name: "Customer" }];
-    // Use the transactional templateId (ensure it’s a Transactional template)
-    payload.templateId = 1; // replace with the transactional template ID if different
+    payload.templateId = templateId;
 
-    // Map dynamic params to your template variables
+    // Provide a verified sender from your Brevo account
+    payload.sender = {
+      email: process.env.BREVO_SENDER_EMAIL || process.env.EMAIL_SERVICE,
+      name: process.env.BREVO_SENDER_NAME || "Local Password Vault",
+    };
+    if (process.env.SUPPORT_EMAIL) {
+      payload.replyTo = { email: process.env.SUPPORT_EMAIL, name: "Support" };
+    }
+
+    const licenseString = licenses.join(", ");
+
+    // Match template variable names exactly (case-sensitive)
     payload.params = {
       FIRSTNAME: "Customer",
-      PRODUCT_NAME: licenseType,
-      DOWNLOAD_URL: downloadInfo.downloadUrl,
-      LICENSE_KEY: licenses.map((key) => `<strong>${key}</strong>`),
+      PRODUCT_NAME: this.getLicenseDisplayName(licenseType),
+      DOWNLOAD_URL: downloadUrl,
+      // If your template loops over keys:
+      LICENSE_KEY: licenseString,
+      // If your template expects HTML and uses |safe:
+      // LICENSE_KEYS_HTML: (Array.isArray(licenses) ? licenses : [licenses])
+      //   .map((k) => `<strong>${k}</strong>`)
+      //   .join("<br/>"),
     };
 
-    // Optional overrides
-    // payload.sender = { email: 'no-reply@yourdomain.com', name: 'Local Password Vault' };
-    // payload.replyTo = { email: 'support@yourdomain.com', name: 'Support' };
-    // payload.tags = ['lpv-purchase'];
+    payload.tags = ["lpv-purchase"];
 
     try {
       const res = await this.api.sendTransacEmail(payload);
-      console.log("Brevo sendTransacEmail OK:", res);
+      console.log("Brevo sendTransacEmail OK:", res?.messageId || res);
       return res;
     } catch (err) {
-      console.error(
-        "Brevo sendTransacEmail error:",
-        err?.response?.text || err.message
-      );
+      const details =
+        err?.response?.body || err?.response?.text || err?.message || err;
+      console.error("Brevo sendTransacEmail error:", details);
       throw err;
     }
   }
