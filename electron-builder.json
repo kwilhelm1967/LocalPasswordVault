@@ -22,7 +22,7 @@
         "arch": ["x64", "arm64"]
       }
     ],
-    "icon": "build/icon.icns"
+    "icon": "assets/icons/icon.icns"
   },
   "win": {
     "target": [
@@ -35,7 +35,7 @@
         "arch": ["x64"]
       }
     ],
-    "icon": "public/vault-icon.svg"
+    "icon": "assets/icons/icon.ico"
   },
   "linux": {
     "target": [
@@ -44,7 +44,7 @@
         "arch": ["x64"]
       }
     ],
-    "icon": "public/vault-icon.svg"
+    "icon": "assets/icons/png/1024x1024.png"
   },
   "nsis": {
     "oneClick": false,
