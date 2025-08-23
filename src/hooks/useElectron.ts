@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
 
 interface ElectronAPI {
   getVersion: () => Promise<string>;
@@ -8,7 +8,7 @@ interface ElectronAPI {
   showFloatingPanel: () => Promise<any>;
   hideFloatingPanel: () => Promise<boolean>;
   isFloatingPanelOpen: () => Promise<boolean>;
-  getFloatingPanelPosition: () => Promise<{x: number, y: number}>;
+  getFloatingPanelPosition: () => Promise<{ x: number; y: number }>;
   saveFloatingPanelPosition: (x: number, y: number) => Promise<boolean>;
   setAlwaysOnTop: (flag: boolean) => Promise<boolean>;
   minimizeMainWindow: () => Promise<boolean>;
@@ -21,6 +21,9 @@ interface ElectronAPI {
   toggleFloatingPanelFromButton: () => Promise<boolean>;
   saveFloatingButtonPosition: (x: number, y: number) => Promise<boolean>;
   moveFloatingButton: (x: number, y: number) => Promise<boolean>;
+  // Vault security controls
+  vaultUnlocked: () => Promise<boolean>;
+  vaultLocked: () => Promise<boolean>;
 }
 
 declare global {
@@ -31,8 +34,8 @@ declare global {
 
 export const useElectron = () => {
   const [isElectron, setIsElectron] = useState(false);
-  const [version, setVersion] = useState<string>('');
-  const [platform, setPlatform] = useState<string>('');
+  const [version, setVersion] = useState<string>("");
+  const [platform, setPlatform] = useState<string>("");
 
   useEffect(() => {
     const checkElectron = async () => {
@@ -44,7 +47,7 @@ export const useElectron = () => {
           setVersion(appVersion);
           setPlatform(appPlatform);
         } catch (error) {
-          console.error('Failed to get electron info:', error);
+          console.error("Failed to get electron info:", error);
         }
       }
     };
@@ -56,6 +59,6 @@ export const useElectron = () => {
     isElectron,
     version,
     platform,
-    electronAPI: window.electronAPI
+    electronAPI: window.electronAPI,
   };
 };

@@ -3,7 +3,7 @@
   "private": true,
   "version": "1.2.0",
   "type": "commonjs",
-  "main": "server-api-examples/license-server.js",
+  "main": "electron/main.js",
   "description": "Professional offline password manager with local encryption and modern UI",
   "keywords": [
     "password-manager",
@@ -23,7 +23,9 @@
   },
   "homepage": "https://localpasswordvault.com",
   "scripts": {
-    "dev": "vite",
+    "dev": "concurrently \"npm run dev:vite\" \"npm run dev:electron\"",
+    "dev:vite": "vite",
+    "dev:electron": "wait-on tcp:5173 && electron .",
     "start:test": "vite --mode test",
     "start": "node server-api-examples/license-server.js",
     "build": "vite build && electron-builder",

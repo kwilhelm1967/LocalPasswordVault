@@ -49,6 +49,7 @@ function App() {
   const [showLicenseKeys, setShowLicenseKeys] = useState(
     () => features.showTestingTools
   );
+
   const [showTrialTestingTools, setShowTrialTestingTools] = useState(
     () => false
   );
@@ -177,6 +178,15 @@ function App() {
         // First time setup - set the password
         await passwordService.setMasterPassword(password);
         setIsLocked(false);
+
+        // SECURITY: Notify Electron that vault is unlocked to show floating button
+        if (
+          isElectron &&
+          window.electronAPI &&
+          window.electronAPI.vaultUnlocked
+        ) {
+          window.electronAPI.vaultUnlocked();
+        }
         return;
       }
 
@@ -184,6 +194,15 @@ function App() {
       const isValid = await passwordService.verifyMasterPassword(password);
       if (isValid) {
         setIsLocked(false);
+
+        // SECURITY: Notify Electron that vault is unlocked to show floating button
+        if (
+          isElectron &&
+          window.electronAPI &&
+          window.electronAPI.vaultUnlocked
+        ) {
+          window.electronAPI.vaultUnlocked();
+        }
       } else {
         // LoginScreen should handle the error display
         throw new Error("Invalid password");
@@ -199,6 +218,11 @@ function App() {
     setIsLocked(true);
     setShowMainVault(true);
     setShowFloatingPanel(false);
+
+    // SECURITY: Notify Electron that vault is locked to hide floating button
+    if (isElectron && window.electronAPI && window.electronAPI.vaultLocked) {
+      window.electronAPI.vaultLocked();
+    }
   };
 
   // Toggle download page
@@ -310,34 +334,50 @@ function App() {
 
   // If we're in Electron floating mode, show the floating panel
   if (isElectron && isFloatingMode) {
+    // SECURITY FIX: Don't allow floating panel access when vault is locked
+    if (isLocked) {
+      return (
+        <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
+          <LoginScreen onLogin={handleLogin} />
+        </div>
+      );
+    }
+
     return (
-      <ElectronFloatingPanel
-        entries={entries}
-        categories={FIXED_CATEGORIES}
-        onAddEntry={handleAddEntry}
-        onUpdateEntry={handleUpdateEntry}
-        onDeleteEntry={handleDeleteEntry}
-        searchTerm={searchTerm}
-        onSearchChange={setSearchTerm}
-        selectedCategory={selectedCategory}
-        onCategoryChange={setSelectedCategory}
-        onMaximize={() => {
-          if (window.electronAPI) {
-            window.electronAPI.restoreMainWindow().then(() => {
-              if (window.electronAPI) {
-                window.electronAPI.hideFloatingPanel();
-              }
-            });
-          }
-        }}
-        onLock={handleLock}
-        onExport={handleExport}
-      />
+      <div className="bg-slate-900">
+        <ElectronFloatingPanel
+          entries={entries}
+          categories={FIXED_CATEGORIES}
+          onAddEntry={handleAddEntry}
+          onUpdateEntry={handleUpdateEntry}
+          onDeleteEntry={handleDeleteEntry}
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          selectedCategory={selectedCategory}
+          onCategoryChange={setSelectedCategory}
+          onMaximize={() => {
+            if (window.electronAPI) {
+              window.electronAPI.restoreMainWindow().then(() => {
+                if (window.electronAPI) {
+                  window.electronAPI.hideFloatingPanel();
+                }
+              });
+            }
+          }}
+          onLock={handleLock}
+          onExport={handleExport}
+        />
+      </div>
     );
   }
 
   // If we're in Electron floating button mode, show the floating button
   if (isElectron && isFloatingButtonMode) {
+    // SECURITY FIX: Don't allow floating button access when vault is locked
+    // if (isLocked) {
+    //   return <LoginScreen onLogin={handleLogin} />;
+    // }
+
     return <FloatingButton />;
   }
 

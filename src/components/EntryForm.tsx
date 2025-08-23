@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, RefreshCw } from 'lucide-react';
+import { X, RefreshCw, Copy } from 'lucide-react';
 import { PasswordEntry, Category } from '../types';
 
 interface EntryFormProps {
@@ -113,6 +113,15 @@ export const EntryForm: React.FC<EntryFormProps> = ({
               <RefreshCw className="w-4 h-4" />
               <span>Generate</span>
             </button>
+            {/* Copy Password */}
+            <button
+              type="button"
+              onClick={() => navigator.clipboard.writeText(formData.password)}
+              className="px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all flex items-center space-x-2"
+            >
+              <Copy className="w-4 h-4" />
+              <span>Copy</span>
+              </button>
           </div>
         </div>
 

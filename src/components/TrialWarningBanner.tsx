@@ -2,13 +2,7 @@ import React from "react";
 import { Clock, AlertTriangle, CreditCard } from "lucide-react";
 import { licenseService } from "../utils/licenseService";
 
-interface TrialWarningBannerProps {
-  onPurchase: () => void;
-}
-
-export const TrialWarningBanner: React.FC<TrialWarningBannerProps> = ({
-  onPurchase,
-}) => {
+export const TrialWarningBanner: React.FC = () => {
   const appStatus = licenseService.getAppStatus();
 
   // Don't show if licensed or trial not active
@@ -49,13 +43,15 @@ export const TrialWarningBanner: React.FC<TrialWarningBannerProps> = ({
         </div>
       </div>
 
-      <button
-        onClick={onPurchase}
+      <a
+        href="https://www.buymeacoffee.com/"
+        target="_blank"
+        rel="noopener noreferrer"
         className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-all flex items-center space-x-2 text-sm"
       >
         <CreditCard className="w-4 h-4" />
         <span>Purchase Now</span>
-      </button>
+      </a>
     </div>
   );
 };

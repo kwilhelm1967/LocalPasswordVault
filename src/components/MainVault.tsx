@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   Search,
   Plus,
@@ -56,22 +56,24 @@ export const MainVault: React.FC<MainVaultProps> = ({
     new Set()
   );
 
-  const filteredEntries = entries.filter((entry) => {
-    const matchesSearch =
-      entry.accountName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      entry.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (entry.notes || "").toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredEntries = useMemo(() => {
+    return entries.filter((entry) => {
+      const matchesSearch =
+        entry.accountName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        entry.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (entry.notes || "").toLowerCase().includes(searchTerm.toLowerCase());
 
-    // If there's a search term, search across all categories
-    // If no search term, filter by selected category
-    if (searchTerm.trim()) {
-      return matchesSearch;
-    } else {
-      const matchesCategory =
-        selectedCategory === "all" || entry.category === selectedCategory;
-      return matchesCategory;
-    }
-  });
+      // If there's a search term, search across all categories
+      // If no search term, filter by selected category
+        if (searchTerm.trim()) {
+        return matchesSearch;
+      } else {
+        const matchesCategory =
+          selectedCategory === "all" || entry.category === selectedCategory;
+        return matchesCategory;
+      }
+    });
+  }, [entries, searchTerm, selectedCategory]);
 
   const togglePasswordVisibility = (entryId: string) => {
     const newVisible = new Set(visiblePasswords);
@@ -146,9 +148,12 @@ export const MainVault: React.FC<MainVaultProps> = ({
                 <h1 className="text-xl font-bold text-white">
                   Local Password Vault
                 </h1>
-                <p className="text-xs text-slate-400">
+                <a
+                  href="https://localpasswordvault.com"
+                  className="text-xs text-slate-400"
+                >
                   by LocalPasswordVault.com
-                </p>
+                </a>
               </div>
             </div>
 
@@ -173,7 +178,7 @@ export const MainVault: React.FC<MainVaultProps> = ({
 
               <button
                 onClick={onLock}
-                className="p-2 text-slate-400 hover:text-white hover:bg-slate-700/50 rounded-lg transition-all"
+                className="p-2 mt-2 text-slate-400 hover:text-white hover:bg-slate-700/50 rounded-lg transition-all"
                 title="Lock Vault"
               >
                 <Lock className="w-5 h-5" />
@@ -185,9 +190,7 @@ export const MainVault: React.FC<MainVaultProps> = ({
 
       <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Trial Warning Banner */}
-        {onShowPricingPlans && (
-          <TrialWarningBanner onPurchase={onShowPricingPlans} />
-        )}
+        {onShowPricingPlans && <TrialWarningBanner />}
 
         {/* Search and Controls */}
         <div className="mb-8">

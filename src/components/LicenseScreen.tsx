@@ -282,7 +282,7 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
           <h1 className="text-3xl font-bold text-white mb-2">
             Local Password Vault
           </h1>
-          <p className="text-slate-400">Local offline password management</p>
+          <p className="text-slate-400">Local Offline Password Management</p>
           <p className="text-xs text-slate-500 mt-2">
             by{" "}
             <a
