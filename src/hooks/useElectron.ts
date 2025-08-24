@@ -1,36 +1,6 @@
 import { useEffect, useState } from "react";
 
-interface ElectronAPI {
-  getVersion: () => Promise<string>;
-  getPlatform: () => Promise<string>;
-  onLockVault: (callback: () => void) => void;
-  removeAllListeners: (channel: string) => void;
-  showFloatingPanel: () => Promise<any>;
-  hideFloatingPanel: () => Promise<boolean>;
-  isFloatingPanelOpen: () => Promise<boolean>;
-  getFloatingPanelPosition: () => Promise<{ x: number; y: number }>;
-  saveFloatingPanelPosition: (x: number, y: number) => Promise<boolean>;
-  setAlwaysOnTop: (flag: boolean) => Promise<boolean>;
-  minimizeMainWindow: () => Promise<boolean>;
-  hideMainWindow: () => Promise<boolean>;
-  restoreMainWindow: () => Promise<boolean>;
-  // Floating button APIs
-  showFloatingButton: () => Promise<boolean>;
-  hideFloatingButton: () => Promise<boolean>;
-  isFloatingButtonOpen: () => Promise<boolean>;
-  toggleFloatingPanelFromButton: () => Promise<boolean>;
-  saveFloatingButtonPosition: (x: number, y: number) => Promise<boolean>;
-  moveFloatingButton: (x: number, y: number) => Promise<boolean>;
-  // Vault security controls
-  vaultUnlocked: () => Promise<boolean>;
-  vaultLocked: () => Promise<boolean>;
-}
-
-declare global {
-  interface Window {
-    electronAPI?: ElectronAPI;
-  }
-}
+// Using the global ElectronAPI type from vite-env.d.ts
 
 export const useElectron = () => {
   const [isElectron, setIsElectron] = useState(false);

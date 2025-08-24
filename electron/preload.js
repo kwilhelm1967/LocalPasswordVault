@@ -37,6 +37,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
   // Vault security controls
   vaultUnlocked: () => ipcRenderer.invoke("vault-unlocked"),
   vaultLocked: () => ipcRenderer.invoke("vault-locked"),
+  isVaultUnlocked: () => ipcRenderer.invoke("is-vault-unlocked"),
+  showMainWindow: () => ipcRenderer.invoke("show-main-window"),
+  openExternal: (url) => ipcRenderer.invoke("open-external", url),
 });
 
 // Security: Remove any node globals in renderer

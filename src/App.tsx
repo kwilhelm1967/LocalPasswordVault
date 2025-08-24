@@ -49,7 +49,6 @@ function App() {
   const [showLicenseKeys, setShowLicenseKeys] = useState(
     () => features.showTestingTools
   );
-
   const [showTrialTestingTools, setShowTrialTestingTools] = useState(
     () => false
   );
@@ -179,13 +178,14 @@ function App() {
         await passwordService.setMasterPassword(password);
         setIsLocked(false);
 
-        // SECURITY: Notify Electron that vault is unlocked to show floating button
-        if (
-          isElectron &&
-          window.electronAPI &&
-          window.electronAPI.vaultUnlocked
-        ) {
-          window.electronAPI.vaultUnlocked();
+        // Update vault status in Electron
+        if (isElectron && window.electronAPI) {
+          // Ensure vault is marked as unlocked in main process
+          await window.electronAPI.vaultUnlocked?.();
+          // Also update the isVaultUnlocked state in main process
+          if (window.electronAPI.isVaultUnlocked) {
+            await window.electronAPI.isVaultUnlocked();
+          }
         }
         return;
       }
@@ -195,14 +195,17 @@ function App() {
       if (isValid) {
         setIsLocked(false);
 
-        // SECURITY: Notify Electron that vault is unlocked to show floating button
-        if (
-          isElectron &&
-          window.electronAPI &&
-          window.electronAPI.vaultUnlocked
-        ) {
-          window.electronAPI.vaultUnlocked();
+        // Update vault status in Electron
+        if (isElectron && window.electronAPI) {
+          // Ensure vault is marked as unlocked in main process
+          await window.electronAPI.vaultUnlocked?.();
+          // Also update the isVaultUnlocked state in main process
+          if (window.electronAPI.isVaultUnlocked) {
+            await window.electronAPI.isVaultUnlocked();
+          }
         }
+
+        setIsLocked(false);
       } else {
         // LoginScreen should handle the error display
         throw new Error("Invalid password");
@@ -373,11 +376,6 @@ function App() {
 
   // If we're in Electron floating button mode, show the floating button
   if (isElectron && isFloatingButtonMode) {
-    // SECURITY FIX: Don't allow floating button access when vault is locked
-    // if (isLocked) {
-    //   return <LoginScreen onLogin={handleLogin} />;
-    // }
-
     return <FloatingButton />;
   }
 

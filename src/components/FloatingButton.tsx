@@ -4,9 +4,13 @@ import { Lock } from "lucide-react";
 export const FloatingButton: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
-  const dragStartPos = useRef({ x: 0, y: 0 });
+  const dragStartPos = useRef({ x: 0, y: 0, clientX: 0, clientY: 0 });
   const buttonRef = useRef<HTMLDivElement>(null);
   const dragTimeoutRef = useRef<NodeJS.Timeout>();
+  const isClick = useRef(true);
+  const DRAG_THRESHOLD = 5; // pixels
+  const lastClickTsRef = useRef(0);
+  const CLICK_THROTTLE_MS = 250;
 
   // Clean up on unmount
   useEffect(() => {
@@ -20,14 +24,16 @@ export const FloatingButton: React.FC = () => {
   const handleMouseDown = (e: React.MouseEvent) => {
     if (e.button !== 0) return; // Only handle left click
 
-    setIsDragging(true);
     const rect = buttonRef.current?.getBoundingClientRect();
     if (rect) {
       dragStartPos.current = {
         x: e.clientX - rect.left,
         y: e.clientY - rect.top,
+        clientX: e.clientX,
+        clientY: e.clientY
       };
     }
+    isClick.current = true;
 
     e.preventDefault();
     e.stopPropagation();
@@ -37,22 +43,50 @@ export const FloatingButton: React.FC = () => {
     e.preventDefault();
     e.stopPropagation();
 
-    if (isProcessing || isDragging) return;
+    // Ignore while dragging or if flagged as not a click
+    if (isProcessing || isDragging || !isClick.current) {
+      isClick.current = false;
+      return;
+    }
+    // Simple throttle to avoid rapid re-triggers
+    const now = Date.now();
+    if (now - lastClickTsRef.current < CLICK_THROTTLE_MS) {
+      return;
+    }
+    lastClickTsRef.current = now;
     
     setIsProcessing(true);
 
     try {
-      if (window.electronAPI?.toggleFloatingPanelFromButton) {
+      // Check if vault is already unlocked
+      const isUnlocked = window.electronAPI?.isVaultUnlocked ? 
+        await window.electronAPI.isVaultUnlocked() : false;
+
+      if (isUnlocked && window.electronAPI?.toggleFloatingPanelFromButton) {
         await window.electronAPI.toggleFloatingPanelFromButton();
+      } else if (!isUnlocked && window.electronAPI?.showMainWindow) {
+        // If vault is locked, show main window to unlock
+        window.electronAPI.showMainWindow();
       }
     } catch (error) {
       console.error("Failed to toggle floating panel:", error);
     } finally {
-      setTimeout(() => setIsProcessing(false), 30);
+      setTimeout(() => setIsProcessing(false), 120);
     }
   };
 
   const handleMouseMove = useCallback((e: MouseEvent) => {
+    if (!dragStartPos.current.clientX || !isClick.current) return;
+    
+    // Check if mouse has moved beyond threshold to start dragging
+    const dx = Math.abs(e.clientX - dragStartPos.current.clientX);
+    const dy = Math.abs(e.clientY - dragStartPos.current.clientY);
+    
+    if (dx > DRAG_THRESHOLD || dy > DRAG_THRESHOLD) {
+      isClick.current = false;
+      setIsDragging(true);
+    }
+    
     if (!isDragging) return;
 
     const buttonSize = 60;
@@ -71,7 +105,12 @@ export const FloatingButton: React.FC = () => {
   }, [isDragging]);
 
   const handleMouseUp = useCallback(async (e: MouseEvent) => {
-    if (!isDragging) return;
+    if (!isDragging && !isClick.current) return;
+    
+    // Reset click state after a short delay
+    setTimeout(() => {
+      isClick.current = true;
+    }, 100);
 
     const buttonSize = 60;
     const snapThreshold = 100; // Distance from edge to snap

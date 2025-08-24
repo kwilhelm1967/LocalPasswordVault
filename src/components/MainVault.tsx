@@ -148,12 +148,20 @@ export const MainVault: React.FC<MainVaultProps> = ({
                 <h1 className="text-xl font-bold text-white">
                   Local Password Vault
                 </h1>
-                <a
-                  href="https://localpasswordvault.com"
-                  className="text-xs text-slate-400"
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    const url = 'https://localpasswordvault.com';
+                    if (window.electronAPI) {
+                      window.electronAPI.openExternal(url);
+                    } else {
+                      window.open('https://localpasswordvault.com', '_blank');
+                    }
+                  }}
+                  className="text-xs text-slate-400 hover:underline cursor-pointer"
                 >
                   by LocalPasswordVault.com
-                </a>
+                </button>
               </div>
             </div>
 

@@ -43,15 +43,20 @@ export const TrialWarningBanner: React.FC = () => {
         </div>
       </div>
 
-      <a
-        href="https://www.buymeacoffee.com/"
-        target="_blank"
-        rel="noopener noreferrer"
+      <button
+        onClick={(e) => {
+          e.preventDefault();
+          if (window.electronAPI) {
+            window.electronAPI.openExternal("https://localpasswordvault.com");
+          } else {
+            window.open("https://localpasswordvault.com", "_blank");
+          }
+        }}
         className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-all flex items-center space-x-2 text-sm"
       >
         <CreditCard className="w-4 h-4" />
         <span>Purchase Now</span>
-      </a>
+      </button>
     </div>
   );
 };

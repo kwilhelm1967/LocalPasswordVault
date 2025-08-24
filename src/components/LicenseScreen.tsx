@@ -349,15 +349,22 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
                 </button>
 
                 <div className="text-center">
-                  <a
-                    href="https://LocalPasswordVault.com"
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (window.electronAPI) {
+                        window.electronAPI.openExternal(
+                          "https://localpasswordvault.com"
+                        );
+                      } else {
+                        window.open("https://localpasswordvault.com", "_blank");
+                      }
+                    }}
                     className="text-blue-400 hover:text-blue-300 text-sm transition-colors inline-flex items-center space-x-1"
                   >
                     <span>Don't have a license? Purchase one</span>
                     <ExternalLink className="w-3 h-3" />
-                  </a>
+                  </button>
                 </div>
               </div>
             </div>

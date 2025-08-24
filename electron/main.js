@@ -6,12 +6,14 @@ const Positioner = require("electron-positioner");
 const isDev = process.env.NODE_ENV === "development";
 
 let mainWindow;
-let floatingWindow;
 let floatingButton;
+let floatingWindow = null; // Track floating panel window
+let isVaultUnlocked = false; // Track vault lock state
 let floatingPanelPosition = null;
 let floatingButtonPosition = null;
 let floatingPanelInterval = null;
 let floatingButtonInterval = null;
+let isTogglingFloatingWindow = false;
 const userDataPath = app.getPath("userData");
 const positionFilePath = path.join(
   userDataPath,
@@ -338,11 +340,12 @@ const createFloatingWindow = () => {
     }
   });
 
-  // Ensure it stays on top periodically
+  // Ensure it stays on top periodically (light-touch)
   floatingPanelInterval = setInterval(() => {
     if (floatingWindow && !floatingWindow.isDestroyed()) {
-      floatingWindow.setAlwaysOnTop(true, "screen-saver");
-      floatingWindow.setVisibleOnAllWorkspaces(true);
+      if (!floatingWindow.isAlwaysOnTop()) {
+        floatingWindow.setAlwaysOnTop(true, "screen-saver");
+      }
 
       // For Windows, ensure it stays as a tool window
       if (process.platform === "win32") {
@@ -350,11 +353,8 @@ const createFloatingWindow = () => {
         floatingWindow.setType("toolbar");
       }
 
-      // For macOS, ensure it stays visible on all workspaces
+      // For macOS, keep Mission Control setting enforced
       if (process.platform === "darwin") {
-        floatingWindow.setVisibleOnAllWorkspaces(true, {
-          visibleOnFullScreen: true,
-        });
         floatingWindow.setHiddenInMissionControl(true);
       }
     } else {
@@ -364,7 +364,7 @@ const createFloatingWindow = () => {
         floatingPanelInterval = null;
       }
     }
-  }, 500); // Check more frequently (every 500ms)
+  }, 3000); // Light cadence to reduce flicker
 
   return floatingWindow;
 };
@@ -508,11 +508,12 @@ const createFloatingButton = () => {
     }
   });
 
-  // Ensure it stays on top periodically
+  // Ensure it stays on top periodically (light-touch)
   floatingButtonInterval = setInterval(() => {
     if (floatingButton && !floatingButton.isDestroyed()) {
-      floatingButton.setAlwaysOnTop(true, "screen-saver");
-      floatingButton.setVisibleOnAllWorkspaces(true);
+      if (!floatingButton.isAlwaysOnTop()) {
+        floatingButton.setAlwaysOnTop(true, "screen-saver");
+      }
 
       // For Windows, ensure it stays as a tool window
       if (process.platform === "win32") {
@@ -520,11 +521,8 @@ const createFloatingButton = () => {
         floatingButton.setType("toolbar");
       }
 
-      // For macOS, ensure it stays visible on all workspaces
+      // For macOS, keep Mission Control setting enforced
       if (process.platform === "darwin") {
-        floatingButton.setVisibleOnAllWorkspaces(true, {
-          visibleOnFullScreen: true,
-        });
         floatingButton.setHiddenInMissionControl(true);
       }
     } else {
@@ -534,7 +532,7 @@ const createFloatingButton = () => {
         floatingButtonInterval = null;
       }
     }
-  }, 1000); // Check every second
+  }, 5000); // Light cadence to reduce flicker
 
   return floatingButton;
 };
@@ -840,6 +838,53 @@ ipcMain.handle("save-floating-panel-position", (event, x, y) => {
   return true;
 });
 
+// Vault status handlers
+const vaultHandlers = {
+  'vault-unlocked': () => {
+    console.log('Vault unlocked');
+    isVaultUnlocked = true;
+    // Show floating button when vault is unlocked
+    if (!floatingButton || floatingButton.isDestroyed()) {
+      createFloatingButton();
+    }
+    return true;
+  },
+  'vault-locked': () => {
+    console.log('Vault locked');
+    isVaultUnlocked = false;
+    // Hide floating button when vault is locked
+    if (floatingButton && !floatingButton.isDestroyed()) {
+      floatingButton.close();
+      floatingButton = null;
+    }
+    return true;
+  },
+  'is-vault-unlocked': () => {
+    console.log('Checking vault status:', isVaultUnlocked ? 'unlocked' : 'locked');
+    return isVaultUnlocked;
+  }
+};
+
+// Register vault status handlers
+Object.entries(vaultHandlers).forEach(([event, handler]) => {
+  // Remove existing handler if it exists
+  if (ipcMain.listeners(event).length > 0) {
+    ipcMain.removeHandler(event);
+  }
+  ipcMain.handle(event, handler);
+});
+
+// Handle external URL opening
+ipcMain.handle('open-external', async (event, url) => {
+  try {
+    await shell.openExternal(url);
+    return true;
+  } catch (error) {
+    console.error('Failed to open external URL:', error);
+    return false;
+  }
+});
+
 // Floating button IPC handlers
 ipcMain.handle("show-floating-button", () => {
   const button = createFloatingButton();
@@ -863,13 +908,21 @@ ipcMain.handle("is-floating-button-open", () => {
 });
 
 ipcMain.handle("toggle-floating-panel-from-button", async () => {
+  // Reentrancy guard to prevent rapid repeated toggles
+  if (isTogglingFloatingWindow) {
+    return (
+      floatingWindow &&
+      !floatingWindow.isDestroyed() &&
+      floatingWindow.isVisible()
+    );
+  }
+  isTogglingFloatingWindow = true;
   console.log("Toggle floating panel requested");
 
   try {
     // Check if we have a valid floating window that's visible
-    const isWindowOpen = floatingWindow && 
-                        !floatingWindow.isDestroyed() && 
-                        floatingWindow.isVisible();
+    const isWindowOpen =
+      floatingWindow && !floatingWindow.isDestroyed() && floatingWindow.isVisible();
 
     if (isWindowOpen) {
       // Close the existing window
@@ -881,7 +934,7 @@ ipcMain.handle("toggle-floating-panel-from-button", async () => {
       // Create a new window
       console.log("Opening floating panel");
       floatingWindow = createFloatingWindow();
-      
+
       if (!floatingWindow) {
         console.error("Failed to create floating window");
         return false;
@@ -899,13 +952,15 @@ ipcMain.handle("toggle-floating-panel-from-button", async () => {
 
       // macOS-specific settings
       if (process.platform === "darwin") {
-        floatingWindow.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true });
+        floatingWindow.setVisibleOnAllWorkspaces(true, {
+          visibleOnFullScreen: true,
+        });
         floatingWindow.setHiddenInMissionControl(true);
       }
 
       // Ensure the window is fully ready
-      await new Promise(resolve => {
-        floatingWindow.once('ready-to-show', () => {
+      await new Promise((resolve) => {
+        floatingWindow.once("ready-to-show", () => {
           floatingWindow.show();
           resolve(true);
         });
@@ -916,6 +971,11 @@ ipcMain.handle("toggle-floating-panel-from-button", async () => {
   } catch (error) {
     console.error("Error toggling floating panel:", error);
     return false;
+  } finally {
+    // Small delay to absorb accidental double triggers
+    setTimeout(() => {
+      isTogglingFloatingWindow = false;
+    }, 200);
   }
 });
 
@@ -947,20 +1007,16 @@ ipcMain.handle("move-floating-button", (event, x, y) => {
   return false;
 });
 
-// SECURITY: Handle vault lock/unlock events to control floating button
-ipcMain.handle("vault-unlocked", () => {
-  // Show floating button when vault is unlocked
-  if (!floatingButton || floatingButton.isDestroyed()) {
-    createFloatingButton();
-  }
-  return true;
-});
+// Vault status handlers are now defined at the top of the file
 
-ipcMain.handle("vault-locked", () => {
-  // Hide floating button when vault is locked
-  if (floatingButton && !floatingButton.isDestroyed()) {
-    floatingButton.close();
-    floatingButton = null;
+ipcMain.handle('show-main-window', () => {
+  if (mainWindow) {
+    if (mainWindow.isMinimized()) {
+      mainWindow.restore();
+    }
+    mainWindow.show();
+    mainWindow.focus();
+    return true;
   }
-  return true;
+  return false;
 });
