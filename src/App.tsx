@@ -376,9 +376,9 @@ function App() {
   }
 
   // // If we're in Electron floating button mode, show the floating button
-  if (isElectron && isFloatingButtonMode) {
-    return <FloatingButton />;
-  }
+  // if (isElectron && isFloatingButtonMode) {
+  //   return <FloatingButton />;
+  // }
 
   if (!appStatus.canUseApp) {
     return (

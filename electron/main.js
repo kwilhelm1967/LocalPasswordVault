@@ -231,10 +231,13 @@ const createFloatingWindow = () => {
   // For Windows, set as a tool window to ensure it stays on top
   if (process.platform === "win32") {
     floatingWindow.setSkipTaskbar(true);
-    // Set as a tool window which helps with always-on-top behavior
-    floatingWindow.setType("toolbar");
     // Set content protection to prevent screen capture tools from hiding it
     floatingWindow.setContentProtection(true);
+  }
+
+  // For Linux, set as a tool window which helps with always-on-top behavior
+  if (process.platform === "linux") {
+    floatingWindow.setType("toolbar");
   }
 
   // Prevent flickering by showing only when ready
@@ -251,6 +254,10 @@ const createFloatingWindow = () => {
       // For Windows, ensure it stays as a tool window
       if (process.platform === "win32") {
         floatingWindow.setSkipTaskbar(true);
+      }
+
+      // For Linux, ensure it stays as a tool window
+      if (process.platform === "linux") {
         floatingWindow.setType("toolbar");
       }
 
@@ -268,8 +275,8 @@ const createFloatingWindow = () => {
     if (floatingWindow && !floatingWindow.isDestroyed()) {
       floatingWindow.setAlwaysOnTop(true, "screen-saver");
 
-      // For Windows, ensure it stays as a tool window
-      if (process.platform === "win32") {
+      // For Linux, ensure it stays as a tool window
+      if (process.platform === "linux") {
         floatingWindow.setType("toolbar");
       }
 
@@ -350,6 +357,10 @@ const createFloatingWindow = () => {
       // For Windows, ensure it stays as a tool window
       if (process.platform === "win32") {
         floatingWindow.setSkipTaskbar(true);
+      }
+
+      // For Linux, ensure it stays as a tool window
+      if (process.platform === "linux") {
         floatingWindow.setType("toolbar");
       }
 
@@ -448,6 +459,10 @@ const createFloatingButton = () => {
   // For Windows, set as a tool window to ensure it stays on top
   if (process.platform === "win32") {
     floatingButton.setSkipTaskbar(true);
+  }
+
+  // For Linux, set as a tool window to ensure it stays on top
+  if (process.platform === "linux") {
     floatingButton.setType("toolbar");
   }
 
@@ -466,11 +481,9 @@ const createFloatingButton = () => {
 
   // Load the floating button page
   if (isDev) {
-    floatingButton.loadURL("http://localhost:5173/#floating-button");
+    floatingButton.loadURL("http://localhost:5173/floating-button.html");
   } else {
-    floatingButton.loadFile(path.join(__dirname, "../dist/index.html"), {
-      hash: "floating-button",
-    });
+    floatingButton.loadFile(path.join(__dirname, "../dist/floating-button.html"));
   }
 
   // Handle window closed
@@ -518,6 +531,10 @@ const createFloatingButton = () => {
       // For Windows, ensure it stays as a tool window
       if (process.platform === "win32") {
         floatingButton.setSkipTaskbar(true);
+      }
+
+      // For Linux, ensure it stays as a tool window
+      if (process.platform === "linux") {
         floatingButton.setType("toolbar");
       }
 
@@ -736,9 +753,13 @@ ipcMain.handle("show-floating-panel", () => {
 
     // For Windows, set as a tool window to ensure it stays on top
     if (process.platform === "win32") {
-      window.setType("toolbar");
       window.setSkipTaskbar(true);
       window.setContentProtection(true);
+    }
+
+    // For Linux, set as a tool window to ensure it stays on top
+    if (process.platform === "linux") {
+      window.setType("toolbar");
     }
 
     // For macOS, set additional flags to ensure it stays visible
@@ -814,6 +835,12 @@ ipcMain.handle("set-always-on-top", (event, flag) => {
 
     // For Windows, set as a tool window to ensure it stays on top
     if (process.platform === "win32" && flag) {
+      floatingWindow.setSkipTaskbar(true);
+      floatingWindow.setContentProtection(true);
+    }
+
+    // For Linux, set as a tool window to ensure it stays on top
+    if (process.platform === "linux" && flag) {
       floatingWindow.setType("toolbar");
     }
 
@@ -948,14 +975,16 @@ ipcMain.handle("toggle-floating-panel-from-button", async () => {
       // Set window properties
       floatingWindow.setAlwaysOnTop(true, "screen-saver");
 
-      // Windows-specific settings
-      if (process.platform === "win32") {
-        floatingWindow.setType("toolbar");
-        floatingWindow.setSkipTaskbar(true);
-        floatingWindow.setContentProtection(true);
-      }
+    // Windows-specific settings
+    if (process.platform === "win32") {
+      floatingWindow.setSkipTaskbar(true);
+      floatingWindow.setContentProtection(true);
+    }
 
-      // macOS-specific settings
+    // Linux-specific settings
+    if (process.platform === "linux") {
+      floatingWindow.setType("toolbar");
+    }      // macOS-specific settings
       if (process.platform === "darwin") {
         floatingWindow.setVisibleOnAllWorkspaces(true, {
           visibleOnFullScreen: true,
