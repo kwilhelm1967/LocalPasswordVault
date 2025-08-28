@@ -1,55 +1,63 @@
-import React, { useState } from 'react';
-import { X, RefreshCw, Copy } from 'lucide-react';
-import { PasswordEntry, Category } from '../types';
+import React, { useState } from "react";
+import { X, RefreshCw, Copy } from "lucide-react";
+import { PasswordEntry, Category } from "../types";
 
 interface EntryFormProps {
   entry?: PasswordEntry | null;
   categories: Category[];
-  onSubmit: (data: Omit<PasswordEntry, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  onSubmit: (
+    data: Omit<PasswordEntry, "id" | "createdAt" | "updatedAt">
+  ) => void;
   onCancel: () => void;
   onDelete?: () => void;
 }
 
-export const EntryForm: React.FC<EntryFormProps> = ({ 
-  entry, 
-  categories, 
-  onSubmit, 
-  onCancel, 
-  onDelete 
+export const EntryForm: React.FC<EntryFormProps> = ({
+  entry,
+  categories,
+  onSubmit,
+  onCancel,
+  onDelete,
 }) => {
   const [formData, setFormData] = useState({
-    accountName: entry?.accountName || '',
-    username: entry?.username || '',
-    password: entry?.password || '',
-    notes: entry?.notes || '',
-    balance: entry?.balance || '',
-    category: entry?.category || ''
+    accountName: entry?.accountName || "",
+    username: entry?.username || "",
+    password: entry?.password || "",
+    notes: entry?.notes || "",
+    balance: entry?.balance || "",
+    category: entry?.category || "",
   });
 
   const generatePassword = () => {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
-    let password = '';
+    const chars =
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
+    let password = "";
     for (let i = 0; i < 16; i++) {
       password += chars.charAt(Math.floor(Math.random() * chars.length));
     }
-    setFormData(prev => ({ ...prev, password }));
+    setFormData((prev) => ({ ...prev, password }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (formData.accountName.trim() && formData.username.trim() && formData.password.trim() && formData.category) {
+
+    if (
+      formData.accountName.trim() &&
+      formData.username.trim() &&
+      formData.password.trim() &&
+      formData.category
+    ) {
       try {
         onSubmit({
           ...formData,
           accountName: formData.accountName.trim(),
           username: formData.username.trim(),
           password: formData.password.trim(),
-          notes: formData.notes?.trim() || '',
-          balance: formData.balance?.trim() || ''
+          notes: formData.notes?.trim() || "",
+          balance: formData.balance?.trim() || "",
         });
       } catch (error) {
-        console.error('Error submitting form:', error);
+        console.error("Error submitting form:", error);
         // Don't crash the app, just log the error
       }
     }
@@ -59,7 +67,7 @@ export const EntryForm: React.FC<EntryFormProps> = ({
     <div>
       <div className="flex items-center justify-between mb-4 sm:mb-6">
         <h3 className="text-white font-semibold text-base sm:text-lg">
-          {entry ? 'Edit Account' : 'Add New Account'}
+          {entry ? "Edit Account" : "Add New Account"}
         </h3>
         <button
           onClick={onCancel}
@@ -68,14 +76,18 @@ export const EntryForm: React.FC<EntryFormProps> = ({
           <X className="w-5 h-5" />
         </button>
       </div>
-      
+
       <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
         <div>
-          <label className="block text-sm font-medium text-slate-300 mb-2">Account Name</label>
+          <label className="block text-sm font-medium text-slate-300 mb-2">
+            Account Name
+          </label>
           <input
             type="text"
             value={formData.accountName}
-            onChange={(e) => setFormData(prev => ({ ...prev, accountName: e.target.value }))}
+            onChange={(e) =>
+              setFormData((prev) => ({ ...prev, accountName: e.target.value }))
+            }
             className="w-full px-3 sm:px-4 py-2 sm:py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all text-sm sm:text-base"
             placeholder="e.g., Gmail, Bank of America"
             required
@@ -83,11 +95,15 @@ export const EntryForm: React.FC<EntryFormProps> = ({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-slate-300 mb-2">Username/Email</label>
+          <label className="block text-sm font-medium text-slate-300 mb-2">
+            Username/Email
+          </label>
           <input
             type="text"
             value={formData.username}
-            onChange={(e) => setFormData(prev => ({ ...prev, username: e.target.value }))}
+            onChange={(e) =>
+              setFormData((prev) => ({ ...prev, username: e.target.value }))
+            }
             className="w-full px-3 sm:px-4 py-2 sm:py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all text-sm sm:text-base"
             placeholder="username@example.com"
             required
@@ -95,13 +111,17 @@ export const EntryForm: React.FC<EntryFormProps> = ({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-slate-300 mb-2">Password</label>
+          <label className="block text-sm font-medium text-slate-300 mb-2">
+            Password
+          </label>
           <div className="flex space-x-1 sm:space-x-2">
             <input
               type="text"
               value={formData.password}
-              onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
-              className="flex-1 px-3 sm:px-4 py-2 sm:py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all font-mono text-sm sm:text-base"
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, password: e.target.value }))
+              }
+              className="flex-1 px-3 sm:px-4 py-2 sm:py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all  text-sm sm:text-base"
               placeholder="Enter password"
               required
             />
@@ -117,47 +137,62 @@ export const EntryForm: React.FC<EntryFormProps> = ({
             <button
               type="button"
               onClick={() => navigator.clipboard.writeText(formData.password)}
-              className="px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all flex items-center space-x-2"
+              className="p-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all flex items-center space-x-2"
             >
               <Copy className="w-4 h-4" />
-              <span>Copy</span>
-              </button>
+            </button>
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-slate-300 mb-2">Category</label>
+          <label className="block text-sm font-medium text-slate-300 mb-2">
+            Category
+          </label>
           <select
             value={formData.category}
-            onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value }))}
+            onChange={(e) =>
+              setFormData((prev) => ({ ...prev, category: e.target.value }))
+            }
             className="w-full px-3 sm:px-4 py-2 sm:py-3 bg-slate-800 border border-slate-600 rounded-lg text-white focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all text-sm sm:text-base"
             required
           >
-            <option value="" disabled>Select a category</option>
-            {categories.filter(c => c.id !== 'all').map(category => (
-              <option key={category.id} value={category.id}>
-                {category.name}
-              </option>
-            ))}
+            <option value="" disabled>
+              Select a category
+            </option>
+            {categories
+              .filter((c) => c.id !== "all")
+              .map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.name}
+                </option>
+              ))}
           </select>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-slate-300 mb-2">Account Details</label>
+          <label className="block text-sm font-medium text-slate-300 mb-2">
+            Account Details
+          </label>
           <input
             type="text"
             value={formData.balance}
-            onChange={(e) => setFormData(prev => ({ ...prev, balance: e.target.value }))}
+            onChange={(e) =>
+              setFormData((prev) => ({ ...prev, balance: e.target.value }))
+            }
             className="w-full px-3 sm:px-4 py-2 sm:py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all text-sm sm:text-base"
             placeholder="e.g., Account details, credentials, etc."
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-slate-300 mb-2">Notes</label>
+          <label className="block text-sm font-medium text-slate-300 mb-2">
+            Notes
+          </label>
           <textarea
             value={formData.notes}
-            onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+            onChange={(e) =>
+              setFormData((prev) => ({ ...prev, notes: e.target.value }))
+            }
             className="w-full px-3 sm:px-4 py-2 sm:py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all resize-none text-sm sm:text-base"
             rows={3}
             placeholder="Additional notes..."
@@ -169,7 +204,7 @@ export const EntryForm: React.FC<EntryFormProps> = ({
             type="submit"
             className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 sm:py-3 px-3 sm:px-4 rounded-lg font-medium transition-all text-sm sm:text-base"
           >
-            {entry ? 'Update Account' : 'Add Account'}
+            {entry ? "Update Account" : "Add Account"}
           </button>
           <button
             type="button"

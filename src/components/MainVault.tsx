@@ -298,7 +298,7 @@ export const MainVault: React.FC<MainVaultProps> = ({
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-slate-400">Username</span>
                     <div className="flex items-center space-x-2">
-                      <span className="text-sm text-slate-300 font-mono">
+                      <span className="text-sm text-slate-300 ">
                         {entry.username}
                       </span>
                       <button
@@ -314,7 +314,7 @@ export const MainVault: React.FC<MainVaultProps> = ({
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-slate-400">Password</span>
                     <div className="flex items-center space-x-2">
-                      <span className="text-sm text-slate-300 font-mono">
+                      <span className="text-sm text-slate-300 ">
                         {isPasswordVisible ? entry.password : "••••••••"}
                       </span>
                       <button
@@ -345,7 +345,7 @@ export const MainVault: React.FC<MainVaultProps> = ({
                       <span className="text-sm text-slate-400">
                         Account Details
                       </span>
-                      <span className="text-sm text-slate-300 font-mono">
+                      <span className="text-sm text-slate-300 ">
                         {entry.balance}
                       </span>
                     </div>

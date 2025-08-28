@@ -4,7 +4,7 @@
 
 /* Prevent white flash on load - CRITICAL */
 * {
-  background-color: inherit;
+  /* background-color: inherit; */
 }
 
 html {

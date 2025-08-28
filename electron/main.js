@@ -5,6 +5,16 @@ const { screen, powerMonitor, globalShortcut } = require("electron");
 const Positioner = require("electron-positioner");
 const isDev = process.env.NODE_ENV === "development";
 
+// Add process error handlers for debugging
+process.on("uncaughtException", (error) => {
+  console.error("Uncaught Exception:", error);
+  console.error("Stack:", error.stack);
+});
+
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("Unhandled Rejection at:", promise, "reason:", reason);
+});
+
 let mainWindow;
 let floatingButton;
 let floatingWindow = null; // Track floating panel window
@@ -134,277 +144,301 @@ const createWindow = () => {
 
 // Create floating panel window
 const createFloatingWindow = () => {
-  if (floatingWindow) {
-    if (floatingWindow.isMinimized() || !floatingWindow.isVisible()) {
-      floatingWindow.restore();
-      floatingWindow.show();
+  try {
+    console.log("Creating floating window...");
+    if (floatingWindow) {
+      if (floatingWindow.isMinimized() || !floatingWindow.isVisible()) {
+        floatingWindow.restore();
+        floatingWindow.show();
+      }
+      floatingWindow.focus();
+      // Ensure it's always on top with highest level
+      floatingWindow.setAlwaysOnTop(true, "screen-saver");
+      if (process.platform === "win32") {
+        floatingWindow.setSkipTaskbar(true);
+      }
+      if (process.platform === "darwin") {
+        floatingWindow.setVisibleOnAllWorkspaces(true, {
+          visibleOnFullScreen: true,
+        });
+      }
+      console.log("Existing floating window restored and focused");
+      return floatingWindow;
     }
-    floatingWindow.focus();
-    // Ensure it's always on top with highest level
+
+    // Load saved position
+    const savedPosition = loadSavedPosition();
+
+    // Get screen dimensions
+    const primaryDisplay = screen.getPrimaryDisplay();
+    const { width, height } = primaryDisplay.workAreaSize;
+
+    // Determine window position
+    const windowOptions = {
+      width: 400,
+      height: 600,
+      minWidth: 350,
+      minHeight: 400,
+      maxWidth: 500,
+      maxHeight: 800,
+      alwaysOnTop: true,
+      focusable: true,
+      skipTaskbar: true,
+      resizable: true,
+      minimizable: false,
+      maximizable: false,
+      closable: true,
+      frame: false,
+      transparent: false,
+      hasShadow: true,
+      webPreferences: {
+        nodeIntegration: false,
+        contextIsolation: true,
+        enableRemoteModule: false,
+        preload: path.join(__dirname, "preload.js"),
+      },
+      icon: path.join(__dirname, "../public/vault-icon.png"),
+      show: false,
+    };
+
+    // Add position if available
+    if (
+      savedPosition &&
+      typeof savedPosition.x === "number" &&
+      typeof savedPosition.y === "number"
+    ) {
+      // Ensure position is within screen bounds
+      const validX = Math.max(0, Math.min(width - 200, savedPosition.x));
+      const validY = Math.max(0, Math.min(height - 200, savedPosition.y));
+      windowOptions.x = validX;
+      windowOptions.y = validY;
+      floatingPanelPosition = { x: validX, y: validY };
+    } else {
+      // Default to center of screen if no saved position
+      windowOptions.x = Math.floor((width - 400) / 2);
+      windowOptions.y = Math.floor((height - 600) / 2);
+      floatingPanelPosition = { x: windowOptions.x, y: windowOptions.y };
+    }
+
+    floatingWindow = new BrowserWindow(windowOptions);
+
+    // Use electron-positioner to position the window
+    const positioner = new Positioner(floatingWindow);
+
+    // Position at the saved position or top-right corner as a fallback
+    if (
+      savedPosition &&
+      typeof savedPosition.x === "number" &&
+      typeof savedPosition.y === "number"
+    ) {
+      floatingWindow.setPosition(savedPosition.x, savedPosition.y);
+    } else {
+      positioner.move("topRight");
+    }
+
+    // Set window to be always on top with level 'screen-saver' (highest level)
+    // This ensures it stays above ALL other windows, including other applications
     floatingWindow.setAlwaysOnTop(true, "screen-saver");
+    floatingWindow.setVisibleOnAllWorkspaces(true);
+
+    // For Windows, set as a tool window to ensure it stays on top
     if (process.platform === "win32") {
       floatingWindow.setSkipTaskbar(true);
+      // Set content protection to prevent screen capture tools from hiding it
+      floatingWindow.setContentProtection(true);
     }
-    if (process.platform === "darwin") {
-      floatingWindow.setVisibleOnAllWorkspaces(true, {
-        visibleOnFullScreen: true,
+
+    // For Linux, set as a tool window which helps with always-on-top behavior
+    if (process.platform === "linux") {
+      floatingWindow.setType("toolbar");
+    }
+
+    // Prevent flickering by showing only when ready
+    floatingWindow.once("ready-to-show", () => {
+      floatingWindow.show();
+    });
+
+    // Re-apply always-on-top when computer wakes from sleep
+    powerMonitor.on("resume", () => {
+      if (floatingWindow && !floatingWindow.isDestroyed()) {
+        floatingWindow.setAlwaysOnTop(true, "screen-saver");
+        floatingWindow.setVisibleOnAllWorkspaces(true);
+
+        // For Windows, ensure it stays as a tool window
+        if (process.platform === "win32") {
+          floatingWindow.setSkipTaskbar(true);
+        }
+
+        // For Linux, ensure it stays as a tool window
+        if (process.platform === "linux") {
+          floatingWindow.setType("toolbar");
+        }
+
+        // For macOS, ensure it stays visible on all workspaces
+        if (process.platform === "darwin") {
+          floatingWindow.setVisibleOnAllWorkspaces(true, {
+            visibleOnFullScreen: true,
+          });
+        }
+      }
+    });
+
+    // Ensure the window stays on top even when it loses focus
+    floatingWindow.on("blur", () => {
+      if (floatingWindow && !floatingWindow.isDestroyed()) {
+        floatingWindow.setAlwaysOnTop(true, "screen-saver");
+
+        // For Linux, ensure it stays as a tool window
+        if (process.platform === "linux") {
+          floatingWindow.setType("toolbar");
+        }
+
+        // For macOS, ensure it stays visible on all workspaces
+        if (process.platform === "darwin") {
+          floatingWindow.setVisibleOnAllWorkspaces(true, {
+            visibleOnFullScreen: true,
+          });
+        }
+      }
+    });
+
+    // Load the floating panel page
+    if (isDev) {
+      floatingWindow.loadURL("http://localhost:5173/#floating");
+      // Don't show dev tools by default to prevent flashing
+      // floatingWindow.webContents.openDevTools();
+    } else {
+      floatingWindow.loadFile(path.join(__dirname, "../dist/index.html"), {
+        hash: "floating",
       });
     }
-    return floatingWindow;
-  }
 
-  // Load saved position
-  const savedPosition = loadSavedPosition();
-
-  // Get screen dimensions
-  const primaryDisplay = screen.getPrimaryDisplay();
-  const { width, height } = primaryDisplay.workAreaSize;
-
-  // Determine window position
-  const windowOptions = {
-    width: 400,
-    height: 600,
-    minWidth: 350,
-    minHeight: 400,
-    maxWidth: 500,
-    maxHeight: 800,
-    alwaysOnTop: true,
-    focusable: true,
-    skipTaskbar: true,
-    resizable: true,
-    minimizable: false,
-    maximizable: false,
-    closable: true,
-    frame: false,
-    transparent: false,
-    hasShadow: true,
-    webPreferences: {
-      nodeIntegration: false,
-      contextIsolation: true,
-      enableRemoteModule: false,
-      preload: path.join(__dirname, "preload.js"),
-    },
-    icon: path.join(__dirname, "../public/vault-icon.png"),
-    show: false,
-  };
-
-  // Add position if available
-  if (
-    savedPosition &&
-    typeof savedPosition.x === "number" &&
-    typeof savedPosition.y === "number"
-  ) {
-    // Ensure position is within screen bounds
-    const validX = Math.max(0, Math.min(width - 200, savedPosition.x));
-    const validY = Math.max(0, Math.min(height - 200, savedPosition.y));
-    windowOptions.x = validX;
-    windowOptions.y = validY;
-    floatingPanelPosition = { x: validX, y: validY };
-  } else {
-    // Default to center of screen if no saved position
-    windowOptions.x = Math.floor((width - 400) / 2);
-    windowOptions.y = Math.floor((height - 600) / 2);
-    floatingPanelPosition = { x: windowOptions.x, y: windowOptions.y };
-  }
-
-  floatingWindow = new BrowserWindow(windowOptions);
-
-  // Use electron-positioner to position the window
-  const positioner = new Positioner(floatingWindow);
-
-  // Position at the saved position or top-right corner as a fallback
-  if (
-    savedPosition &&
-    typeof savedPosition.x === "number" &&
-    typeof savedPosition.y === "number"
-  ) {
-    floatingWindow.setPosition(savedPosition.x, savedPosition.y);
-  } else {
-    positioner.move("topRight");
-  }
-
-  // Set window to be always on top with level 'screen-saver' (highest level)
-  // This ensures it stays above ALL other windows, including other applications
-  floatingWindow.setAlwaysOnTop(true, "screen-saver");
-  floatingWindow.setVisibleOnAllWorkspaces(true);
-
-  // For Windows, set as a tool window to ensure it stays on top
-  if (process.platform === "win32") {
-    floatingWindow.setSkipTaskbar(true);
-    // Set content protection to prevent screen capture tools from hiding it
-    floatingWindow.setContentProtection(true);
-  }
-
-  // For Linux, set as a tool window which helps with always-on-top behavior
-  if (process.platform === "linux") {
-    floatingWindow.setType("toolbar");
-  }
-
-  // Prevent flickering by showing only when ready
-  floatingWindow.once("ready-to-show", () => {
-    floatingWindow.show();
-  });
-
-  // Re-apply always-on-top when computer wakes from sleep
-  powerMonitor.on("resume", () => {
-    if (floatingWindow && !floatingWindow.isDestroyed()) {
-      floatingWindow.setAlwaysOnTop(true, "screen-saver");
-      floatingWindow.setVisibleOnAllWorkspaces(true);
-
-      // For Windows, ensure it stays as a tool window
-      if (process.platform === "win32") {
-        floatingWindow.setSkipTaskbar(true);
-      }
-
-      // For Linux, ensure it stays as a tool window
-      if (process.platform === "linux") {
-        floatingWindow.setType("toolbar");
-      }
-
-      // For macOS, ensure it stays visible on all workspaces
-      if (process.platform === "darwin") {
-        floatingWindow.setVisibleOnAllWorkspaces(true, {
-          visibleOnFullScreen: true,
-        });
-      }
-    }
-  });
-
-  // Ensure the window stays on top even when it loses focus
-  floatingWindow.on("blur", () => {
-    if (floatingWindow && !floatingWindow.isDestroyed()) {
-      floatingWindow.setAlwaysOnTop(true, "screen-saver");
-
-      // For Linux, ensure it stays as a tool window
-      if (process.platform === "linux") {
-        floatingWindow.setType("toolbar");
-      }
-
-      // For macOS, ensure it stays visible on all workspaces
-      if (process.platform === "darwin") {
-        floatingWindow.setVisibleOnAllWorkspaces(true, {
-          visibleOnFullScreen: true,
-        });
-      }
-    }
-  });
-
-  // Load the floating panel page
-  if (isDev) {
-    floatingWindow.loadURL("http://localhost:5173/#floating");
-    // Don't show dev tools by default to prevent flashing
-    // floatingWindow.webContents.openDevTools();
-  } else {
-    floatingWindow.loadFile(path.join(__dirname, "../dist/index.html"), {
-      hash: "floating",
-    });
-  }
-
-  // Handle window closed
-  floatingWindow.on("closed", () => {
-    // Clear the always-on-top interval
-    if (floatingPanelInterval) {
-      clearInterval(floatingPanelInterval);
-      floatingPanelInterval = null;
-    }
-
-    floatingWindow = null;
-
-    // If main window exists and is not destroyed, focus it
-    if (mainWindow && !mainWindow.isDestroyed()) {
-      try {
-        if (mainWindow.isMinimized()) {
-          mainWindow.restore();
-        }
-        mainWindow.focus();
-      } catch (error) {
-        console.error("Error focusing main window:", error);
-      }
-    }
-  });
-
-  // Save position when window is moved
-  floatingWindow.on("moved", () => {
-    const [x, y] = floatingWindow.getPosition();
-    // Only save if position has actually changed
-    if (
-      !floatingPanelPosition ||
-      x !== floatingPanelPosition.x ||
-      y !== floatingPanelPosition.y
-    ) {
-      savePosition(x, y);
-      console.log("Saved floating panel position:", x, y);
-    }
-  });
-
-  // Prevent navigation away from the app
-  floatingWindow.webContents.on("will-navigate", (event, url) => {
-    if (
-      !url.startsWith("http://localhost:5173") &&
-      !url.includes("index.html")
-    ) {
-      event.preventDefault();
-    }
-  });
-
-  // Ensure it stays on top periodically (light-touch)
-  floatingPanelInterval = setInterval(() => {
-    if (floatingWindow && !floatingWindow.isDestroyed()) {
-      if (!floatingWindow.isAlwaysOnTop()) {
-        floatingWindow.setAlwaysOnTop(true, "screen-saver");
-      }
-
-      // For Windows, ensure it stays as a tool window
-      if (process.platform === "win32") {
-        floatingWindow.setSkipTaskbar(true);
-      }
-
-      // For Linux, ensure it stays as a tool window
-      if (process.platform === "linux") {
-        floatingWindow.setType("toolbar");
-      }
-
-      // For macOS, keep Mission Control setting enforced
-      if (process.platform === "darwin") {
-        floatingWindow.setHiddenInMissionControl(true);
-      }
-    } else {
-      // Clear interval if window is destroyed
+    // Handle window closed
+    floatingWindow.on("closed", () => {
+      // Clear the always-on-top interval
       if (floatingPanelInterval) {
         clearInterval(floatingPanelInterval);
         floatingPanelInterval = null;
       }
-    }
-  }, 3000); // Light cadence to reduce flicker
 
-  return floatingWindow;
+      floatingWindow = null;
+
+      // If main window exists and is not destroyed, focus it
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        try {
+          if (mainWindow.isMinimized()) {
+            mainWindow.restore();
+          }
+          mainWindow.focus();
+        } catch (error) {
+          console.error("Error focusing main window:", error);
+        }
+      }
+    });
+
+    // Save position when window is moved
+    floatingWindow.on("moved", () => {
+      const [x, y] = floatingWindow.getPosition();
+      // Only save if position has actually changed
+      if (
+        !floatingPanelPosition ||
+        x !== floatingPanelPosition.x ||
+        y !== floatingPanelPosition.y
+      ) {
+        savePosition(x, y);
+        console.log("Saved floating panel position:", x, y);
+      }
+    });
+
+    // Prevent navigation away from the app
+    floatingWindow.webContents.on("will-navigate", (event, url) => {
+      if (
+        !url.startsWith("http://localhost:5173") &&
+        !url.includes("index.html")
+      ) {
+        event.preventDefault();
+      }
+    });
+
+    // Ensure it stays on top periodically (light-touch)
+    floatingPanelInterval = setInterval(() => {
+      if (floatingWindow && !floatingWindow.isDestroyed()) {
+        if (!floatingWindow.isAlwaysOnTop()) {
+          floatingWindow.setAlwaysOnTop(true, "screen-saver");
+        }
+
+        // For Windows, ensure it stays as a tool window
+        if (process.platform === "win32") {
+          floatingWindow.setSkipTaskbar(true);
+        }
+
+        // For Linux, ensure it stays as a tool window
+        if (process.platform === "linux") {
+          floatingWindow.setType("toolbar");
+        }
+
+        // For macOS, keep Mission Control setting enforced
+        if (process.platform === "darwin") {
+          floatingWindow.setHiddenInMissionControl(true);
+        }
+      } else {
+        // Clear interval if window is destroyed
+        if (floatingPanelInterval) {
+          clearInterval(floatingPanelInterval);
+          floatingPanelInterval = null;
+        }
+      }
+    }, 3000); // Light cadence to reduce flicker
+
+    console.log("Floating window created successfully");
+    return floatingWindow;
+  } catch (error) {
+    console.error("Error creating floating window:", error);
+    // Clean up if window creation failed
+    if (floatingWindow) {
+      try {
+        floatingWindow.destroy();
+      } catch (destroyError) {
+        console.error("Error destroying failed floating window:", destroyError);
+      }
+      floatingWindow = null;
+    }
+    return null;
+  }
 };
 
 // Create floating button window
 const createFloatingButton = () => {
-  if (floatingButton) {
-    if (floatingButton.isMinimized() || !floatingButton.isVisible()) {
-      floatingButton.restore();
-      floatingButton.show();
+  try {
+    console.log("Creating floating button...");
+    if (floatingButton) {
+      if (floatingButton.isMinimized() || !floatingButton.isVisible()) {
+        floatingButton.restore();
+        floatingButton.show();
+      }
+      floatingButton.focus();
+      console.log("Existing floating button restored and focused");
+      return floatingButton;
     }
-    floatingButton.focus();
-    return floatingButton;
-  }
 
-  // Load saved button position
-  const savedButtonPosition = loadSavedButtonPosition();
+    // Load saved button position
+    const savedButtonPosition = loadSavedButtonPosition();
 
-  // Get screen dimensions
-  const primaryDisplay = screen.getPrimaryDisplay();
-  const { width, height } = primaryDisplay.workAreaSize;
+    // Get screen dimensions
+    const primaryDisplay = screen.getPrimaryDisplay();
+    const { width, height } = primaryDisplay.workAreaSize;
 
-  // Button size
-  const buttonSize = 60;
+  // Button size - match Tailwind w-12 h-12 (48px)
+  const buttonSize = 48;
 
   // Determine button position (default to bottom-right corner)
   const windowOptions = {
     width: buttonSize,
     height: buttonSize,
+    minWidth: buttonSize,
+    maxWidth: buttonSize,
+    minHeight: buttonSize,
+    maxHeight: buttonSize,
     alwaysOnTop: true,
     focusable: true,
     skipTaskbar: true,
@@ -416,6 +450,7 @@ const createFloatingButton = () => {
     transparent: true,
     hasShadow: false,
     movable: true, // Ensure window is movable
+    thickFrame: false, // Prevent Windows theme/border issues
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -423,59 +458,64 @@ const createFloatingButton = () => {
       preload: path.join(__dirname, "preload.js"),
     },
     show: false,
-  };
+  };    // Add position if available, otherwise default to bottom-right corner
+    if (
+      savedButtonPosition &&
+      typeof savedButtonPosition.x === "number" &&
+      typeof savedButtonPosition.y === "number"
+    ) {
+      // Ensure position is within screen bounds
+      const validX = Math.max(
+        0,
+        Math.min(width - buttonSize, savedButtonPosition.x)
+      );
+      const validY = Math.max(
+        0,
+        Math.min(height - buttonSize, savedButtonPosition.y)
+      );
+      windowOptions.x = validX;
+      windowOptions.y = validY;
+      floatingButtonPosition = { x: validX, y: validY };
+    } else {
+      // Default to bottom-right corner
+      windowOptions.x = width - buttonSize - 20;
+      windowOptions.y = height - buttonSize - 20;
+      floatingButtonPosition = { x: windowOptions.x, y: windowOptions.y };
+    }
 
-  // Add position if available, otherwise default to bottom-right corner
-  if (
-    savedButtonPosition &&
-    typeof savedButtonPosition.x === "number" &&
-    typeof savedButtonPosition.y === "number"
-  ) {
-    // Ensure position is within screen bounds
-    const validX = Math.max(
-      0,
-      Math.min(width - buttonSize, savedButtonPosition.x)
-    );
-    const validY = Math.max(
-      0,
-      Math.min(height - buttonSize, savedButtonPosition.y)
-    );
-    windowOptions.x = validX;
-    windowOptions.y = validY;
-    floatingButtonPosition = { x: validX, y: validY };
-  } else {
-    // Default to bottom-right corner
-    windowOptions.x = width - buttonSize - 20;
-    windowOptions.y = height - buttonSize - 20;
-    floatingButtonPosition = { x: windowOptions.x, y: windowOptions.y };
-  }
+    floatingButton = new BrowserWindow(windowOptions);
 
-  floatingButton = new BrowserWindow(windowOptions);
+    // Set window to be always on top with level 'screen-saver'
+    floatingButton.setAlwaysOnTop(true, "screen-saver");
+    floatingButton.setVisibleOnAllWorkspaces(true);
 
-  // Set window to be always on top with level 'screen-saver'
-  floatingButton.setAlwaysOnTop(true, "screen-saver");
-  floatingButton.setVisibleOnAllWorkspaces(true);
+    // For Windows, set as a tool window to ensure it stays on top
+    if (process.platform === "win32") {
+      floatingButton.setSkipTaskbar(true);
+    }
 
-  // For Windows, set as a tool window to ensure it stays on top
-  if (process.platform === "win32") {
-    floatingButton.setSkipTaskbar(true);
-  }
+    // For Linux, set as a tool window to ensure it stays on top
+    if (process.platform === "linux") {
+      floatingButton.setType("toolbar");
+    }
 
-  // For Linux, set as a tool window to ensure it stays on top
-  if (process.platform === "linux") {
-    floatingButton.setType("toolbar");
-  }
-
-  // For macOS, ensure it stays visible on all workspaces
-  if (process.platform === "darwin") {
-    floatingButton.setVisibleOnAllWorkspaces(true, {
-      visibleOnFullScreen: true,
-    });
-    floatingButton.setHiddenInMissionControl(true);
-  }
+    // For macOS, ensure it stays visible on all workspaces
+    if (process.platform === "darwin") {
+      floatingButton.setVisibleOnAllWorkspaces(true, {
+        visibleOnFullScreen: true,
+      });
+      floatingButton.setHiddenInMissionControl(true);
+    }
 
   // Prevent flickering by showing only when ready
   floatingButton.once("ready-to-show", () => {
+    // Force window bounds to prevent phantom resize bug on Windows
+    floatingButton.setBounds({ 
+      width: buttonSize, 
+      height: buttonSize,
+      x: floatingButton.getBounds().x,
+      y: floatingButton.getBounds().y
+    });
     floatingButton.show();
   });
 
@@ -483,75 +523,105 @@ const createFloatingButton = () => {
   if (isDev) {
     floatingButton.loadURL("http://localhost:5173/floating-button.html");
   } else {
-    floatingButton.loadFile(path.join(__dirname, "../dist/floating-button.html"));
+    floatingButton.loadFile(
+      path.join(__dirname, "../dist/floating-button.html")
+    );
   }
 
-  // Handle window closed
-  floatingButton.on("closed", () => {
-    // Clear the always-on-top interval
-    if (floatingButtonInterval) {
-      clearInterval(floatingButtonInterval);
-      floatingButtonInterval = null;
-    }
-
-    floatingButton = null;
-  });
-
-  // Save position when window is moved
-  floatingButton.on("moved", () => {
-    const [x, y] = floatingButton.getPosition();
-    // Only save if position has actually changed
-    if (
-      !floatingButtonPosition ||
-      x !== floatingButtonPosition.x ||
-      y !== floatingButtonPosition.y
-    ) {
-      saveButtonPosition(x, y);
-      console.log("Saved floating button position:", x, y);
+  // Prevent any accidental resize operations (Windows protection)
+  floatingButton.on("resize", () => {
+    const currentBounds = floatingButton.getBounds();
+    if (currentBounds.width !== buttonSize || currentBounds.height !== buttonSize) {
+      console.log("Preventing button resize, restoring to", buttonSize + "x" + buttonSize);
+      floatingButton.setBounds({
+        x: currentBounds.x,
+        y: currentBounds.y,
+        width: buttonSize,
+        height: buttonSize,
+      });
     }
   });
 
-  // Prevent navigation away from the app
-  floatingButton.webContents.on("will-navigate", (event, url) => {
-    if (
-      !url.startsWith("http://localhost:5173") &&
-      !url.includes("index.html")
-    ) {
-      event.preventDefault();
-    }
-  });
-
-  // Ensure it stays on top periodically (light-touch)
-  floatingButtonInterval = setInterval(() => {
-    if (floatingButton && !floatingButton.isDestroyed()) {
-      if (!floatingButton.isAlwaysOnTop()) {
-        floatingButton.setAlwaysOnTop(true, "screen-saver");
-      }
-
-      // For Windows, ensure it stays as a tool window
-      if (process.platform === "win32") {
-        floatingButton.setSkipTaskbar(true);
-      }
-
-      // For Linux, ensure it stays as a tool window
-      if (process.platform === "linux") {
-        floatingButton.setType("toolbar");
-      }
-
-      // For macOS, keep Mission Control setting enforced
-      if (process.platform === "darwin") {
-        floatingButton.setHiddenInMissionControl(true);
-      }
-    } else {
-      // Clear interval if window is destroyed
+    // Handle window closed
+    floatingButton.on("closed", () => {
+      // Clear the always-on-top interval
       if (floatingButtonInterval) {
         clearInterval(floatingButtonInterval);
         floatingButtonInterval = null;
       }
-    }
-  }, 5000); // Light cadence to reduce flicker
 
-  return floatingButton;
+      floatingButton = null;
+    });
+
+    // Save position when window is moved
+    floatingButton.on("moved", () => {
+      const [x, y] = floatingButton.getPosition();
+      // Only save if position has actually changed
+      if (
+        !floatingButtonPosition ||
+        x !== floatingButtonPosition.x ||
+        y !== floatingButtonPosition.y
+      ) {
+        saveButtonPosition(x, y);
+        console.log("Saved floating button position:", x, y);
+      }
+    });
+
+    // Prevent navigation away from the app
+    floatingButton.webContents.on("will-navigate", (event, url) => {
+      if (
+        !url.startsWith("http://localhost:5173") &&
+        !url.includes("index.html")
+      ) {
+        event.preventDefault();
+      }
+    });
+
+    // Ensure it stays on top periodically (light-touch)
+    floatingButtonInterval = setInterval(() => {
+      if (floatingButton && !floatingButton.isDestroyed()) {
+        if (!floatingButton.isAlwaysOnTop()) {
+          floatingButton.setAlwaysOnTop(true, "screen-saver");
+        }
+
+        // For Windows, ensure it stays as a tool window
+        if (process.platform === "win32") {
+          floatingButton.setSkipTaskbar(true);
+        }
+
+        // For Linux, ensure it stays as a tool window
+        if (process.platform === "linux") {
+          floatingButton.setType("toolbar");
+        }
+
+        // For macOS, keep Mission Control setting enforced
+        if (process.platform === "darwin") {
+          floatingButton.setHiddenInMissionControl(true);
+        }
+      } else {
+        // Clear interval if window is destroyed
+        if (floatingButtonInterval) {
+          clearInterval(floatingButtonInterval);
+          floatingButtonInterval = null;
+        }
+      }
+    }, 5000); // Light cadence to reduce flicker
+
+    console.log("Floating button created successfully");
+    return floatingButton;
+  } catch (error) {
+    console.error("Error creating floating button:", error);
+    // Clean up if button creation failed
+    if (floatingButton) {
+      try {
+        floatingButton.destroy();
+      } catch (destroyError) {
+        console.error("Error destroying failed floating button:", destroyError);
+      }
+      floatingButton = null;
+    }
+    return null;
+  }
 };
 
 // Create application menu
@@ -678,15 +748,19 @@ app.whenReady().then(() => {
 });
 
 app.on("window-all-closed", () => {
+  console.log("All windows closed! Platform:", process.platform);
   // Force close all floating windows
   if (floatingWindow && !floatingWindow.isDestroyed()) {
+    console.log("Destroying floating window...");
     floatingWindow.destroy();
   }
   if (floatingButton && !floatingButton.isDestroyed()) {
+    console.log("Destroying floating button...");
     floatingButton.destroy();
   }
 
   // On macOS, also quit the app when all windows are closed
+  console.log("Quitting app...");
   app.quit();
 });
 
@@ -868,23 +942,39 @@ ipcMain.handle("save-floating-panel-position", (event, x, y) => {
 // Vault status handlers
 const vaultHandlers = {
   "vault-unlocked": () => {
-    console.log("Vault unlocked");
-    isVaultUnlocked = true;
-    // Show floating button when vault is unlocked
-    if (!floatingButton || floatingButton.isDestroyed()) {
-      createFloatingButton();
+    try {
+      console.log("Vault unlocked");
+      isVaultUnlocked = true;
+      // Show floating button when vault is unlocked
+      if (!floatingButton || floatingButton.isDestroyed()) {
+        console.log("Creating floating button for unlocked vault...");
+        const button = createFloatingButton();
+        if (!button) {
+          console.error("Failed to create floating button!");
+          return false;
+        }
+      }
+      return true;
+    } catch (error) {
+      console.error("Error handling vault unlock:", error);
+      return false;
     }
-    return true;
   },
   "vault-locked": () => {
-    console.log("Vault locked");
-    isVaultUnlocked = false;
-    // Hide floating button when vault is locked
-    if (floatingButton && !floatingButton.isDestroyed()) {
-      floatingButton.close();
-      floatingButton = null;
+    try {
+      console.log("Vault locked");
+      isVaultUnlocked = false;
+      // Hide floating button when vault is locked
+      if (floatingButton && !floatingButton.isDestroyed()) {
+        console.log("Closing floating button for locked vault...");
+        floatingButton.close();
+        floatingButton = null;
+      }
+      return true;
+    } catch (error) {
+      console.error("Error handling vault lock:", error);
+      return false;
     }
-    return true;
   },
   "is-vault-unlocked": () => {
     console.log(
@@ -917,16 +1007,32 @@ ipcMain.handle("open-external", async (event, url) => {
 
 // Floating button IPC handlers
 ipcMain.handle("show-floating-button", () => {
-  const button = createFloatingButton();
-  return button !== null;
+  try {
+    console.log("IPC: show-floating-button requested");
+    const button = createFloatingButton();
+    const success = button !== null;
+    console.log("IPC: show-floating-button result:", success);
+    return success;
+  } catch (error) {
+    console.error("Error in show-floating-button IPC handler:", error);
+    return false;
+  }
 });
 
 ipcMain.handle("hide-floating-button", () => {
-  if (floatingButton) {
-    floatingButton.close();
-    return true;
+  try {
+    console.log("IPC: hide-floating-button requested");
+    if (floatingButton) {
+      floatingButton.close();
+      console.log("IPC: floating button closed");
+      return true;
+    }
+    console.log("IPC: no floating button to close");
+    return false;
+  } catch (error) {
+    console.error("Error in hide-floating-button IPC handler:", error);
+    return false;
   }
-  return false;
 });
 
 ipcMain.handle("is-floating-button-open", () => {
@@ -975,16 +1081,16 @@ ipcMain.handle("toggle-floating-panel-from-button", async () => {
       // Set window properties
       floatingWindow.setAlwaysOnTop(true, "screen-saver");
 
-    // Windows-specific settings
-    if (process.platform === "win32") {
-      floatingWindow.setSkipTaskbar(true);
-      floatingWindow.setContentProtection(true);
-    }
+      // Windows-specific settings
+      if (process.platform === "win32") {
+        floatingWindow.setSkipTaskbar(true);
+        floatingWindow.setContentProtection(true);
+      }
 
-    // Linux-specific settings
-    if (process.platform === "linux") {
-      floatingWindow.setType("toolbar");
-    }      // macOS-specific settings
+      // Linux-specific settings
+      if (process.platform === "linux") {
+        floatingWindow.setType("toolbar");
+      } // macOS-specific settings
       if (process.platform === "darwin") {
         floatingWindow.setVisibleOnAllWorkspaces(true, {
           visibleOnFullScreen: true,
@@ -1029,7 +1135,7 @@ ipcMain.handle("move-floating-button", (event, x, y) => {
       // Ensure position is within screen bounds
       const primaryDisplay = screen.getPrimaryDisplay();
       const { width, height } = primaryDisplay.workAreaSize;
-      const buttonSize = 60;
+      const buttonSize = 48; // Match Tailwind w-12 h-12
 
       const validX = Math.max(0, Math.min(width - buttonSize, x));
       const validY = Math.max(0, Math.min(height - buttonSize, y));

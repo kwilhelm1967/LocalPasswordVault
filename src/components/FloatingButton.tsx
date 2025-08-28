@@ -91,7 +91,7 @@ export const FloatingButton: React.FC = () => {
 
       if (!isDragging) return;
 
-      const buttonSize = 48; // Updated smaller button size
+      const buttonSize = 48; // Match Tailwind w-12 h-12 and Electron window size
       const newX = Math.max(
         0,
         Math.min(
@@ -121,7 +121,7 @@ export const FloatingButton: React.FC = () => {
       isDragHandle.current = false;
 
       if (isDragging) {
-        const buttonSize = 48; // Updated smaller button size
+        const buttonSize = 48; // Match Tailwind w-12 h-12 and Electron window size
         const snapThreshold = 100; // Distance from edge to snap
 
         let newX = Math.max(
@@ -215,9 +215,9 @@ export const FloatingButton: React.FC = () => {
   return (
     <div
       ref={buttonRef}
-      className="fixed z-[9999] bg-transparent w-full h-full flex items-center justify-center"
+      className="fixed rounded-full z-[9999] bg-transparent w-12 h-12 flex items-center justify-center"
     >
-      <div className={`w-12 h-12 rounded-full flex overflow-hidden`}>
+      <div className={`w-12 h-12 rounded-full flex overflow-hidden bg-blue-500`}>
         {/* Drag Handle */}
         <div
           ref={dragHandleRef}

@@ -504,7 +504,7 @@ const EntryItem: React.FC<EntryItemProps> = ({
         <div className="flex items-center justify-between">
           <span className="text-slate-400 text-xs">Password</span>
           <div className="flex items-center space-x-1">
-            <span className="text-slate-300 font-mono text-xs">
+            <span className="text-slate-300  text-xs">
               {isPasswordVisible ? entry.password : "••••••••"}
             </span>
             <button
@@ -531,7 +531,7 @@ const EntryItem: React.FC<EntryItemProps> = ({
         <div className="flex items-center justify-between">
           <span className="text-slate-400 text-xs">Username</span>
           <div className="flex items-center space-x-1">
-            <span className="text-slate-300 font-mono text-xs truncate max-w-24">
+            <span className="text-slate-300  text-xs truncate max-w-24">
               {entry.username}
             </span>
             <button
@@ -547,9 +547,7 @@ const EntryItem: React.FC<EntryItemProps> = ({
         {entry.balance && (
           <div className="flex items-center justify-between">
             <span className="text-slate-400 text-xs">Account Details</span>
-            <span className="text-slate-300 font-mono text-xs">
-              {entry.balance}
-            </span>
+            <span className="text-slate-300  text-xs">{entry.balance}</span>
           </div>
         )}
 
