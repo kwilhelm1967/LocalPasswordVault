@@ -1,9 +1,44 @@
 import fs from "fs";
 import path from "path";
 import archiver from "archiver";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 class PackageGenerator {
   constructor() {
+    // Set the base path to the project root directory
+    this.basePath = path.resolve(__dirname, '..');
+    this.releasePath = path.join(this.basePath, 'release');
+    
+    // Debug logging to help with path issues
+    console.log('PackageGenerator paths:');
+    console.log('  __dirname:', __dirname);
+    console.log('  basePath:', this.basePath);
+    console.log('  releasePath:', this.releasePath);
+    
+    // Check if release directory exists
+    if (fs.existsSync(this.releasePath)) {
+      console.log('  Release directory found:', this.releasePath);
+      try {
+        const files = fs.readdirSync(this.releasePath);
+        console.log('  Release files:', files);
+      } catch (error) {
+        console.error('  Error reading release directory:', error.message);
+      }
+    } else {
+      console.error('  Release directory NOT found:', this.releasePath);
+      // Try to find it in the current working directory
+      const currentWorkingDir = process.cwd();
+      const altReleasePath = path.join(currentWorkingDir, 'release');
+      console.log('  Checking alternative path:', altReleasePath);
+      if (fs.existsSync(altReleasePath)) {
+        console.log('  Found release directory at:', altReleasePath);
+        this.releasePath = altReleasePath;
+      }
+    }
+    
     this.packageConfigs = {
       "single-user": {
         name: "LocalPasswordVault",
@@ -40,7 +75,9 @@ class PackageGenerator {
       fs.mkdirSync(outputDir, { recursive: true });
     }
 
-    const outputPath = path.join(outputDir, `${config.name}.zip`);
+    // Generate unique filename with package type
+    const timestamp = Date.now();
+    const outputPath = path.join(outputDir, `${config.name}-${packageType.charAt(0).toUpperCase() + packageType.slice(1).replace('-', '')}-${timestamp}.zip`);
     const output = fs.createWriteStream(outputPath);
     const archive = archiver("zip", { zlib: { level: 9 } });
 
@@ -48,7 +85,7 @@ class PackageGenerator {
       output.on("close", () => {
         resolve({
           filePath: outputPath,
-          fileName: `${config.name}.zip`,
+          fileName: path.basename(outputPath),
           size: archive.pointer(),
           description: config.description,
         });
@@ -80,17 +117,17 @@ class PackageGenerator {
       // All platform executables (NO source code)
       {
         type: "file",
-        source: "release/LocalPasswordVault-Setup.exe",
+        source: path.join(this.releasePath, "LocalPasswordVault-Setup.exe"),
         destination: "LocalPasswordVault-Setup.exe",
       },
       {
         type: "file",
-        source: "release/LocalPasswordVault.dmg",
+        source: path.join(this.releasePath, "LocalPasswordVault.dmg"),
         destination: "LocalPasswordVault.dmg",
       },
       {
         type: "file",
-        source: "release/LocalPasswordVault.AppImage",
+        source: path.join(this.releasePath, "LocalPasswordVault.AppImage"),
         destination: "LocalPasswordVault.AppImage",
       },
 
@@ -109,154 +146,154 @@ class PackageGenerator {
   }
 
   // Family Plan package files - ONLY .exe files + docs
-  getFamilyPlanFiles() {
-    return [
-      // All platform executables (NO source code)
-      {
-        type: "file",
-        source: "release/LocalPasswordVault-Setup.exe",
-        destination: "LocalPasswordVault-Setup.exe",
-      },
-      {
-        type: "file",
-        source: "release/LocalPasswordVault-Portable.exe",
-        destination: "LocalPasswordVault-Portable.exe",
-      },
-      {
-        type: "file",
-        source: "release/LocalPasswordVault.dmg",
-        destination: "LocalPasswordVault.dmg",
-      },
-      {
-        type: "file",
-        source: "release/LocalPasswordVault.AppImage",
-        destination: "LocalPasswordVault.AppImage",
-      },
+  // getFamilyPlanFiles() {
+  //   return [
+  //     // All platform executables (NO source code)
+  //     {
+  //       type: "file",
+  //       source: path.join(this.releasePath, "LocalPasswordVault-Setup.exe"),
+  //       destination: "LocalPasswordVault-Setup.exe",
+  //     },
+  //     {
+  //       type: "file",
+  //       source: path.join(this.releasePath, "LocalPasswordVault-Portable.exe"),
+  //       destination: "LocalPasswordVault-Portable.exe",
+  //     },
+  //     {
+  //       type: "file",
+  //       source: path.join(this.releasePath, "LocalPasswordVault.dmg"),
+  //       destination: "LocalPasswordVault.dmg",
+  //     },
+  //     {
+  //       type: "file",
+  //       source: path.join(this.releasePath, "LocalPasswordVault.AppImage"),
+  //       destination: "LocalPasswordVault.AppImage",
+  //     },
 
-      // Family-specific documentation
-      {
-        type: "content",
-        content: this.getReadme("family-plan"),
-        destination: "README.txt",
-      },
-      {
-        type: "content",
-        content: this.getQuickStart("family-plan"),
-        destination: "QUICK_START.txt",
-      },
-      {
-        type: "content",
-        content: this.getFamilySharingGuide(),
-        destination: "FAMILY_SHARING_GUIDE.txt",
-      },
-    ];
-  }
-  LocalPasswordVault;
+  //     // Family-specific documentation
+  //     {
+  //       type: "content",
+  //       content: this.getReadme("family-plan"),
+  //       destination: "README.txt",
+  //     },
+  //     {
+  //       type: "content",
+  //       content: this.getQuickStart("family-plan"),
+  //       destination: "QUICK_START.txt",
+  //     },
+  //     {
+  //       type: "content",
+  //       content: this.getFamilySharingGuide(),
+  //       destination: "FAMILY_SHARING_GUIDE.txt",
+  //     },
+  //   ];
+  // }
+  // LocalPasswordVault;
 
-  // Pro package files - ONLY .exe files + docs
-  getProFiles() {
-    return [
-      // All platform executables (NO source code)
-      {
-        type: "file",
-        source: "release/LocalPasswordVault-Setup.exe",
-        destination: "LocalPasswordVault-Setup.exe",
-      },
-      {
-        type: "file",
-        source: "release/LocalPasswordVault-Portable.exe",
-        destination: "LocalPasswordVault-Portable.exe",
-      },
-      {
-        type: "file",
-        source: "release/LocalPasswordVault.dmg",
-        destination: "LocalPasswordVault.dmg",
-      },
-      {
-        type: "file",
-        source: "release/LocalPasswordVault.AppImage",
-        destination: "LocalPasswordVault.AppImage",
-      },
+  // // Pro package files - ONLY .exe files + docs
+  // getProFiles() {
+  //   return [
+  //     // All platform executables (NO source code)
+  //     {
+  //       type: "file",
+  //       source: path.join(this.releasePath, "LocalPasswordVault-Setup.exe"),
+  //       destination: "LocalPasswordVault-Setup.exe",
+  //     },
+  //     {
+  //       type: "file",
+  //       source: path.join(this.releasePath, "LocalPasswordVault-Portable.exe"),
+  //       destination: "LocalPasswordVault-Portable.exe",
+  //     },
+  //     {
+  //       type: "file",
+  //       source: path.join(this.releasePath, "LocalPasswordVault.dmg"),
+  //       destination: "LocalPasswordVault.dmg",
+  //     },
+  //     {
+  //       type: "file",
+  //       source: path.join(this.releasePath, "LocalPasswordVault.AppImage"),
+  //       destination: "LocalPasswordVault.AppImage",
+  //     },
 
-      // Pro-specific documentation
-      {
-        type: "content",
-        content: this.getReadme("pro"),
-        destination: "README.txt",
-      },
-      {
-        type: "content",
-        content: this.getQuickStart("pro"),
-        destination: "QUICK_START.txt",
-      },
-      {
-        type: "content",
-        content: this.getMultiDeviceGuide(),
-        destination: "MULTI_DEVICE_GUIDE.txt",
-      },
-    ];
-  }
+  //     // Pro-specific documentation
+  //     {
+  //       type: "content",
+  //       content: this.getReadme("pro"),
+  //       destination: "README.txt",
+  //     },
+  //     {
+  //       type: "content",
+  //       content: this.getQuickStart("pro"),
+  //       destination: "QUICK_START.txt",
+  //     },
+  //     {
+  //       type: "content",
+  //       content: this.getMultiDeviceGuide(),
+  //       destination: "MULTI_DEVICE_GUIDE.txt",
+  //     },
+  //   ];
+  // }
 
-  // Business Plan package files - ONLY .exe files + docs
-  getBusinessPlanFiles() {
-    return [
-      // All platform executables (NO source code)
-      {
-        type: "file",
-        source: "release/LocalPasswordVault-Setup.exe",
-        destination: "LocalPasswordVault-Setup.exe",
-      },
-      {
-        type: "file",
-        source: "release/LocalPasswordVault-Portable.exe",
-        destination: "LocalPasswordVault-Portable.exe",
-      },
-      {
-        type: "file",
-        source: "release/LocalPasswordVault.dmg",
-        destination: "LocalPasswordVault.dmg",
-      },
-      {
-        type: "file",
-        source: "release/LocalPasswordVault.AppImage",
-        destination: "LocalPasswordVault.AppImage",
-      },
+  // // Business Plan package files - ONLY .exe files + docs
+  // getBusinessPlanFiles() {
+  //   return [
+  //     // All platform executables (NO source code)
+  //     {
+  //       type: "file",
+  //       source: path.join(this.releasePath, "LocalPasswordVault-Setup.exe"),
+  //       destination: "LocalPasswordVault-Setup.exe",
+  //     },
+  //     {
+  //       type: "file",
+  //       source: path.join(this.releasePath, "LocalPasswordVault-Portable.exe"),
+  //       destination: "LocalPasswordVault-Portable.exe",
+  //     },
+  //     {
+  //       type: "file",
+  //       source: path.join(this.releasePath, "LocalPasswordVault.dmg"),
+  //       destination: "LocalPasswordVault.dmg",
+  //     },
+  //     {
+  //       type: "file",
+  //       source: path.join(this.releasePath, "LocalPasswordVault.AppImage"),
+  //       destination: "LocalPasswordVault.AppImage",
+  //     },
 
-      // Pre-built license server files (NO source code)
-      {
-        type: "content",
-        content: this.getLicenseServerExecutable(),
-        destination: "license-server/license-server.exe",
-      },
-      {
-        type: "content",
-        content: this.getLicenseServerConfig(),
-        destination: "license-server/config.json",
-      },
-      {
-        type: "content",
-        content: this.getLicenseServerReadme(),
-        destination: "license-server/README.txt",
-      },
+  //     // Pre-built license server files (NO source code)
+  //     {
+  //       type: "content",
+  //       content: this.getLicenseServerExecutable(),
+  //       destination: "license-server/license-server.exe",
+  //     },
+  //     {
+  //       type: "content",
+  //       content: this.getLicenseServerConfig(),
+  //       destination: "license-server/config.json",
+  //     },
+  //     {
+  //       type: "content",
+  //       content: this.getLicenseServerReadme(),
+  //       destination: "license-server/README.txt",
+  //     },
 
-      // Business-specific documentation
-      {
-        type: "content",
-        content: this.getReadme("business-plan"),
-        destination: "README.txt",
-      },
-      {
-        type: "content",
-        content: this.getQuickStart("business-plan"),
-        destination: "QUICK_START.txt",
-      },
-      {
-        type: "content",
-        content: this.getEnterpriseGuide(),
-        destination: "ENTERPRISE_DEPLOYMENT_GUIDE.txt",
-      },
-    ];
-  }
+  //     // Business-specific documentation
+  //     {
+  //       type: "content",
+  //       content: this.getReadme("business-plan"),
+  //       destination: "README.txt",
+  //     },
+  //     {
+  //       type: "content",
+  //       content: this.getQuickStart("business-plan"),
+  //       destination: "QUICK_START.txt",
+  //     },
+  //     {
+  //       type: "content",
+  //       content: this.getEnterpriseGuide(),
+  //       destination: "ENTERPRISE_DEPLOYMENT_GUIDE.txt",
+  //     },
+  //   ];
+  // }
 
   // README for each tier
   getReadme(tier) {
