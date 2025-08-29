@@ -337,6 +337,7 @@ function App() {
     return (
       <div className="bg-slate-900">
         <ElectronFloatingPanel
+          key={`floating-panel-${entries.length}`}
           entries={entries}
           categories={FIXED_CATEGORIES}
           onAddEntry={handleAddEntry}
@@ -415,6 +416,7 @@ function App() {
 
       {showMainVault && (
         <MainVault
+          key={`main-vault-${entries.length}`}
           entries={entries}
           categories={FIXED_CATEGORIES}
           onAddEntry={handleAddEntry}

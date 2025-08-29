@@ -55,6 +55,10 @@ export const MainVault: React.FC<MainVaultProps> = ({
   const [visiblePasswords, setVisiblePasswords] = useState<Set<string>>(
     new Set()
   );
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [entryToDelete, setEntryToDelete] = useState<PasswordEntry | null>(null);
+
+  console.log(entries, 'entries')
 
   const filteredEntries = useMemo(() => {
     return entries.filter((entry) => {
@@ -113,13 +117,26 @@ export const MainVault: React.FC<MainVaultProps> = ({
     }
   };
 
+  const handleDeleteClick = (entry: PasswordEntry) => {
+    setEntryToDelete(entry);
+    setShowDeleteConfirm(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (entryToDelete) {
+      onDeleteEntry(entryToDelete.id);
+      setEntryToDelete(null);
+      setShowDeleteConfirm(false);
+    }
+  };
+
   return (
     <div
-      className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900"
+      className="h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col overflow-hidden"
       style={{ backgroundColor: "#0f172a" }}
     >
       {/* Header */}
-      <div className="bg-slate-800/50 backdrop-blur-sm border-b border-slate-700/50 sticky top-0 z-40">
+      <div className="bg-slate-800/50 backdrop-blur-sm border-b border-slate-700/50 sticky top-0 z-40 flex-shrink-0">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
@@ -195,218 +212,274 @@ export const MainVault: React.FC<MainVaultProps> = ({
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* Trial Warning Banner */}
-        {onShowPricingPlans && <TrialWarningBanner />}
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-7xl mx-auto px-6 py-8">
+          {/* Trial Warning Banner */}
+          {onShowPricingPlans && <TrialWarningBanner />}
 
-        {/* Search and Controls */}
-        <div className="mb-8">
-          <div className="flex flex-col sm:flex-row gap-4 mb-6">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
-              <input
-                type="text"
-                placeholder="Search"
-                value={searchTerm}
-                onChange={(e) => onSearchChange(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
-              />
-              {searchTerm && (
-                <button
-                  onClick={() => onSearchChange("")}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-white transition-colors"
-                  title="Clear search"
+          {/* Search and Controls */}
+          <div className="mb-8">
+            <div className="flex flex-col sm:flex-row gap-4 mb-6">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
+                <input
+                  type="text"
+                  placeholder="Search"
+                  value={searchTerm}
+                  onChange={(e) => onSearchChange(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                />
+                {searchTerm && (
+                  <button
+                    onClick={() => onSearchChange("")}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-white transition-colors"
+                    title="Clear search"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                )}
+              </div>
+
+              <select
+                value={selectedCategory}
+                onChange={(e) => onCategoryChange(e.target.value)}
+                className="px-4 py-3 bg-slate-900 border border-slate-700/50 rounded-xl text-white focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+              >
+                <option value="all">All Categories</option>
+                {categories
+                  .filter((c) => c.id !== "all")
+                  .map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
+              </select>
+
+              <button
+                onClick={() => setShowAddForm(true)}
+                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl font-medium transition-all transform hover:scale-105 flex items-center space-x-2"
+              >
+                <Plus className="w-5 h-5" />
+                <span>Add Account</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Entries Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            {filteredEntries.map((entry) => {
+              const category = categories.find((c) => c.id === entry.category);
+              const isPasswordVisible = visiblePasswords.has(entry.id);
+
+              return (
+                <div
+                  key={entry.id}
+                  className="bg-gradient-to-br from-slate-800/40 via-slate-800/30 to-slate-900/40 backdrop-blur-sm border border-slate-600/50 rounded-2xl p-6 hover:bg-gradient-to-br hover:from-slate-800/60 hover:via-slate-800/50 hover:to-slate-900/60 transition-all duration-300 group shadow-xl hover:shadow-2xl hover:border-slate-500/60"
                 >
-                  <X className="w-5 h-5" />
+                  {/* Header with gradient accent */}
+                  <div className="flex items-start justify-between mb-5">
+                    <div className="flex items-center space-x-3">
+                      {category && (
+                        <div className="p-2 bg-gradient-to-br from-blue-500/20 to-indigo-500/20 rounded-xl border border-blue-500/30">
+                          <CategoryIcon
+                            name={category.icon}
+                            size={18}
+                            className="text-blue-400"
+                          />
+                        </div>
+                      )}
+                      <div>
+                        <h3 className="font-bold text-white group-hover:text-blue-400 transition-colors text-base">
+                          {entry.accountName}
+                        </h3>
+                        <p className="text-sm text-slate-400 mt-1">
+                          {entry.username}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                      <button
+                        onClick={() => setEditingEntry(entry)}
+                        className="p-2 text-slate-400 hover:text-blue-400 hover:bg-blue-500/20 rounded-xl transition-all border border-transparent hover:border-blue-500/30"
+                        title="Edit"
+                      >
+                        <Edit3 className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteClick(entry)}
+                        className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/20 rounded-xl transition-all border border-transparent hover:border-red-500/30"
+                        title="Delete"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Content with enhanced styling */}
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between p-3 bg-slate-700/30 rounded-xl border border-slate-600/30">
+                      <span className="text-sm font-medium text-slate-300">
+                        Username
+                      </span>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-sm text-white font-medium max-w-32 truncate">
+                          {entry.username}
+                        </span>
+                        <button
+                          onClick={() => copyToClipboard(entry.username)}
+                          className="p-1.5 text-slate-400 hover:text-green-400 hover:bg-slate-600/50 rounded-lg transition-all"
+                          title="Copy username"
+                        >
+                          <Copy className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 bg-slate-700/30 rounded-xl border border-slate-600/30">
+                      <span className="text-sm font-medium text-slate-300">
+                        Password
+                      </span>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-sm text-white font-medium max-w-32 truncate">
+                          {isPasswordVisible ? entry.password : "••••••••"}
+                        </span>
+                        <button
+                          onClick={() => togglePasswordVisibility(entry.id)}
+                          className="p-1.5 text-slate-400 hover:text-blue-400 hover:bg-slate-600/50 rounded-lg transition-all"
+                          title={
+                            isPasswordVisible
+                              ? "Hide password"
+                              : "Show password"
+                          }
+                        >
+                          {isPasswordVisible ? (
+                            <EyeOff className="w-3.5 h-3.5" />
+                          ) : (
+                            <Eye className="w-3.5 h-3.5" />
+                          )}
+                        </button>
+                        <button
+                          onClick={() => copyToClipboard(entry.password)}
+                          className="p-1.5 text-slate-400 hover:text-green-400 hover:bg-slate-600/50 rounded-lg transition-all"
+                          title="Copy password"
+                        >
+                          <Copy className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {entry.balance && (
+                      <div className="flex items-center justify-between p-3 bg-slate-700/30 rounded-xl border border-slate-600/30">
+                        <span className="text-sm font-medium text-slate-300">
+                          Account Details
+                        </span>
+                        <span className="text-sm text-white font-medium max-w-32 truncate">
+                          {entry.balance}
+                        </span>
+                      </div>
+                    )}
+
+                    {entry.notes && (
+                      <div className="p-3 bg-gradient-to-r from-slate-700/20 to-slate-600/20 rounded-xl border border-slate-600/30">
+                        <span className="text-xs font-medium text-slate-300 mb-2 block">
+                          Notes
+                        </span>
+                        <p className="text-sm text-slate-400 leading-relaxed">
+                          {entry.notes}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {filteredEntries.length === 0 && (
+            <div className="text-center py-16">
+              <div className="w-20 h-20 bg-gradient-to-br from-slate-800/60 to-slate-700/40 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-slate-600/50 shadow-xl">
+                <Search className="w-10 h-10 text-slate-400" />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-3">
+                No accounts found
+              </h3>
+              <p className="text-slate-400 mb-8 max-w-md mx-auto leading-relaxed">
+                {searchTerm || selectedCategory !== "all"
+                  ? "Try adjusting your search or filter criteria to find what you're looking for"
+                  : "Get started by adding your first account to secure your credentials"}
+              </p>
+              {!searchTerm && selectedCategory === "all" && (
+                <button
+                  onClick={() => setShowAddForm(true)}
+                  className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-2xl font-bold transition-all transform hover:scale-105 shadow-xl hover:shadow-2xl border border-blue-500/30"
+                >
+                  Add Your First Account
                 </button>
               )}
             </div>
+          )}
 
-            <select
-              value={selectedCategory}
-              onChange={(e) => onCategoryChange(e.target.value)}
-              className="px-4 py-3 bg-slate-900 border border-slate-700/50 rounded-xl text-white focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
-            >
-              <option value="all">All Categories</option>
-              {categories
-                .filter((c) => c.id !== "all")
-                .map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {category.name}
-                  </option>
-                ))}
-            </select>
-
-            <button
-              onClick={() => setShowAddForm(true)}
-              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl font-medium transition-all transform hover:scale-105 flex items-center space-x-2"
-            >
-              <Plus className="w-5 h-5" />
-              <span>Add Account</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Entries Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          {filteredEntries.map((entry) => {
-            const category = categories.find((c) => c.id === entry.category);
-            const isPasswordVisible = visiblePasswords.has(entry.id);
-
-            return (
-              <div
-                key={entry.id}
-                className="bg-gradient-to-br from-slate-800/40 via-slate-800/30 to-slate-900/40 backdrop-blur-sm border border-slate-600/50 rounded-2xl p-6 hover:bg-gradient-to-br hover:from-slate-800/60 hover:via-slate-800/50 hover:to-slate-900/60 transition-all duration-300 group shadow-xl hover:shadow-2xl hover:border-slate-500/60"
-              >
-                {/* Header with gradient accent */}
-                <div className="flex items-start justify-between mb-5">
-                  <div className="flex items-center space-x-3">
-                    {category && (
-                      <div className="p-2 bg-gradient-to-br from-blue-500/20 to-indigo-500/20 rounded-xl border border-blue-500/30">
-                        <CategoryIcon
-                          name={category.icon}
-                          size={18}
-                          className="text-blue-400"
-                        />
-                      </div>
-                    )}
-                    <div>
-                      <h3 className="font-bold text-white group-hover:text-blue-400 transition-colors text-base">
-                        {entry.accountName}
-                      </h3>
-                      <p className="text-sm text-slate-400 mt-1">
-                        {entry.username}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-all duration-300">
-                    <button
-                      onClick={() => setEditingEntry(entry)}
-                      className="p-2 text-slate-400 hover:text-blue-400 hover:bg-blue-500/20 rounded-xl transition-all border border-transparent hover:border-blue-500/30"
-                      title="Edit"
-                    >
-                      <Edit3 className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => onDeleteEntry(entry.id)}
-                      className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/20 rounded-xl transition-all border border-transparent hover:border-red-500/30"
-                      title="Delete"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Content with enhanced styling */}
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between p-3 bg-slate-700/30 rounded-xl border border-slate-600/30">
-                    <span className="text-sm font-medium text-slate-300">
-                      Username
-                    </span>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm text-white font-medium max-w-32 truncate">
-                        {entry.username}
-                      </span>
-                      <button
-                        onClick={() => copyToClipboard(entry.username)}
-                        className="p-1.5 text-slate-400 hover:text-green-400 hover:bg-slate-600/50 rounded-lg transition-all"
-                        title="Copy username"
-                      >
-                        <Copy className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between p-3 bg-slate-700/30 rounded-xl border border-slate-600/30">
-                    <span className="text-sm font-medium text-slate-300">
-                      Password
-                    </span>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm text-white font-mono font-medium max-w-32 truncate">
-                        {isPasswordVisible ? entry.password : "••••••••"}
-                      </span>
-                      <button
-                        onClick={() => togglePasswordVisibility(entry.id)}
-                        className="p-1.5 text-slate-400 hover:text-blue-400 hover:bg-slate-600/50 rounded-lg transition-all"
-                        title={
-                          isPasswordVisible ? "Hide password" : "Show password"
-                        }
-                      >
-                        {isPasswordVisible ? (
-                          <EyeOff className="w-3.5 h-3.5" />
-                        ) : (
-                          <Eye className="w-3.5 h-3.5" />
-                        )}
-                      </button>
-                      <button
-                        onClick={() => copyToClipboard(entry.password)}
-                        className="p-1.5 text-slate-400 hover:text-green-400 hover:bg-slate-600/50 rounded-lg transition-all"
-                        title="Copy password"
-                      >
-                        <Copy className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-
-                  {entry.balance && (
-                    <div className="flex items-center justify-between p-3 bg-slate-700/30 rounded-xl border border-slate-600/30">
-                      <span className="text-sm font-medium text-slate-300">
-                        Account Details
-                      </span>
-                      <span className="text-sm text-white font-medium max-w-32 truncate">
-                        {entry.balance}
-                      </span>
-                    </div>
-                  )}
-
-                  {entry.notes && (
-                    <div className="p-3 bg-gradient-to-r from-slate-700/20 to-slate-600/20 rounded-xl border border-slate-600/30">
-                      <span className="text-xs font-medium text-slate-300 mb-2 block">
-                        Notes
-                      </span>
-                      <p className="text-sm text-slate-400 leading-relaxed">
-                        {entry.notes}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {filteredEntries.length === 0 && (
-          <div className="text-center py-16">
-            <div className="w-20 h-20 bg-gradient-to-br from-slate-800/60 to-slate-700/40 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-slate-600/50 shadow-xl">
-              <Search className="w-10 h-10 text-slate-400" />
-            </div>
-            <h3 className="text-xl font-bold text-white mb-3">
-              No accounts found
-            </h3>
-            <p className="text-slate-400 mb-8 max-w-md mx-auto leading-relaxed">
-              {searchTerm || selectedCategory !== "all"
-                ? "Try adjusting your search or filter criteria to find what you're looking for"
-                : "Get started by adding your first account to secure your credentials"}
-            </p>
-            {!searchTerm && selectedCategory === "all" && (
+          {/* Footer */}
+          <div className="py-6 text-center">
+            <p className="text-xs text-slate-500">
+              Local Password Management by{" "}
               <button
-                onClick={() => setShowAddForm(true)}
-                className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-2xl font-bold transition-all transform hover:scale-105 shadow-xl hover:shadow-2xl border border-blue-500/30"
+                onClick={(e) => {
+                  e.preventDefault();
+                  const url = "https://localpasswordvault.com";
+                  if (window.electronAPI) {
+                    window.electronAPI.openExternal(url);
+                  } else {
+                    window.open("https://localpasswordvault.com", "_blank");
+                  }
+                }}
+                className="text-xs text-slate-400 hover:underline cursor-pointer"
               >
-                Add Your First Account
+                LocalPasswordVault.com
               </button>
-            )}
+            </p>
           </div>
-        )}
-
-        {/* Footer */}
-        <div className="py-6 text-center">
-          <p className="text-xs text-slate-500">
-            Local Password Management by LocalPasswordVault.com
-          </p>
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && entryToDelete && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 z-50">
+          <div className="bg-gradient-to-br from-slate-800 via-slate-800 to-slate-900 rounded-2xl p-6 w-full max-w-md border border-slate-600/50 shadow-2xl">
+            <div className="text-center">
+              <div className="p-3 bg-red-500/20 rounded-full w-fit mx-auto mb-4 border border-red-500/30">
+                <Trash2 className="w-6 h-6 text-red-400" />
+              </div>
+              
+              <h3 className="text-white font-bold text-lg mb-2">
+                Delete Password Entry
+              </h3>
+              
+              <p className="text-slate-400 text-sm mb-6 leading-relaxed">
+                Are you sure you want to delete "<span className="text-white font-medium">{entryToDelete.accountName}</span>"? 
+                This action cannot be undone.
+              </p>
+              
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  className="flex-1 px-4 py-3 bg-slate-600/50 hover:bg-slate-600 text-white rounded-xl font-medium transition-all text-sm border border-slate-500/50"
+                >
+                  Cancel
+                </button>
+                
+                <button
+                  onClick={handleConfirmDelete}
+                  className="flex-1 px-4 py-3 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 text-white rounded-xl font-medium transition-all text-sm shadow-lg"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Add/Edit Form Modal */}
       {(showAddForm || editingEntry) && (

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Search,
   Plus,
@@ -144,22 +144,24 @@ export const ElectronFloatingPanel: React.FC<ElectronFloatingPanelProps> = ({
   //   );
   // }, [favorites]);
 
-  const filteredEntries = entries.filter((entry) => {
-    const matchesSearch =
-      entry.accountName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      entry.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (entry.notes || "").toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredEntries = useMemo(() => {
+    return entries.filter((entry) => {
+      const matchesSearch =
+        entry.accountName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        entry.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (entry.notes || "").toLowerCase().includes(searchTerm.toLowerCase());
 
-    // If there's a search term, search across all categories
-    // If no search term, filter by selected category
-    if (searchTerm.trim()) {
-      return matchesSearch;
-    } else {
-      const matchesCategory =
-        selectedCategory === "all" || entry.category === selectedCategory;
-      return matchesCategory;
-    }
-  });
+      // If there's a search term, search across all categories
+      // If no search term, filter by selected category
+      if (searchTerm.trim()) {
+        return matchesSearch;
+      } else {
+        const matchesCategory =
+          selectedCategory === "all" || entry.category === selectedCategory;
+        return matchesCategory;
+      }
+    });
+  }, [entries, searchTerm, selectedCategory]);
 
   const favoriteEntries = filteredEntries.filter((entry) =>
     favorites.has(entry.id)
@@ -247,7 +249,9 @@ export const ElectronFloatingPanel: React.FC<ElectronFloatingPanelProps> = ({
             <Lock className="w-5 h-5 text-blue-400" />
           </div>
           <div>
-            <span className="text-sm font-semibold text-white">Password Vault</span>
+            <span className="text-sm font-semibold text-white">
+              Password Vault
+            </span>
             <p className="text-xs text-slate-400">Secure Access Panel</p>
           </div>
         </div>
@@ -256,7 +260,9 @@ export const ElectronFloatingPanel: React.FC<ElectronFloatingPanelProps> = ({
           {/* Enhanced Auto-lock timer */}
           <div className="flex items-center space-x-2 bg-slate-800/50 rounded-lg px-3 py-1.5 border border-slate-700/50">
             <Clock className="w-3.5 h-3.5 text-blue-400" />
-            <span className="text-xs font-mono text-slate-300">{formatTime(timeRemaining)}</span>
+            <span className="text-xs  text-slate-300">
+              {formatTime(timeRemaining)}
+            </span>
             <div className="w-12 h-1.5 bg-slate-700 rounded-full overflow-hidden">
               <div
                 className="h-full bg-gradient-to-r from-blue-500 to-cyan-400 transition-all duration-1000 rounded-full"
@@ -300,11 +306,11 @@ export const ElectronFloatingPanel: React.FC<ElectronFloatingPanelProps> = ({
 
       {/* Compact Category Pills */}
       <div className="p-2 border-b border-slate-700/50 bg-slate-800/20 no-drag relative">
-        <div 
-          className="flex space-x-1.5 overflow-x-auto pb-1 scrollbar-none" 
-          style={{ 
-            scrollbarWidth: 'none', 
-            msOverflowStyle: 'none'
+        <div
+          className="flex space-x-1.5 overflow-x-auto pb-1 scrollbar-none"
+          style={{
+            scrollbarWidth: "none",
+            msOverflowStyle: "none",
           }}
         >
           {categories.map((category) => (
@@ -317,10 +323,14 @@ export const ElectronFloatingPanel: React.FC<ElectronFloatingPanelProps> = ({
                   : "bg-slate-800/60 text-slate-300 hover:bg-slate-700/60 border-slate-600/40"
               }`}
             >
-              <CategoryIcon 
-                name={category.icon} 
-                size={12} 
-                className={selectedCategory === category.id ? "text-white" : "text-slate-400"} 
+              <CategoryIcon
+                name={category.icon}
+                size={12}
+                className={
+                  selectedCategory === category.id
+                    ? "text-white"
+                    : "text-slate-400"
+                }
               />
               <span className="max-w-[60px] truncate">{category.name}</span>
             </button>
@@ -353,7 +363,9 @@ export const ElectronFloatingPanel: React.FC<ElectronFloatingPanelProps> = ({
               <div className="bg-slate-800/30 rounded-2xl p-8 border border-slate-700/30">
                 <Search className="w-12 h-12 mx-auto mb-4 opacity-40" />
                 <p className="text-sm font-medium mb-2">No passwords found</p>
-                <p className="text-xs opacity-60">Try adjusting your search or add a new password</p>
+                <p className="text-xs opacity-60">
+                  Try adjusting your search or add a new password
+                </p>
               </div>
             </div>
           )}
@@ -382,7 +394,8 @@ export const ElectronFloatingPanel: React.FC<ElectronFloatingPanelProps> = ({
         </div>
 
         <div className="text-xs text-slate-500 bg-slate-800/50 px-3 py-1.5 rounded-lg border border-slate-700/30">
-          {displayEntries.length} {displayEntries.length === 1 ? 'entry' : 'entries'}
+          {displayEntries.length}{" "}
+          {displayEntries.length === 1 ? "entry" : "entries"}
         </div>
       </div>
 
@@ -436,8 +449,14 @@ const EntryItem: React.FC<EntryItemProps> = ({
   onEdit,
   onDelete,
 }) => {
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const category = categories.find((c) => c.id === entry.category);
   const isPasswordVisible = visiblePasswords.has(entry.id);
+
+  const handleDelete = () => {
+    onDelete(entry.id);
+    setShowDeleteConfirm(false);
+  };
 
   return (
     <div className="bg-gradient-to-br from-slate-800/50 via-slate-800/30 to-slate-700/40 backdrop-blur-sm rounded-xl p-4 mb-3 border border-slate-600/30 hover:border-slate-500/50 hover:shadow-lg hover:shadow-blue-500/10 transition-all duration-300 group">
@@ -473,7 +492,7 @@ const EntryItem: React.FC<EntryItemProps> = ({
           </button>
 
           <button
-            onClick={() => onDelete(entry.id)}
+            onClick={() => setShowDeleteConfirm(true)}
             className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/20 rounded-lg transition-all duration-200"
             title="Delete entry"
           >
@@ -486,7 +505,9 @@ const EntryItem: React.FC<EntryItemProps> = ({
         {/* Password Field */}
         <div className="bg-slate-800/40 rounded-lg p-3 border border-slate-700/50 hover:border-slate-600/50 transition-all">
           <div className="flex items-center justify-between mb-2">
-            <label className="text-slate-400 text-xs font-medium uppercase tracking-wider">Password</label>
+            <label className="text-slate-400 text-xs font-medium uppercase tracking-wider">
+              Password
+            </label>
             <div className="flex items-center space-x-2">
               <button
                 onClick={() => onTogglePassword(entry.id)}
@@ -508,7 +529,7 @@ const EntryItem: React.FC<EntryItemProps> = ({
               </button>
             </div>
           </div>
-          <div className="font-mono text-sm text-white bg-slate-900/50 rounded px-3 py-2 border border-slate-700/30">
+          <div className=" text-sm text-white bg-slate-900/50 rounded px-3 py-2 border border-slate-700/30">
             {isPasswordVisible ? entry.password : "••••••••••••"}
           </div>
         </div>
@@ -516,7 +537,9 @@ const EntryItem: React.FC<EntryItemProps> = ({
         {/* Username Field */}
         <div className="bg-slate-800/40 rounded-lg p-3 border border-slate-700/50 hover:border-slate-600/50 transition-all">
           <div className="flex items-center justify-between mb-2">
-            <label className="text-slate-400 text-xs font-medium uppercase tracking-wider">Username</label>
+            <label className="text-slate-400 text-xs font-medium uppercase tracking-wider">
+              Username
+            </label>
             <button
               onClick={() => onCopy(entry.username)}
               className="p-1.5 text-slate-400 hover:text-green-400 hover:bg-slate-700/50 rounded-md transition-all"
@@ -533,7 +556,9 @@ const EntryItem: React.FC<EntryItemProps> = ({
         {/* Account Details */}
         {entry.balance && (
           <div className="bg-gradient-to-r from-blue-900/20 to-indigo-900/20 rounded-lg p-3 border border-blue-700/30">
-            <label className="text-blue-300 text-xs font-medium uppercase tracking-wider mb-2 block">Account Details</label>
+            <label className="text-blue-300 text-xs font-medium uppercase tracking-wider mb-2 block">
+              Account Details
+            </label>
             <div className="text-sm text-blue-100 bg-blue-900/30 rounded px-3 py-2 border border-blue-700/30">
               {entry.balance}
             </div>
@@ -542,14 +567,57 @@ const EntryItem: React.FC<EntryItemProps> = ({
 
         {/* Notes */}
         {entry.notes && (
-          <div className="bg-gradient-to-r from-amber-900/20 to-yellow-900/20 rounded-lg p-3 border border-amber-700/30">
-            <label className="text-amber-300 text-xs font-medium uppercase tracking-wider mb-2 block">Notes</label>
-            <div className="text-sm text-amber-100 bg-amber-900/30 rounded px-3 py-2 border border-amber-700/30">
+          <div className="bg-gradient-to-r from-blue-900/20 to-indigo-900/20 rounded-lg p-3 border border-blue-700/30">
+            <label className="text-blue-300 text-xs font-medium uppercase tracking-wider mb-2 block">
+              Notes
+            </label>
+            <div className="text-sm text-blue-100 bg-blue-900/30 rounded px-3 py-2 border border-blue-700/30">
               {entry.notes}
             </div>
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 z-50">
+          <div className="bg-gradient-to-br from-slate-800 via-slate-800 to-slate-900 rounded-2xl p-6 w-full max-w-md border border-slate-600/50 shadow-2xl">
+            <div className="text-center">
+              <div className="p-3 bg-red-500/20 rounded-full w-fit mx-auto mb-4 border border-red-500/30">
+                <Trash2 className="w-6 h-6 text-red-400" />
+              </div>
+
+              <h3 className="text-white font-bold text-lg mb-2">
+                Delete Password Entry
+              </h3>
+
+              <p className="text-slate-400 text-sm mb-6 leading-relaxed">
+                Are you sure you want to delete "
+                <span className="text-white font-medium">
+                  {entry.accountName}
+                </span>
+                "? This action cannot be undone.
+              </p>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  className="flex-1 px-4 py-3 bg-slate-600/50 hover:bg-slate-600 text-white rounded-xl font-medium transition-all text-sm border border-slate-500/50"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  onClick={handleDelete}
+                  className="flex-1 px-4 py-3 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 text-white rounded-xl font-medium transition-all text-sm shadow-lg"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

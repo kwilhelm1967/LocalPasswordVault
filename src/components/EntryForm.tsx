@@ -152,7 +152,7 @@ export const EntryForm: React.FC<EntryFormProps> = ({
                 onChange={(e) =>
                   setFormData((prev) => ({ ...prev, password: e.target.value }))
                 }
-                className="w-full px-4 py-3 pr-32 bg-slate-700/50 border border-slate-600/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all text-sm font-mono"
+                className="w-full px-4 py-3 pr-32 bg-slate-700/50 border border-slate-600/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all text-sm"
                 placeholder="Enter password"
                 required
               />
@@ -224,14 +224,14 @@ export const EntryForm: React.FC<EntryFormProps> = ({
             <label className="block text-sm font-medium text-slate-300 mb-2">
               Account Details
             </label>
-            <input
-              type="text"
+            <textarea
               value={formData.balance}
               onChange={(e) =>
                 setFormData((prev) => ({ ...prev, balance: e.target.value }))
               }
-              className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all text-sm"
-              placeholder="e.g., Account details, credentials, etc."
+              className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all resize-none text-sm"
+              rows={3}
+              placeholder="Additional account details..."
             />
           </div>
 
