@@ -132,8 +132,18 @@ const createWindow = () => {
       floatingWindow.destroy();
       floatingWindow = null;
     }
-    if (floatingButton && !floatingButton.isDestroyed()) {
-      floatingButton.destroy();
+    if (floatingButton) {
+      try {
+        if (!floatingButton.isDestroyed()) {
+          floatingButton.removeAllListeners(); // optional, defensive
+          floatingButton.destroy(); // Use destroy, NOT just close
+        }
+      } catch (err) {
+        console.error(
+          "Error destroying floatingButton on main window close:",
+          err
+        );
+      }
       floatingButton = null;
     }
     // Quit the app
@@ -547,7 +557,11 @@ const createFloatingButton = () => {
         floatingButtonInterval = null;
       }
 
-      floatingButton = null;
+      if (floatingButton) floatingButton = null;
+    });
+
+    floatingButton.on("destroyed", () => {
+      if (floatingButton) floatingButton = null;
     });
 
     // Save position when window is moved
@@ -749,9 +763,20 @@ app.on("window-all-closed", () => {
     console.log("Destroying floating window...");
     floatingWindow.destroy();
   }
-  if (floatingButton && !floatingButton.isDestroyed()) {
+  if (floatingButton) {
+    try {
+      if (!floatingButton.isDestroyed()) {
+        floatingButton.removeAllListeners(); // optional, defensive
+        floatingButton.destroy(); // Use destroy, NOT just close
+      }
+    } catch (err) {
+      console.error(
+        "Error destroying floatingButton on window-all-closed:",
+        err
+      );
+    }
+    floatingButton = null;
     console.log("Destroying floating button...");
-    floatingButton.destroy();
   }
 
   // On macOS, also quit the app when all windows are closed
@@ -776,8 +801,15 @@ app.on("before-quit", () => {
     floatingWindow.destroy();
     floatingWindow = null;
   }
-  if (floatingButton && !floatingButton.isDestroyed()) {
-    floatingButton.destroy();
+  if (floatingButton) {
+    try {
+      if (!floatingButton.isDestroyed()) {
+        floatingButton.removeAllListeners(); // optional, defensive
+        floatingButton.destroy(); // Use destroy, NOT just close
+      }
+    } catch (err) {
+      console.error("Error destroying floatingButton on before-quit:", err);
+    }
     floatingButton = null;
   }
   if (mainWindow && !mainWindow.isDestroyed()) {
@@ -945,13 +977,16 @@ const vaultHandlers = {
       floatingWindow?.webContents.send("vault-status-changed", isVaultUnlocked);
       floatingButton?.webContents.send("vault-status-changed", isVaultUnlocked);
       // Show floating button when vault is unlocked
+      // Force cleanup before creation to prevent overlap or race conditions
+      if (floatingButton && !floatingButton.isDestroyed()) {
+        floatingButton.removeAllListeners();
+        floatingButton.destroy();
+        floatingButton = null;
+      }
+
       if (!floatingButton || floatingButton.isDestroyed()) {
         console.log("Creating floating button for unlocked vault...");
-        const button = createFloatingButton();
-        if (!button) {
-          console.error("Failed to create floating button!");
-          return false;
-        }
+        floatingButton = createFloatingButton();
       }
       return true;
     } catch (error) {
@@ -968,9 +1003,15 @@ const vaultHandlers = {
       floatingWindow?.webContents.send("vault-status-changed", isVaultUnlocked);
       floatingButton?.webContents.send("vault-status-changed", isVaultUnlocked);
       // Hide floating button when vault is locked
-      if (floatingButton && !floatingButton.isDestroyed()) {
-        console.log("Closing floating button for locked vault...");
-        floatingButton.close();
+      if (floatingButton) {
+        try {
+          if (!floatingButton.isDestroyed()) {
+            floatingButton.removeAllListeners(); // optional, defensive
+            floatingButton.destroy(); // Use destroy, NOT just close
+          }
+        } catch (err) {
+          console.error("Error destroying floatingButton:", err);
+        }
         floatingButton = null;
       }
 
@@ -1032,11 +1073,19 @@ ipcMain.handle("hide-floating-button", () => {
   try {
     console.log("IPC: hide-floating-button requested");
     if (floatingButton) {
-      floatingButton.close();
-      console.log("IPC: floating button closed");
+      try {
+        if (!floatingButton.isDestroyed()) {
+          floatingButton.removeAllListeners(); // optional, defensive
+          floatingButton.destroy(); // Use destroy, NOT just close
+        }
+      } catch (err) {
+        console.error("Error destroying floatingButton in IPC handler:", err);
+      }
+      floatingButton = null;
+      console.log("IPC: floating button destroyed");
       return true;
     }
-    console.log("IPC: no floating button to close");
+    console.log("IPC: no floating button to destroy");
     return false;
   } catch (error) {
     console.error("Error in hide-floating-button IPC handler:", error);
