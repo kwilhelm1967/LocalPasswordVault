@@ -124,6 +124,40 @@ function App() {
     loadData();
   }, []);
 
+  // Listen for entries changes from other windows
+  useEffect(() => {
+    if (
+      isElectron &&
+      window.electronAPI &&
+      window.electronAPI.onEntriesChanged
+    ) {
+      const handleEntriesChanged = async () => {
+        try {
+          console.log(
+            "Received entries changed signal, reloading from storage..."
+          );
+          const loadedEntries = await storageService.loadEntries();
+          setEntries(loadedEntries || []);
+        } catch (error) {
+          console.error("Failed to reload entries:", error);
+        }
+      };
+
+      // Listen for changes from other windows
+      window.electronAPI.onEntriesChanged(handleEntriesChanged);
+
+      // Cleanup listener on unmount
+      return () => {
+        if (
+          window.electronAPI &&
+          window.electronAPI.removeEntriesChangedListener
+        ) {
+          window.electronAPI.removeEntriesChangedListener(handleEntriesChanged);
+        }
+      };
+    }
+  }, [isElectron]);
+
   // Auto-lock after 15 minutes of inactivity
   useEffect(() => {
     let timeout: NodeJS.Timeout;
@@ -257,6 +291,15 @@ function App() {
       const updatedEntries = [...entries, newEntry];
       setEntries(updatedEntries);
       await storageService.saveEntries(updatedEntries);
+
+      // Broadcast change to other windows via IPC
+      if (
+        isElectron &&
+        window.electronAPI &&
+        window.electronAPI.broadcastEntriesChanged
+      ) {
+        window.electronAPI.broadcastEntriesChanged();
+      }
     } catch (error) {
       console.error("Failed to add entry:", error);
       // Don't crash the app, just log the error
@@ -271,12 +314,30 @@ function App() {
     );
     setEntries(updatedEntries);
     await storageService.saveEntries(updatedEntries);
+
+    // Broadcast change to other windows via IPC
+    if (
+      isElectron &&
+      window.electronAPI &&
+      window.electronAPI.broadcastEntriesChanged
+    ) {
+      window.electronAPI.broadcastEntriesChanged();
+    }
   };
 
   const handleDeleteEntry = async (id: string) => {
     const updatedEntries = entries.filter((entry) => entry.id !== id);
     setEntries(updatedEntries);
     await storageService.saveEntries(updatedEntries);
+
+    // Broadcast change to other windows via IPC
+    if (
+      isElectron &&
+      window.electronAPI &&
+      window.electronAPI.broadcastEntriesChanged
+    ) {
+      window.electronAPI.broadcastEntriesChanged();
+    }
   };
 
   const handleExport = async () => {

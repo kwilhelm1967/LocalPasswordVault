@@ -51,6 +51,19 @@ contextBridge.exposeInMainWorld("electronAPI", {
   removeVaultStatusListener: () => {
     ipcRenderer.removeAllListeners("vault-status-changed");
   },
+
+  // Entries synchronization across windows
+  broadcastEntriesChanged: () =>
+    ipcRenderer.invoke("broadcast-entries-changed"),
+  onEntriesChanged: (callback) => {
+    // Remove any existing listeners to prevent duplicates
+    ipcRenderer.removeAllListeners("entries-changed");
+    // Add the new listener
+    ipcRenderer.on("entries-changed", callback);
+  },
+  removeEntriesChangedListener: (callback) => {
+    ipcRenderer.removeListener("entries-changed", callback);
+  },
 });
 
 // Security: Remove any node globals in renderer

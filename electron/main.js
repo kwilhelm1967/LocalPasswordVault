@@ -1218,3 +1218,20 @@ ipcMain.handle("show-main-window", () => {
   }
   return false;
 });
+
+// Entries synchronization IPC handlers
+ipcMain.handle("broadcast-entries-changed", () => {
+  try {
+    // Send entries-changed event to all renderer processes
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send("entries-changed");
+    }
+    if (floatingWindow && !floatingWindow.isDestroyed()) {
+      floatingWindow.webContents.send("entries-changed");
+    }
+    return true;
+  } catch (error) {
+    console.error("Failed to broadcast entries changed:", error);
+    return false;
+  }
+});

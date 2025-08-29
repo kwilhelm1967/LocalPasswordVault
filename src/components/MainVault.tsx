@@ -11,6 +11,7 @@ import {
   Copy,
   Edit3,
   X,
+  FileText,
 } from "lucide-react";
 import { PasswordEntry, Category } from "../types";
 import { CategoryIcon } from "./CategoryIcon";
@@ -52,13 +53,16 @@ export const MainVault: React.FC<MainVaultProps> = ({
 }) => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingEntry, setEditingEntry] = useState<PasswordEntry | null>(null);
+  const [viewingEntry, setViewingEntry] = useState<PasswordEntry | null>(null);
   const [visiblePasswords, setVisiblePasswords] = useState<Set<string>>(
     new Set()
   );
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [entryToDelete, setEntryToDelete] = useState<PasswordEntry | null>(null);
+  const [entryToDelete, setEntryToDelete] = useState<PasswordEntry | null>(
+    null
+  );
 
-  console.log(entries, 'entries')
+  console.log(entries, "entries");
 
   const filteredEntries = useMemo(() => {
     return entries.filter((entry) => {
@@ -300,6 +304,13 @@ export const MainVault: React.FC<MainVaultProps> = ({
 
                     <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-all duration-300">
                       <button
+                        onClick={() => setViewingEntry(entry)}
+                        className="p-2 text-slate-400 hover:text-green-400 hover:bg-green-500/20 rounded-xl transition-all border border-transparent hover:border-green-500/30"
+                        title="View Details"
+                      >
+                        <FileText className="w-4 h-4" />
+                      </button>
+                      <button
                         onClick={() => setEditingEntry(entry)}
                         className="p-2 text-slate-400 hover:text-blue-400 hover:bg-blue-500/20 rounded-xl transition-all border border-transparent hover:border-blue-500/30"
                         title="Edit"
@@ -451,16 +462,19 @@ export const MainVault: React.FC<MainVaultProps> = ({
               <div className="p-3 bg-red-500/20 rounded-full w-fit mx-auto mb-4 border border-red-500/30">
                 <Trash2 className="w-6 h-6 text-red-400" />
               </div>
-              
+
               <h3 className="text-white font-bold text-lg mb-2">
                 Delete Password Entry
               </h3>
-              
+
               <p className="text-slate-400 text-sm mb-6 leading-relaxed">
-                Are you sure you want to delete "<span className="text-white font-medium">{entryToDelete.accountName}</span>"? 
-                This action cannot be undone.
+                Are you sure you want to delete "
+                <span className="text-white font-medium">
+                  {entryToDelete.accountName}
+                </span>
+                "? This action cannot be undone.
               </p>
-              
+
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowDeleteConfirm(false)}
@@ -468,7 +482,7 @@ export const MainVault: React.FC<MainVaultProps> = ({
                 >
                   Cancel
                 </button>
-                
+
                 <button
                   onClick={handleConfirmDelete}
                   className="flex-1 px-4 py-3 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 text-white rounded-xl font-medium transition-all text-sm shadow-lg"
@@ -476,6 +490,201 @@ export const MainVault: React.FC<MainVaultProps> = ({
                   Delete
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* View Details Modal */}
+      {viewingEntry && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 z-50">
+          <div className="bg-gradient-to-br from-slate-800 via-slate-800 to-slate-900 rounded-2xl p-6 w-full max-w-lg border border-slate-600/50 shadow-2xl max-h-[90vh] overflow-y-auto">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-gradient-to-br from-blue-500/20 to-indigo-500/20 rounded-xl border border-blue-500/30">
+                  <FileText className="w-5 h-5 text-blue-400" />
+                </div>
+                <div>
+                  <h3 className="text-white font-bold text-lg">
+                    {viewingEntry.accountName}
+                  </h3>
+                  <p className="text-slate-400 text-sm">Account Details</p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setViewingEntry(null)}
+                className="p-2 text-slate-400 hover:text-white hover:bg-slate-700/50 rounded-lg transition-all"
+                title="Close"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="space-y-4">
+              {/* Account Name */}
+              <div className="p-4 bg-slate-700/30 rounded-xl border border-slate-600/30">
+                <label className="text-slate-400 text-xs font-medium uppercase tracking-wider mb-2 block">
+                  Account Name
+                </label>
+                <div className="text-white font-medium text-lg">
+                  {viewingEntry.accountName}
+                </div>
+              </div>
+
+              {/* Username */}
+              <div className="p-4 bg-slate-700/30 rounded-xl border border-slate-600/30">
+                <label className="text-slate-400 text-xs font-medium uppercase tracking-wider mb-2 block">
+                  Username
+                </label>
+                <div className="flex items-center justify-between">
+                  <div className="text-white font-medium">
+                    {viewingEntry.username}
+                  </div>
+                  <button
+                    onClick={() => copyToClipboard(viewingEntry.username)}
+                    className="p-2 text-slate-400 hover:text-green-400 hover:bg-slate-600/50 rounded-lg transition-all"
+                    title="Copy username"
+                  >
+                    <Copy className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Password */}
+              <div className="p-4 bg-slate-700/30 rounded-xl border border-slate-600/30">
+                <label className="text-slate-400 text-xs font-medium uppercase tracking-wider mb-2 block">
+                  Password
+                </label>
+                <div className="flex items-center justify-between">
+                  <div className="text-white font-medium font-mono">
+                    {visiblePasswords.has(viewingEntry.id)
+                      ? viewingEntry.password
+                      : "••••••••••••"}
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => togglePasswordVisibility(viewingEntry.id)}
+                      className="p-2 text-slate-400 hover:text-blue-400 hover:bg-slate-600/50 rounded-lg transition-all"
+                      title={
+                        visiblePasswords.has(viewingEntry.id)
+                          ? "Hide password"
+                          : "Show password"
+                      }
+                    >
+                      {visiblePasswords.has(viewingEntry.id) ? (
+                        <EyeOff className="w-4 h-4" />
+                      ) : (
+                        <Eye className="w-4 h-4" />
+                      )}
+                    </button>
+                    <button
+                      onClick={() => copyToClipboard(viewingEntry.password)}
+                      className="p-2 text-slate-400 hover:text-green-400 hover:bg-slate-600/50 rounded-lg transition-all"
+                      title="Copy password"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Category */}
+              <div className="p-4 bg-slate-700/30 rounded-xl border border-slate-600/30">
+                <label className="text-slate-400 text-xs font-medium uppercase tracking-wider mb-2 block">
+                  Category
+                </label>
+                <div className="flex items-center space-x-2">
+                  {(() => {
+                    const category = categories.find(
+                      (c) => c.id === viewingEntry.category
+                    );
+                    return category ? (
+                      <>
+                        <CategoryIcon
+                          name={category.icon}
+                          size={16}
+                          className="text-blue-400"
+                        />
+                        <span className="text-white font-medium">
+                          {category.name}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-slate-400">Unknown Category</span>
+                    );
+                  })()}
+                </div>
+              </div>
+
+              {/* Account Details */}
+              {viewingEntry.balance && (
+                <div className="p-4 bg-slate-700/30 rounded-xl border border-slate-600/30">
+                  <label className="text-slate-400 text-xs font-medium uppercase tracking-wider mb-2 block">
+                    Account Details
+                  </label>
+                  <div className="text-white font-medium">
+                    {viewingEntry.balance}
+                  </div>
+                </div>
+              )}
+
+              {/* Notes */}
+              {viewingEntry.notes && (
+                <div className="p-4 bg-gradient-to-r from-slate-700/20 to-slate-600/20 rounded-xl border border-slate-600/30">
+                  <label className="text-slate-400 text-xs font-medium uppercase tracking-wider mb-2 block">
+                    Notes
+                  </label>
+                  <div className="text-slate-300 leading-relaxed whitespace-pre-wrap">
+                    {viewingEntry.notes}
+                  </div>
+                </div>
+              )}
+
+              {/* Metadata */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="p-4 bg-slate-800/40 rounded-xl border border-slate-700/30">
+                  <label className="text-slate-400 text-xs font-medium uppercase tracking-wider mb-2 block">
+                    Created
+                  </label>
+                  <div className="text-slate-300 text-sm">
+                    {new Date(viewingEntry.createdAt).toLocaleDateString()} at{" "}
+                    {new Date(viewingEntry.createdAt).toLocaleTimeString()}
+                  </div>
+                </div>
+                <div className="p-4 bg-slate-800/40 rounded-xl border border-slate-700/30">
+                  <label className="text-slate-400 text-xs font-medium uppercase tracking-wider mb-2 block">
+                    Last Updated
+                  </label>
+                  <div className="text-slate-300 text-sm">
+                    {new Date(viewingEntry.updatedAt).toLocaleDateString()} at{" "}
+                    {new Date(viewingEntry.updatedAt).toLocaleTimeString()}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer Actions */}
+            <div className="flex gap-3 mt-6 pt-4 border-t border-slate-700/50">
+              <button
+                onClick={() => {
+                  setViewingEntry(null);
+                  setEditingEntry(viewingEntry);
+                }}
+                className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white rounded-xl font-medium transition-all text-sm shadow-lg flex items-center justify-center space-x-2"
+              >
+                <Edit3 className="w-4 h-4" />
+                <span>Edit Account</span>
+              </button>
+
+              <button
+                onClick={() => setViewingEntry(null)}
+                className="px-6 py-3 bg-slate-600/50 hover:bg-slate-600 text-white rounded-xl font-medium transition-all text-sm border border-slate-500/50"
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>

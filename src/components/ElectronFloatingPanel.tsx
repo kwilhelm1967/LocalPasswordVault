@@ -146,20 +146,19 @@ export const ElectronFloatingPanel: React.FC<ElectronFloatingPanelProps> = ({
 
   const filteredEntries = useMemo(() => {
     return entries.filter((entry) => {
+      // Search filter: if no search term, all entries match search
       const matchesSearch =
+        !searchTerm.trim() ||
         entry.accountName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         entry.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (entry.notes || "").toLowerCase().includes(searchTerm.toLowerCase());
 
-      // If there's a search term, search across all categories
-      // If no search term, filter by selected category
-      if (searchTerm.trim()) {
-        return matchesSearch;
-      } else {
-        const matchesCategory =
-          selectedCategory === "all" || entry.category === selectedCategory;
-        return matchesCategory;
-      }
+      // Category filter: if "all" is selected, all entries match category
+      const matchesCategory =
+        selectedCategory === "all" || entry.category === selectedCategory;
+
+      // Both filters must pass for entry to be included
+      return matchesSearch && matchesCategory;
     });
   }, [entries, searchTerm, selectedCategory]);
 
