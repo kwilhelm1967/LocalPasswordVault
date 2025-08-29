@@ -11,8 +11,6 @@ import {
   Copy,
   Edit3,
   X,
-  Star,
-  StarOff,
   Clock,
 } from "lucide-react";
 import { PasswordEntry, Category } from "../types";
@@ -127,24 +125,24 @@ export const ElectronFloatingPanel: React.FC<ElectronFloatingPanelProps> = ({
   }, [autoLockTime]);
 
   // Load favorites from localStorage
-  useEffect(() => {
-    const stored = localStorage.getItem("floating_panel_favorites");
-    if (stored) {
-      try {
-        setFavorites(new Set(JSON.parse(stored)));
-      } catch (error) {
-        console.error("Failed to parse favorites:", error);
-      }
-    }
-  }, []);
+  // useEffect(() => {
+  //   const stored = localStorage.getItem("floating_panel_favorites");
+  //   if (stored) {
+  //     try {
+  //       setFavorites(new Set(JSON.parse(stored)));
+  //     } catch (error) {
+  //       console.error("Failed to parse favorites:", error);
+  //     }
+  //   }
+  // }, []);
 
   // Save favorites to localStorage
-  useEffect(() => {
-    localStorage.setItem(
-      "floating_panel_favorites",
-      JSON.stringify([...favorites])
-    );
-  }, [favorites]);
+  // useEffect(() => {
+  //   localStorage.setItem(
+  //     "floating_panel_favorites",
+  //     JSON.stringify([...favorites])
+  //   );
+  // }, [favorites]);
 
   const filteredEntries = entries.filter((entry) => {
     const matchesSearch =

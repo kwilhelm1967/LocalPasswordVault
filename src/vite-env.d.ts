@@ -38,7 +38,7 @@ declare global {
       vaultLocked: () => Promise<void>;
       isVaultUnlocked: () => Promise<boolean>;
       onVaultStatusChange: (
-        callback: (event: any, data: { unlocked: boolean }) => void
+        callback: (event: any, unlocked: boolean) => void
       ) => void;
       removeVaultStatusListener: () => void;
 

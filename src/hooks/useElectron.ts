@@ -20,8 +20,6 @@ export const useElectron = () => {
           setVersion(appVersion);
           setPlatform(appPlatform);
           setIsVaultUnlocked(vaultUnlocked);
-
-          console.log("Initial vault status:", vaultUnlocked);
         } catch (error) {
           console.error("Failed to get electron info:", error);
         }
@@ -35,12 +33,8 @@ export const useElectron = () => {
   useEffect(() => {
     if (!window.electronAPI?.onVaultStatusChange) return;
 
-    const handleVaultStatusChange = (
-      _event: any,
-      data: { unlocked: boolean }
-    ) => {
-      console.log("Vault status changed via push channel:", data.unlocked);
-      setIsVaultUnlocked(data.unlocked);
+    const handleVaultStatusChange = (_event: any, unlocked: boolean) => {
+      setIsVaultUnlocked(unlocked);
     };
 
     // Set up the listener

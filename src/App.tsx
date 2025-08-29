@@ -16,18 +16,23 @@ import { TrialTestingTools } from "./components/TrialTestingTools";
 // FIXED CATEGORIES - NO DUPLICATES ALLOWED
 const FIXED_CATEGORIES: Category[] = [
   { id: "all", name: "All", color: "#3b82f6", icon: "Grid3X3" },
-  { id: "banking", name: "Banking", color: "#10b981", icon: "CreditCard" },
+  {
+    id: "banking",
+    name: "Banking",
+    color: "#10b981",
+    icon: "CircleDollarSign",
+  },
   { id: "shopping", name: "Shopping", color: "#f59e0b", icon: "ShoppingCart" },
   {
     id: "entertainment",
     name: "Entertainment",
     color: "#ef4444",
-    icon: "Play",
+    icon: "Ticket",
   },
   { id: "email", name: "Email", color: "#f43f5e", icon: "Mail" },
   { id: "work", name: "Work", color: "#f43f5e", icon: "Briefcase" },
-  { id: "business", name: "Business", color: "#8b5cf6", icon: "Briefcase" },
-  { id: "other", name: "Other", color: "#6b7280", icon: "Folder" },
+  { id: "business", name: "Business", color: "#8b5cf6", icon: "TrendingUp" },
+  { id: "other", name: "Other", color: "#6b7280", icon: "FileText" },
 ];
 
 function App() {
@@ -98,7 +103,6 @@ function App() {
 
   // Check if we're in floating panel mode (for Electron)
   const isFloatingMode = window.location.hash === "#floating";
-  const isFloatingButtonMode = window.location.hash === "#floating-button";
 
   // Load data from localStorage on initial load
   useEffect(() => {
@@ -180,12 +184,7 @@ function App() {
 
         // Update vault status in Electron
         if (isElectron && window.electronAPI) {
-          // Ensure vault is marked as unlocked in main process
           await window.electronAPI.vaultUnlocked?.();
-          // Also update the isVaultUnlocked state in main process
-          if (window.electronAPI.isVaultUnlocked) {
-            await window.electronAPI.isVaultUnlocked();
-          }
         }
         return;
       }
@@ -197,15 +196,8 @@ function App() {
 
         // Update vault status in Electron
         if (isElectron && window.electronAPI) {
-          // Ensure vault is marked as unlocked in main process
           await window.electronAPI.vaultUnlocked?.();
-          // Also update the isVaultUnlocked state in main process
-          if (window.electronAPI.isVaultUnlocked) {
-            await window.electronAPI.isVaultUnlocked();
-          }
         }
-
-        setIsLocked(false);
       } else {
         // LoginScreen should handle the error display
         throw new Error("Invalid password");
@@ -335,17 +327,11 @@ function App() {
     }
   };
 
-  console.log(isVaultUnlocked, 'isVaultUnlocked');
-
   // If we're in Electron floating mode, show the floating panel
   if (isElectron && isFloatingMode) {
     // SECURITY FIX: Don't allow floating panel access when vault is locked
     if (!isVaultUnlocked) {
-      return (
-        <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
-          <LoginScreen onLogin={handleLogin} />
-        </div>
-      );
+      return null;
     }
 
     return (

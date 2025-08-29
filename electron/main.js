@@ -145,7 +145,6 @@ const createWindow = () => {
 // Create floating panel window
 const createFloatingWindow = () => {
   try {
-    console.log("Creating floating window...");
     if (floatingWindow) {
       if (floatingWindow.isMinimized() || !floatingWindow.isVisible()) {
         floatingWindow.restore();
@@ -162,7 +161,6 @@ const createFloatingWindow = () => {
           visibleOnFullScreen: true,
         });
       }
-      console.log("Existing floating window restored and focused");
       return floatingWindow;
     }
 
@@ -346,7 +344,6 @@ const createFloatingWindow = () => {
         y !== floatingPanelPosition.y
       ) {
         savePosition(x, y);
-        console.log("Saved floating panel position:", x, y);
       }
     });
 
@@ -390,7 +387,6 @@ const createFloatingWindow = () => {
       }
     }, 3000); // Light cadence to reduce flicker
 
-    console.log("Floating window created successfully");
     return floatingWindow;
   } catch (error) {
     console.error("Error creating floating window:", error);
@@ -410,14 +406,12 @@ const createFloatingWindow = () => {
 // Create floating button window
 const createFloatingButton = () => {
   try {
-    console.log("Creating floating button...");
     if (floatingButton) {
       if (floatingButton.isMinimized() || !floatingButton.isVisible()) {
         floatingButton.restore();
         floatingButton.show();
       }
       floatingButton.focus();
-      console.log("Existing floating button restored and focused");
       return floatingButton;
     }
 
@@ -536,10 +530,6 @@ const createFloatingButton = () => {
         currentBounds.width !== buttonSize ||
         currentBounds.height !== buttonSize
       ) {
-        console.log(
-          "Preventing button resize, restoring to",
-          buttonSize + "x" + buttonSize
-        );
         floatingButton.setBounds({
           x: currentBounds.x,
           y: currentBounds.y,
@@ -570,7 +560,6 @@ const createFloatingButton = () => {
         y !== floatingButtonPosition.y
       ) {
         saveButtonPosition(x, y);
-        console.log("Saved floating button position:", x, y);
       }
     });
 
@@ -614,7 +603,6 @@ const createFloatingButton = () => {
       }
     }, 5000); // Light cadence to reduce flicker
 
-    console.log("Floating button created successfully");
     return floatingButton;
   } catch (error) {
     console.error("Error creating floating button:", error);
@@ -952,6 +940,10 @@ const vaultHandlers = {
     try {
       console.log("Vault unlocked");
       isVaultUnlocked = true;
+
+      mainWindow?.webContents.send("vault-status-changed", isVaultUnlocked);
+      floatingWindow?.webContents.send("vault-status-changed", isVaultUnlocked);
+      floatingButton?.webContents.send("vault-status-changed", isVaultUnlocked);
       // Show floating button when vault is unlocked
       if (!floatingButton || floatingButton.isDestroyed()) {
         console.log("Creating floating button for unlocked vault...");
@@ -971,11 +963,21 @@ const vaultHandlers = {
     try {
       console.log("Vault locked");
       isVaultUnlocked = false;
+
+      mainWindow?.webContents.send("vault-status-changed", isVaultUnlocked);
+      floatingWindow?.webContents.send("vault-status-changed", isVaultUnlocked);
+      floatingButton?.webContents.send("vault-status-changed", isVaultUnlocked);
       // Hide floating button when vault is locked
       if (floatingButton && !floatingButton.isDestroyed()) {
         console.log("Closing floating button for locked vault...");
         floatingButton.close();
         floatingButton = null;
+      }
+
+      if (floatingWindow && !floatingWindow.isDestroyed()) {
+        console.log("Closing floatingWindow for locked vault...");
+        floatingWindow.close();
+        floatingWindow = null;
       }
       return true;
     } catch (error) {

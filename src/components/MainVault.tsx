@@ -58,20 +58,19 @@ export const MainVault: React.FC<MainVaultProps> = ({
 
   const filteredEntries = useMemo(() => {
     return entries.filter((entry) => {
+      // Search filter: if no search term, all entries match search
       const matchesSearch =
+        !searchTerm.trim() ||
         entry.accountName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         entry.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (entry.notes || "").toLowerCase().includes(searchTerm.toLowerCase());
 
-      // If there's a search term, search across all categories
-      // If no search term, filter by selected category
-        if (searchTerm.trim()) {
-        return matchesSearch;
-      } else {
-        const matchesCategory =
-          selectedCategory === "all" || entry.category === selectedCategory;
-        return matchesCategory;
-      }
+      // Category filter: if "all" is selected, all entries match category
+      const matchesCategory =
+        selectedCategory === "all" || entry.category === selectedCategory;
+
+      // Both filters must pass for entry to be included
+      return matchesSearch && matchesCategory;
     });
   }, [entries, searchTerm, selectedCategory]);
 
@@ -151,11 +150,11 @@ export const MainVault: React.FC<MainVaultProps> = ({
                 <button
                   onClick={(e) => {
                     e.preventDefault();
-                    const url = 'https://localpasswordvault.com';
+                    const url = "https://localpasswordvault.com";
                     if (window.electronAPI) {
                       window.electronAPI.openExternal(url);
                     } else {
-                      window.open('https://localpasswordvault.com', '_blank');
+                      window.open("https://localpasswordvault.com", "_blank");
                     }
                   }}
                   className="text-xs text-slate-400 hover:underline cursor-pointer"
@@ -257,36 +256,41 @@ export const MainVault: React.FC<MainVaultProps> = ({
             return (
               <div
                 key={entry.id}
-                className="bg-slate-800/30 backdrop-blur-sm border border-slate-700/50 rounded-xl p-6 hover:bg-slate-800/50 transition-all group"
+                className="bg-gradient-to-br from-slate-800/40 via-slate-800/30 to-slate-900/40 backdrop-blur-sm border border-slate-600/50 rounded-2xl p-6 hover:bg-gradient-to-br hover:from-slate-800/60 hover:via-slate-800/50 hover:to-slate-900/60 transition-all duration-300 group shadow-xl hover:shadow-2xl hover:border-slate-500/60"
               >
-                <div className="flex items-start justify-between mb-4">
+                {/* Header with gradient accent */}
+                <div className="flex items-start justify-between mb-5">
                   <div className="flex items-center space-x-3">
                     {category && (
-                      <CategoryIcon
-                        name={category.icon}
-                        size={20}
-                        className="text-blue-400"
-                      />
+                      <div className="p-2 bg-gradient-to-br from-blue-500/20 to-indigo-500/20 rounded-xl border border-blue-500/30">
+                        <CategoryIcon
+                          name={category.icon}
+                          size={18}
+                          className="text-blue-400"
+                        />
+                      </div>
                     )}
                     <div>
-                      <h3 className="font-semibold text-white group-hover:text-blue-400 transition-colors">
+                      <h3 className="font-bold text-white group-hover:text-blue-400 transition-colors text-base">
                         {entry.accountName}
                       </h3>
-                      <p className="text-sm text-slate-400">{entry.username}</p>
+                      <p className="text-sm text-slate-400 mt-1">
+                        {entry.username}
+                      </p>
                     </div>
                   </div>
 
-                  <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-all duration-300">
                     <button
                       onClick={() => setEditingEntry(entry)}
-                      className="p-1.5 text-slate-400 hover:text-blue-400 hover:bg-slate-700/50 rounded-lg transition-all"
+                      className="p-2 text-slate-400 hover:text-blue-400 hover:bg-blue-500/20 rounded-xl transition-all border border-transparent hover:border-blue-500/30"
                       title="Edit"
                     >
                       <Edit3 className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => onDeleteEntry(entry.id)}
-                      className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-slate-700/50 rounded-lg transition-all"
+                      className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/20 rounded-xl transition-all border border-transparent hover:border-red-500/30"
                       title="Delete"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -294,66 +298,76 @@ export const MainVault: React.FC<MainVaultProps> = ({
                   </div>
                 </div>
 
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-slate-400">Username</span>
+                {/* Content with enhanced styling */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-3 bg-slate-700/30 rounded-xl border border-slate-600/30">
+                    <span className="text-sm font-medium text-slate-300">
+                      Username
+                    </span>
                     <div className="flex items-center space-x-2">
-                      <span className="text-sm text-slate-300 ">
+                      <span className="text-sm text-white font-medium max-w-32 truncate">
                         {entry.username}
                       </span>
                       <button
                         onClick={() => copyToClipboard(entry.username)}
-                        className="p-1 text-slate-400 hover:text-white transition-colors"
+                        className="p-1.5 text-slate-400 hover:text-green-400 hover:bg-slate-600/50 rounded-lg transition-all"
                         title="Copy username"
                       >
-                        <Copy className="w-3 h-3" />
+                        <Copy className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-slate-400">Password</span>
+                  <div className="flex items-center justify-between p-3 bg-slate-700/30 rounded-xl border border-slate-600/30">
+                    <span className="text-sm font-medium text-slate-300">
+                      Password
+                    </span>
                     <div className="flex items-center space-x-2">
-                      <span className="text-sm text-slate-300 ">
+                      <span className="text-sm text-white font-mono font-medium max-w-32 truncate">
                         {isPasswordVisible ? entry.password : "••••••••"}
                       </span>
                       <button
                         onClick={() => togglePasswordVisibility(entry.id)}
-                        className="p-1 text-slate-400 hover:text-white transition-colors"
+                        className="p-1.5 text-slate-400 hover:text-blue-400 hover:bg-slate-600/50 rounded-lg transition-all"
                         title={
                           isPasswordVisible ? "Hide password" : "Show password"
                         }
                       >
                         {isPasswordVisible ? (
-                          <EyeOff className="w-3 h-3" />
+                          <EyeOff className="w-3.5 h-3.5" />
                         ) : (
-                          <Eye className="w-3 h-3" />
+                          <Eye className="w-3.5 h-3.5" />
                         )}
                       </button>
                       <button
                         onClick={() => copyToClipboard(entry.password)}
-                        className="p-1 text-slate-400 hover:text-white transition-colors"
+                        className="p-1.5 text-slate-400 hover:text-green-400 hover:bg-slate-600/50 rounded-lg transition-all"
                         title="Copy password"
                       >
-                        <Copy className="w-3 h-3" />
+                        <Copy className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   </div>
 
                   {entry.balance && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-400">
+                    <div className="flex items-center justify-between p-3 bg-slate-700/30 rounded-xl border border-slate-600/30">
+                      <span className="text-sm font-medium text-slate-300">
                         Account Details
                       </span>
-                      <span className="text-sm text-slate-300 ">
+                      <span className="text-sm text-white font-medium max-w-32 truncate">
                         {entry.balance}
                       </span>
                     </div>
                   )}
 
                   {entry.notes && (
-                    <div className="pt-2 border-t border-slate-700/50">
-                      <p className="text-xs text-slate-400">{entry.notes}</p>
+                    <div className="p-3 bg-gradient-to-r from-slate-700/20 to-slate-600/20 rounded-xl border border-slate-600/30">
+                      <span className="text-xs font-medium text-slate-300 mb-2 block">
+                        Notes
+                      </span>
+                      <p className="text-sm text-slate-400 leading-relaxed">
+                        {entry.notes}
+                      </p>
                     </div>
                   )}
                 </div>
@@ -363,22 +377,22 @@ export const MainVault: React.FC<MainVaultProps> = ({
         </div>
 
         {filteredEntries.length === 0 && (
-          <div className="text-center py-12">
-            <div className="w-16 h-16 bg-slate-800/50 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Search className="w-8 h-8 text-slate-400" />
+          <div className="text-center py-16">
+            <div className="w-20 h-20 bg-gradient-to-br from-slate-800/60 to-slate-700/40 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-slate-600/50 shadow-xl">
+              <Search className="w-10 h-10 text-slate-400" />
             </div>
-            <h3 className="text-lg font-medium text-white mb-2">
+            <h3 className="text-xl font-bold text-white mb-3">
               No accounts found
             </h3>
-            <p className="text-slate-400 mb-6">
+            <p className="text-slate-400 mb-8 max-w-md mx-auto leading-relaxed">
               {searchTerm || selectedCategory !== "all"
-                ? "Try adjusting your search or filter criteria"
-                : "Get started by adding your first account"}
+                ? "Try adjusting your search or filter criteria to find what you're looking for"
+                : "Get started by adding your first account to secure your credentials"}
             </p>
             {!searchTerm && selectedCategory === "all" && (
               <button
                 onClick={() => setShowAddForm(true)}
-                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl font-medium transition-all transform hover:scale-105"
+                className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-2xl font-bold transition-all transform hover:scale-105 shadow-xl hover:shadow-2xl border border-blue-500/30"
               >
                 Add Your First Account
               </button>
