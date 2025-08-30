@@ -308,7 +308,7 @@ export const MainVault: React.FC<MainVaultProps> = ({
                         className="p-2 text-slate-400 hover:text-green-400 hover:bg-green-500/20 rounded-xl transition-all border border-transparent hover:border-green-500/30"
                         title="View Details"
                       >
-                        <FileText className="w-4 h-4" />
+                        <Eye className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => setEditingEntry(entry)}
@@ -381,13 +381,13 @@ export const MainVault: React.FC<MainVaultProps> = ({
                     </div>
 
                     {entry.balance && (
-                      <div className="flex items-center justify-between p-3 bg-slate-700/30 rounded-xl border border-slate-600/30">
-                        <span className="text-sm font-medium text-slate-300">
+                      <div className="p-3 bg-gradient-to-r from-slate-700/20 to-slate-600/20 rounded-xl border border-slate-600/30">
+                        <span className="text-xs font-medium text-slate-300 mb-2 block">
                           Account Details
                         </span>
-                        <span className="text-sm text-white font-medium max-w-32 truncate">
+                        <p className="text-sm text-slate-400 leading-relaxed">
                           {entry.balance}
-                        </span>
+                        </p>
                       </div>
                     )}
 
@@ -464,7 +464,7 @@ export const MainVault: React.FC<MainVaultProps> = ({
               </div>
 
               <h3 className="text-white font-bold text-lg mb-2">
-                Delete Password Entry
+                Delete Account
               </h3>
 
               <p className="text-slate-400 text-sm mb-6 leading-relaxed">

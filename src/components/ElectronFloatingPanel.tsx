@@ -587,7 +587,7 @@ const EntryItem: React.FC<EntryItemProps> = ({
               </div>
 
               <h3 className="text-white font-bold text-lg mb-2">
-                Delete Password Entry
+                Delete Account
               </h3>
 
               <p className="text-slate-400 text-sm mb-6 leading-relaxed">

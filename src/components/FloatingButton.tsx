@@ -215,11 +215,9 @@ export const FloatingButton: React.FC = () => {
   return (
     <div
       ref={buttonRef}
-      className="fixed rounded-full z-[9999] bg-transparent w-12 h-12 flex items-center justify-center"
+      className="fixed z-[9999] bg-transparent w-12 h-12 flex items-center justify-center"
     >
-      <div
-        className={`w-12 h-12 rounded-full flex overflow-hidden bg-blue-500`}
-      >
+      <div className={`w-12 h-12 flex overflow-hidden bg-blue-500`}>
         {/* Drag Handle */}
         <div
           ref={dragHandleRef}
@@ -243,7 +241,7 @@ export const FloatingButton: React.FC = () => {
           title={isProcessing ? "Processing..." : "Toggle Password Vault"}
         >
           {isProcessing ? (
-            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            <div className="w-4 h-4 border-2 border-white/30 border-t-white  animate-spin" />
           ) : (
             <Lock className="w-5 h-5 text-white" />
           )}
@@ -253,7 +251,7 @@ export const FloatingButton: React.FC = () => {
       {isDragging && (
         <div
           className="absolute -top-10 left-1/2 -translate-x-1/2
-          bg-black/90 text-white px-3 py-1.5 rounded-full text-xs font-semibold
+          bg-black/90 text-white px-3 py-1.5  text-xs font-semibold
           whitespace-nowrap backdrop-blur-md border border-white/20 z-[10001]
           shadow-lg"
         >
