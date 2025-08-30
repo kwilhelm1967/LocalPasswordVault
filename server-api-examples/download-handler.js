@@ -65,7 +65,7 @@ class DownloadHandler {
 
       // Generate secure download URL
       const downloadToken = this.generateDownloadToken(downloadRecord);
-      const downloadUrl = `${process.env.SERVER_URL}/api/download/${downloadToken}`;
+      const downloadUrl = `/api/download/${downloadToken}`;
 
       console.log(
         `Download package created: ${packageInfo.fileName} (${(
