@@ -231,6 +231,7 @@ app.post(
           licenseType = "single";
           quantity = 1;
           break;
+        // This case is test link
         case "prod_Sofb9khTHtbJsQ":
           licenseType = "single";
           quantity = 1;

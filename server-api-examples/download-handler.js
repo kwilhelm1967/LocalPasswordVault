@@ -31,21 +31,21 @@ class DownloadHandler {
         prod_family_plan: "family-plan",
         prod_pro_license: "pro",
         prod_business_plan: "business-plan",
-        single: "single-user",
-        family: "family-plan",
+        single: "single",
+        family: "family",
         pro: "pro",
-        business: "business-plan",
+        business: "business",
       };
 
-      const packageType = packageTypeMap[licenseType] || "single-user";
+      const packageType = packageTypeMap[licenseType] || "single";
 
       // We are not going to generate the package, as well already have it saved to downloads folder
-      const packageName = `LocalPasswordVault-${licenseType}.zip`;
+      const packageName = `LocalPasswordVault-${packageType}.zip`;
       const packageInfo = {
         fileName: packageName,
         filePath: path.join(this.downloadDir, packageName),
         size: fs.statSync(path.join(this.downloadDir, packageName)).size,
-        description: `Download link for ${licenseType} license`,
+        description: `Download link for ${packageType} license`,
       };
 
       // Create download record
