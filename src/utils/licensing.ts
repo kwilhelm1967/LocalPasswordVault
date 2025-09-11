@@ -210,28 +210,6 @@ class LicensingService {
       canUseFloatingPanel: true // Available to all users
     };
   }
-
-  // Generate a demo license key (for testing)
-  generateDemoLicense(): string {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    let result = '';
-    for (let i = 0; i < 15; i++) {
-      if (i > 0 && i % 4 === 0) {
-        result += '-';
-      }
-      result += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    
-    // Add checksum
-    let checksum = 0;
-    const cleanKey = result.replace(/-/g, '');
-    for (let i = 0; i < cleanKey.length; i++) {
-      checksum += cleanKey.charCodeAt(i);
-    }
-    result += (checksum % 36).toString(36).toUpperCase();
-    
-    return result;
-  }
 }
 
 export const licensingService = LicensingService.getInstance();

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Lock, Eye, EyeOff, Key, AlertCircle, Info } from "lucide-react";
-import { passwordService } from "../utils/passwordService";
+import { storageService } from "../utils/storage";
 
 interface LoginScreenProps {
   onLogin: (password: string) => Promise<void>;
@@ -14,8 +14,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
   const [isFirstTime, setIsFirstTime] = useState(false);
 
   useEffect(() => {
-    // Check if this is first time setup
-    setIsFirstTime(!passwordService.hasMasterPassword());
+    // Check if this is first time setup using the new storage service
+    setIsFirstTime(!storageService.vaultExists());
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {

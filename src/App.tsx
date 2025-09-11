@@ -6,7 +6,7 @@ import { FloatingPanel } from "./components/FloatingPanel";
 import { ElectronFloatingPanel } from "./components/ElectronFloatingPanel";
 import { PasswordEntry, Category } from "./types";
 import { storageService } from "./utils/storage";
-import { passwordService } from "./utils/passwordService";
+import { importService } from "./utils/importService";
 import { licenseService } from "./utils/licenseService";
 import { features } from "./config/environment";
 import { useElectron } from "./hooks/useElectron";
@@ -58,6 +58,16 @@ function App() {
     () => false
   );
 
+  // Initialize vault state on app startup
+  useEffect(() => {
+    // Vault should start as locked for security
+    // User will need to enter password to unlock
+    setIsLocked(true);
+
+    // Clear any cached entries for security
+    setEntries([]);
+  }, []);
+
   // Update app status periodically to check trial expiration
   useEffect(() => {
     const updateAppStatus = () => {
@@ -104,10 +114,23 @@ function App() {
   // Check if we're in floating panel mode (for Electron)
   const isFloatingMode = window.location.hash === "#floating";
 
-  // Load data from localStorage on initial load
+  // Load data when vault is unlocked
   useEffect(() => {
     const loadData = async () => {
+      // Only load data if vault is unlocked
+      if (isLocked) {
+        // Clear entries when vault is locked for security
+        setEntries([]);
+        return;
+      }
+
       try {
+        // Check if vault is properly unlocked before loading
+        if (!storageService.isVaultUnlocked()) {
+          console.log("Vault is not unlocked, skipping data load");
+          return;
+        }
+
         const loadedEntries = await storageService.loadEntries();
         if (loadedEntries && loadedEntries.length > 0) {
           setEntries(loadedEntries);
@@ -118,11 +141,15 @@ function App() {
         await storageService.saveCategories(FIXED_CATEGORIES);
       } catch (error) {
         console.error("Failed to load data:", error);
+        // If loading fails, it might be because vault is locked
+        if (error instanceof Error && error.message?.includes("locked")) {
+          setIsLocked(true);
+        }
       }
     };
 
     loadData();
-  }, []);
+  }, [isLocked]); // Re-run when lock status changes
 
   // Listen for entries changes from other windows
   useEffect(() => {
@@ -136,10 +163,23 @@ function App() {
           console.log(
             "Received entries changed signal, reloading from storage..."
           );
+
+          // Only reload if vault is unlocked
+          if (isLocked || !storageService.isVaultUnlocked()) {
+            console.log("Vault is locked, skipping entries reload");
+            setEntries([]);
+            return;
+          }
+
           const loadedEntries = await storageService.loadEntries();
           setEntries(loadedEntries || []);
         } catch (error) {
           console.error("Failed to reload entries:", error);
+          // If reload fails due to locked vault, clear entries
+          if (error instanceof Error && error.message?.includes("locked")) {
+            setEntries([]);
+            setIsLocked(true);
+          }
         }
       };
 
@@ -156,7 +196,7 @@ function App() {
         }
       };
     }
-  }, [isElectron]);
+  }, [isElectron, isLocked]); // Re-run when lock status changes
 
   // Auto-lock after 15 minutes of inactivity
   useEffect(() => {
@@ -239,10 +279,10 @@ function App() {
 
   const handleLogin = async (password: string) => {
     try {
-      // Check if this is the first time setup (no master password set)
-      if (!passwordService.hasMasterPassword()) {
-        // First time setup - set the password
-        await passwordService.setMasterPassword(password);
+      // Use the new military encryption system for authentication
+      if (!storageService.vaultExists()) {
+        // First time setup - initialize vault with password
+        await storageService.initializeVault(password);
         setIsLocked(false);
 
         // Update vault status in Electron
@@ -252,8 +292,8 @@ function App() {
         return;
       }
 
-      // Verify the password hash against stored hash
-      const isValid = await passwordService.verifyMasterPassword(password);
+      // Unlock existing vault with password
+      const isValid = await storageService.unlockVault(password);
       if (isValid) {
         setIsLocked(false);
 
@@ -273,7 +313,10 @@ function App() {
   };
 
   const handleLock = async () => {
-    // SECURITY: Notify Electron that vault is locked first
+    // SECURITY: Lock the vault encryption first
+    storageService.lockVault();
+
+    // SECURITY: Notify Electron that vault is locked
     if (isElectron && window.electronAPI && window.electronAPI.vaultLocked) {
       await window.electronAPI.vaultLocked();
     }
@@ -377,9 +420,8 @@ function App() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `password-vault-export-${
-        new Date().toISOString().split("T")[0]
-      }.csv`;
+      a.download = `password-vault-export-${new Date().toISOString().split("T")[0]
+        }.csv`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -387,6 +429,43 @@ function App() {
     } catch (error) {
       console.error("Export failed:", error);
       alert("Failed to export data");
+    }
+  };
+
+  const handleImport = async () => {
+    try {
+      if (isLocked || !storageService.isVaultUnlocked()) {
+        alert("Unlock the vault first.");
+        return;
+      }
+
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.csv,.json,text/csv,application/json';
+      input.onchange = async () => {
+        const file = input.files?.[0];
+        if (!file) return;
+        const text = await file.text();
+        const result = importService.importContent(text);
+        if (!result.entries.length) {
+          alert('No valid entries found in file.');
+          return;
+        }
+        // Merge strategy: append new entries whose (accountName+username+password) combo not already present
+        const existingKey = new Set(entries.map(e => `${e.accountName}||${e.username}||${e.password}`));
+        const newOnes = result.entries.filter(e => !existingKey.has(`${e.accountName}||${e.username}||${e.password}`));
+        const merged = [...entries, ...newOnes];
+        await storageService.saveEntries(merged);
+        setEntries(merged);
+        if (result.warnings.length) {
+          console.warn('Import warnings:', result.warnings);
+        }
+        alert(`Imported ${newOnes.length} new entr${newOnes.length === 1 ? 'y' : 'ies'} (${result.format.toUpperCase()}).`);
+      };
+      input.click();
+    } catch (error) {
+      console.error('Import failed:', error);
+      alert('Failed to import data');
     }
   };
 
@@ -449,6 +528,7 @@ function App() {
           }}
           onLock={handleLock}
           onExport={handleExport}
+          onImport={handleImport}
         />
       </div>
     );
@@ -515,6 +595,7 @@ function App() {
           onDeleteEntry={handleDeleteEntry}
           onLock={handleLock}
           onExport={handleExport}
+          onImport={handleImport}
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}
           selectedCategory={selectedCategory}

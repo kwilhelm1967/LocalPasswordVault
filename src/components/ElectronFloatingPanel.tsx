@@ -12,6 +12,7 @@ import {
   Edit3,
   X,
   Clock,
+  FileText,
 } from "lucide-react";
 import { PasswordEntry, Category } from "../types";
 import { CategoryIcon } from "./CategoryIcon";
@@ -27,6 +28,7 @@ interface ElectronFloatingPanelProps {
   onDeleteEntry: (id: string) => void;
   onLock: () => void;
   onExport: () => void;
+  onImport: () => void;
   searchTerm: string;
   onSearchChange: (term: string) => void;
   selectedCategory: string;
@@ -42,6 +44,7 @@ export const ElectronFloatingPanel: React.FC<ElectronFloatingPanelProps> = ({
   onDeleteEntry,
   onLock,
   onExport,
+  onImport,
   searchTerm,
   onSearchChange,
   selectedCategory,
@@ -56,7 +59,7 @@ export const ElectronFloatingPanel: React.FC<ElectronFloatingPanelProps> = ({
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [autoLockTime] = useState(15);
   const [timeRemaining, setTimeRemaining] = useState(autoLockTime * 60);
-  const [positionLoaded, setPositionLoaded] = useState(false);
+  // Removed unused positionLoaded state to avoid lint errors
 
   // Load and set window position on component mount
   useEffect(() => {
@@ -67,14 +70,7 @@ export const ElectronFloatingPanel: React.FC<ElectronFloatingPanelProps> = ({
 
       // Then load position if available
       if (window.electronAPI && window.electronAPI.getFloatingPanelPosition) {
-        const position = await window.electronAPI.getFloatingPanelPosition();
-        if (
-          position &&
-          typeof position.x === "number" &&
-          typeof position.y === "number"
-        ) {
-          setPositionLoaded(true);
-        }
+        await window.electronAPI.getFloatingPanelPosition();
       }
     };
 
@@ -270,19 +266,31 @@ export const ElectronFloatingPanel: React.FC<ElectronFloatingPanelProps> = ({
             </div>
           </div>
 
-          <button
-            onClick={onMaximize}
-            className="p-2 text-slate-400 hover:text-white hover:bg-slate-700/50 rounded-lg transition-all duration-200 border border-transparent hover:border-slate-600/50 no-drag"
-            title="Maximize"
-          >
-            <Maximize2 className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-
-      {/* Enhanced Search Bar */}
-      <div className="p-4 border-b border-slate-700/50 bg-gradient-to-r from-slate-800/20 to-slate-700/20 no-drag">
-        <div className="relative group">
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={onExport}
+              className="px-2 py-1 bg-slate-700/40 hover:bg-slate-600/40 rounded text-xs flex items-center space-x-1"
+              title="Export"
+            >
+              <Download className="w-4 h-4" />
+              <span>Export</span>
+            </button>
+            <button
+              onClick={onImport}
+              className="px-2 py-1 bg-slate-700/40 hover:bg-slate-600/40 rounded text-xs flex items-center space-x-1"
+              title="Import"
+            >
+              <FileText className="w-4 h-4" />
+              <span>Import</span>
+            </button>
+            <button
+              onClick={onMaximize}
+              className="p-2 text-slate-400 hover:text-white hover:bg-slate-700/50 rounded-lg transition-all duration-200 border border-transparent hover:border-slate-600/50 no-drag"
+              title="Maximize"
+            >
+              <Maximize2 className="w-4 h-4" />
+            </button>
+          </div>
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 group-focus-within:text-blue-400 w-4 h-4 transition-colors" />
           <input
             type="text"
@@ -316,11 +324,10 @@ export const ElectronFloatingPanel: React.FC<ElectronFloatingPanelProps> = ({
             <button
               key={category.id}
               onClick={() => onCategoryChange(category.id)}
-              className={`flex items-center space-x-1.5 px-2.5 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all duration-200 no-drag border flex-shrink-0 ${
-                selectedCategory === category.id
+              className={`flex items-center space-x-1.5 px-2.5 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all duration-200 no-drag border flex-shrink-0 ${selectedCategory === category.id
                   ? "bg-gradient-to-r from-blue-600 to-blue-500 text-white border-blue-400/30 shadow-md"
                   : "bg-slate-800/60 text-slate-300 hover:bg-slate-700/60 border-slate-600/40"
-              }`}
+                }`}
             >
               <CategoryIcon
                 name={category.icon}
@@ -421,9 +428,9 @@ export const ElectronFloatingPanel: React.FC<ElectronFloatingPanelProps> = ({
               onDelete={
                 editingEntry
                   ? () => {
-                      onDeleteEntry(editingEntry.id);
-                      setEditingEntry(null);
-                    }
+                    onDeleteEntry(editingEntry.id);
+                    setEditingEntry(null);
+                  }
                   : undefined
               }
             />

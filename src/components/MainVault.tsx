@@ -28,6 +28,7 @@ interface MainVaultProps {
   onDeleteEntry: (id: string) => void;
   onLock: () => void;
   onExport: () => void;
+  onImport: () => void;
   searchTerm: string;
   onSearchChange: (term: string) => void;
   selectedCategory: string;
@@ -44,6 +45,7 @@ export const MainVault: React.FC<MainVaultProps> = ({
   onDeleteEntry,
   onLock,
   onExport,
+  onImport,
   searchTerm,
   onSearchChange,
   selectedCategory,
@@ -192,6 +194,13 @@ export const MainVault: React.FC<MainVaultProps> = ({
                 title="Export Vault"
               >
                 <Download className="w-5 h-5" />
+              </button>
+              <button
+                onClick={onImport}
+                className="p-2 text-slate-400 hover:text-white hover:bg-slate-700/50 rounded-lg transition-all"
+                title="Import Vault"
+              >
+                <FileText className="w-5 h-5" />
               </button>
 
               {onMinimize && (
@@ -705,9 +714,9 @@ export const MainVault: React.FC<MainVaultProps> = ({
               onDelete={
                 editingEntry
                   ? () => {
-                      onDeleteEntry(editingEntry.id);
-                      setEditingEntry(null);
-                    }
+                    onDeleteEntry(editingEntry.id);
+                    setEditingEntry(null);
+                  }
                   : undefined
               }
             />
