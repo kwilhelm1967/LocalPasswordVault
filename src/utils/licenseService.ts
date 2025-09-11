@@ -23,14 +23,20 @@ export class LicenseService {
   private static readonly LICENSE_KEY_STORAGE = "app_license_key";
   private static readonly LICENSE_TYPE_STORAGE = "app_license_type";
   private static readonly LICENSE_ACTIVATED_STORAGE = "app_license_activated";
-  private static readonly LAST_VALIDATION_STORAGE = "app_last_validation";
+  private static readonly LAST_VALIDATION_STORAGE = "app_last_validation"; // retained for backward compatibility
   private static readonly HARDWARE_ID_STORAGE = "app_hardware_id";
+
+  // LIFETIME MODE: Only a single API call is ever made (first activation). After that, no
+  // background / periodic / critical validations or refresh calls will hit the network.
+  // Set to false to re-enable legacy periodic validation behaviour.
+  private static readonly LIFETIME_ONE_TIME_ACTIVATION = true;
 
   // Validate once every 24 hours
   private static readonly VALIDATION_INTERVAL = 24 * 60 * 60 * 1000; // 24 hours
 
   // For critical operations, validate more frequently (1 hour)
-  private static readonly CRITICAL_VALIDATION_INTERVAL = 60 * 60 * 1000; // 1 hour
+  // Legacy constant retained for reference; unused in lifetime mode
+  // private static readonly CRITICAL_VALIDATION_INTERVAL = 60 * 60 * 1000; // 1 hour
 
   static getInstance(): LicenseService {
     if (!LicenseService.instance) {
@@ -123,7 +129,7 @@ export class LicenseService {
     );
     const lastValidation = localStorage.getItem(
       LicenseService.LAST_VALIDATION_STORAGE
-    );
+    ); // legacy leftover (ignored in lifetime mode)
 
     if (!key || !type) {
       return {
@@ -134,15 +140,15 @@ export class LicenseService {
       };
     }
 
-    // Check if we need to validate (once every 24 hours)
-    const shouldValidate =
-      !lastValidation ||
-      Date.now() - parseInt(lastValidation) >
-        LicenseService.VALIDATION_INTERVAL;
-
-    if (shouldValidate) {
-      // Run validation in background without blocking UI
-      this.validateLicenseInBackground(key);
+    // In lifetime mode we NEVER schedule or perform background validation after first activation.
+    if (!LicenseService.LIFETIME_ONE_TIME_ACTIVATION) {
+      const shouldValidate =
+        !lastValidation ||
+        Date.now() - parseInt(lastValidation) >
+          LicenseService.VALIDATION_INTERVAL;
+      if (shouldValidate) {
+        this.validateLicenseInBackground(key);
+      }
     }
 
     return {
@@ -169,57 +175,67 @@ export class LicenseService {
       // Generate hardware fingerprint for activation
       const hardwareId = await this.generateHardwareFingerprint();
 
-      // Call the API endpoint
-      const response = await fetch(
-        `${environment.environment.licenseServerUrl}/api/activate-license`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            licenseKey: cleanKey,
-            hardwareId: hardwareId,
-          }),
-        }
-      );
+      let licenseType: LicenseType | undefined;
 
-      const result = await response.json();
-      console.log(result);
+      // Only perform the activation network call the very first time (no existing license stored)
+      if (!LicenseService.LIFETIME_ONE_TIME_ACTIVATION ||
+          !localStorage.getItem(LicenseService.LICENSE_KEY_STORAGE)) {
+        const response = await fetch(
+          `${environment.environment.licenseServerUrl}/api/activate-license`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              licenseKey: cleanKey,
+              hardwareId: hardwareId,
+            }),
+          }
+        );
 
-      if (!response.ok) {
-        // Handle specific error cases
-        if (response.status === 404) {
-          return { success: false, error: "License key not found" };
-        }
-        if (response.status === 409) {
+        const result = await response.json();
+        console.log(result);
+
+        if (!response.ok) {
+          if (response.status === 404) {
+            return { success: false, error: "License key not found" };
+          }
+          if (response.status === 409) {
+            return {
+              success: false,
+              error: "License key is already activated on another device",
+            };
+          }
           return {
             success: false,
-            error: "License key is already activated on another device",
+            error: result.error || "License activation failed",
           };
         }
-        return {
-          success: false,
-          error: result.error || "License activation failed",
-        };
-      }
 
-      if (!result.success) {
-        return {
-          success: false,
-          error: result.error || "License activation failed",
-        };
+        if (!result.success) {
+          return {
+            success: false,
+            error: result.error || "License activation failed",
+          };
+        }
+        licenseType = result.licenseData.type;
+      } else {
+        // Already activated earlier and lifetime mode is ON; trust stored type
+        licenseType = (localStorage.getItem(
+          LicenseService.LICENSE_TYPE_STORAGE
+        ) as LicenseType) || undefined;
       }
-
-      // License activated successfully - store locally
-      const licenseType = result.licenseData.type;
 
       localStorage.setItem(LicenseService.LICENSE_KEY_STORAGE, cleanKey);
-      localStorage.setItem(LicenseService.LICENSE_TYPE_STORAGE, licenseType);
+      if (licenseType) {
+        localStorage.setItem(LicenseService.LICENSE_TYPE_STORAGE, licenseType);
+      }
       localStorage.setItem(
         LicenseService.LICENSE_ACTIVATED_STORAGE,
         new Date().toISOString()
       );
+      // Record initial validation timestamp (historical only). No future validations in lifetime mode.
       localStorage.setItem(
         LicenseService.LAST_VALIDATION_STORAGE,
         Date.now().toString()
@@ -251,48 +267,11 @@ export class LicenseService {
   /**
    * Validate license in background without blocking UI
    */
-  private async validateLicenseInBackground(licenseKey: string): Promise<void> {
-    try {
-      const hardwareId = await this.generateHardwareFingerprint();
-
-      const response = await fetch(
-        `${environment.environment.licenseServerUrl}/api/validate-license`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            licenseKey,
-            hardwareId,
-            timestamp: Date.now(),
-            userAgent: navigator.userAgent,
-            platform: navigator.platform,
-          }),
-        }
-      );
-
-      const result = await response.json();
-
-      if (!response.ok || !result.valid) {
-        // License is invalid - remove it
-        this.removeLicense();
-        console.warn("License validation failed:", result.error);
-        // this.removeLicense();
-        // Dispatch event to notify UI of license status change
-        window.dispatchEvent(
-          new CustomEvent("licenseStatusChanged", {
-            detail: { valid: false, reason: result.error },
-          })
-        );
-      } else {
-        // Update last validation timestamp
-        localStorage.setItem(
-          LicenseService.LAST_VALIDATION_STORAGE,
-          Date.now().toString()
-        );
-      }
-    } catch (error) {
-      // Don't fail on network errors - keep using cached license
-      console.warn("Background license validation failed:", error);
+  private async validateLicenseInBackground(_licenseKey: string): Promise<void> {
+    // Intentionally NO-OP in lifetime mode to avoid any network after activation.
+    if (!LicenseService.LIFETIME_ONE_TIME_ACTIVATION) {
+      // If legacy behaviour is re-enabled, we could restore previous implementation.
+      return;
     }
   }
 
@@ -325,57 +304,9 @@ export class LicenseService {
    * Validate license for critical operations (more frequent validation)
    */
   async validateForCriticalOperation(): Promise<boolean> {
+    // In lifetime mode critical validation is a simple local presence check.
     const key = localStorage.getItem(LicenseService.LICENSE_KEY_STORAGE);
-    if (!key) return false;
-
-    const lastValidation = localStorage.getItem(
-      LicenseService.LAST_VALIDATION_STORAGE
-    );
-    const shouldValidate =
-      !lastValidation ||
-      Date.now() - parseInt(lastValidation) >
-        LicenseService.CRITICAL_VALIDATION_INTERVAL;
-
-    if (shouldValidate) {
-      try {
-        const hardwareId = await this.generateHardwareFingerprint();
-
-        const response = await fetch(
-          `${environment.environment.licenseServerUrl}/api/validate-license`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              licenseKey: key,
-              hardwareId,
-              timestamp: Date.now(),
-              userAgent: navigator.userAgent,
-              platform: navigator.platform,
-            }),
-          }
-        );
-
-        const result = await response.json();
-
-        if (!response.ok || !result.valid) {
-          this.removeLicense();
-          return false;
-        }
-
-        localStorage.setItem(
-          LicenseService.LAST_VALIDATION_STORAGE,
-          Date.now().toString()
-        );
-        return true;
-      } catch (error) {
-        console.warn("Critical license validation failed:", error);
-        // For critical operations, err on the side of caution
-        return false;
-      }
-    }
-
-    // If we don't need to validate, assume license is still valid
-    return true;
+    return !!key;
   }
 
   /**
@@ -425,47 +356,10 @@ export class LicenseService {
    * Manually refresh license status (force validation)
    */
   async refreshLicenseStatus(): Promise<{ success: boolean; error?: string }> {
+    // Lifetime mode: nothing to refresh, license is considered valid if stored.
     const key = localStorage.getItem(LicenseService.LICENSE_KEY_STORAGE);
-    if (!key) {
-      return { success: false, error: "No license found" };
-    }
-
-    try {
-      const hardwareId = await this.generateHardwareFingerprint();
-
-      const response = await fetch(
-        `${environment.environment.licenseServerUrl}/api/validate-license`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            licenseKey: key,
-            hardwareId,
-            timestamp: Date.now(),
-            userAgent: navigator.userAgent,
-            platform: navigator.platform,
-          }),
-        }
-      );
-
-      const result = await response.json();
-
-      if (!response.ok || !result.valid) {
-        this.removeLicense();
-        return {
-          success: false,
-          error: result.error || "License validation failed",
-        };
-      }
-
-      localStorage.setItem(
-        LicenseService.LAST_VALIDATION_STORAGE,
-        Date.now().toString()
-      );
-      return { success: true };
-    } catch (error) {
-      return { success: false, error: "Unable to connect to license server" };
-    }
+    if (!key) return { success: false, error: "No license found" };
+    return { success: true };
   }
 }
 

@@ -45,7 +45,7 @@
 
 1. App runs 100% locally - NO network calls
 2. All vault data stored in browser localStorage
-3. License validation happens locally (for first time it does a single server request)
+3. License activation makes exactly ONE server request the first time. After activation the app never calls any license API again (lifetime license – fully offline).
 4. Backups are manual file exports by user
 
 ### What Stays Online vs Offline
@@ -74,18 +74,18 @@ Local Password Vault is a desktop password manager that operates **fully offline
 
 ### Network Calls Found in Code:
 
-1. **License Validation Only**: App makes network calls ONLY during license activation/validation to `licenseServerUrl` (configurable)
+1. **One-Time License Activation Only**: The app makes a single network call the first time the user activates their license. After that, NO periodic re-validation occurs.
 2. **Development Only**: `http://localhost:5173` calls only exist for development server
 3. **No Telemetry**: Zero analytics, tracking, or data collection after installation
 4. **Local Storage Only**: All vault data stays in localStorage on user's device
 
 ### Files That Make Network Calls:
 
-- `src/utils/licenseService.ts` - License activation and periodic validation (can be disabled)
+- `src/utils/licenseService.ts` - One-time license activation (lifetime mode – no periodic validation)
 - `src/utils/enhancedLicensing.ts` - Enhanced licensing features
 - `src/utils/antiPiracyService.ts` - Anti-piracy monitoring (can be disabled)
 
-**RECOMMENDATION**: For truly offline operation, disable network-based license validation in production builds.
+**STATUS**: Lifetime mode enabled. Only first activation hits the server; production builds already operate fully offline afterward.
 
 1. Ask for this full closing package
    One zip of the source code for every repo • App for Windows Mac and Linux (files are shared via the google drive) • Build scripts and configuration files (added and changes are pushed to the GitHub repo) • Any server code that handles Stripe webhooks, license generation, download delivery, and emails (everything is in GitHub codebase) • Website or landing page code (it’s hosted at card.co so I don’t have any code)
@@ -257,7 +257,7 @@ LICENSE_SERVER_URL=https://server.localpasswordvault.com
 2. **Hardware Fingerprinting**: Generated from screen, system, and browser data
 3. **Server Validation**: Calls `/api/validate-license` and `/api/activate-license`
 4. **Local Storage**: Keys stored in browser localStorage
-5. **Periodic Validation**: Every 24 hours (configurable)
+5. **Periodic Validation**: (REMOVED in lifetime mode – no further server checks after first activation)
 
 ### Device Enforcement Limitations
 
@@ -271,9 +271,9 @@ LICENSE_SERVER_URL=https://server.localpasswordvault.com
 - Users can share keys between devices if they go offline
 
 **Marketing Statement Should Say:**
-"License keys are validated during activation. For continued use, periodic internet connection required for license verification."
+"License key activates once with an internet connection. After that, the app runs forever 100% offline on that device."
 
-**NOT:** "Enforces device limits" (impossible when offline)
+**Clarification:** Device limit enforcement is not possible offline; messaging should focus on trust + single activation.
 
 ### License Key Generation Script
 
@@ -370,9 +370,9 @@ Linux: ~/.config/Local Password Vault/
 
 1. **`src/utils/licenseService.ts`**
 
-   - `activateLicense()` - Calls `/api/activate-license`
-   - `validateLicenseInBackground()` - Calls `/api/validate-license`
-   - `refreshLicenseStatus()` - Manual validation endpoint
+   - `activateLicense()` - Calls `/api/activate-license` (one-time only)
+   - `validateLicenseInBackground()` - (Disabled in lifetime mode)
+   - `refreshLicenseStatus()` - (No-op in lifetime mode)
 
 2. **`src/utils/enhancedLicensing.ts`**
 
@@ -400,7 +400,7 @@ Linux: ~/.config/Local Password Vault/
 ### ❌ FEATURES REQUIRING INTERNET
 
 - Initial license activation
-- Periodic license validation (24hr intervals)
+- Periodic license validation (REMOVED in lifetime mode)
 - Anti-piracy reporting
 - Suspicious activity monitoring
 
