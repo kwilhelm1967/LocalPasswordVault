@@ -7,7 +7,8 @@ async function saveLicensesToDatabase(
   orderId,
   status,
   paymentId = null,
-  price = 0
+  price = 0,
+  maintanancePlanBought = false
 ) {
   // Example with Supabase:
 
@@ -21,6 +22,7 @@ async function saveLicensesToDatabase(
         order_id: orderId,
         created_at: new Date().toISOString(),
         payment_id: paymentId,
+        maintanance_plan: maintanancePlanBought,
         price: price,
       },
     ]);

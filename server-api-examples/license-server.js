@@ -227,6 +227,9 @@ app.post(
       let licenseType = "single";
       let quantity = 1;
 
+      let maintanancePlanBought =
+        sessionWithLineItems.line_items.data.length > 1;
+
       switch (productId) {
         case "prod_T2AiC5qLTzeyCa":
           licenseType = "single";
@@ -277,7 +280,8 @@ app.post(
           session.id,
           "active",
           paymentId,
-          amount
+          amount,
+          maintanancePlanBought
         );
 
         // In a real implementation, send email with license keys
@@ -285,7 +289,8 @@ app.post(
           customerEmail,
           licenses,
           licenseType,
-          downloadInfo
+          downloadInfo,
+          maintanancePlanBought
         );
 
         // For now, just log the licenses

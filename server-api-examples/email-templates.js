@@ -110,7 +110,7 @@ class EmailService {
 
   // Get email template based on license type
   // ...existing code...
-  async sendWelcomeEmail(customerEmail, licenses, licenseType, downloadInfo) {
+  async sendWelcomeEmail(customerEmail, licenses, licenseType, downloadInfo, maintanancePlanBought) {
     if (!process.env.BREVO_API_KEY) {
       console.error("BREVO_API_KEY is missing");
       throw new Error("Brevo API key not configured");
@@ -154,6 +154,7 @@ class EmailService {
       DOWNLOAD_URL: downloadUrl,
       // If your template loops over keys:
       LICENSE_KEY: licenseString,
+      MAINTANANCE_STATUS: maintanancePlanBought ? "Yes" : "No",
       // If your template expects HTML and uses |safe:
       // LICENSE_KEYS_HTML: (Array.isArray(licenses) ? licenses : [licenses])
       //   .map((k) => `<strong>${k}</strong>`)
