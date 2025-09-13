@@ -268,7 +268,6 @@ export class LicenseService {
    * Validate license in background without blocking UI
    */
   private async validateLicenseInBackground(_licenseKey: string): Promise<void> {
-    // Intentionally NO-OP in lifetime mode to avoid any network after activation.
     if (!LicenseService.LIFETIME_ONE_TIME_ACTIVATION) {
       // If legacy behaviour is re-enabled, we could restore previous implementation.
       return;

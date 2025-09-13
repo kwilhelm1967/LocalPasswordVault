@@ -173,10 +173,10 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
         selectedPlan === "single"
           ? 29.99
           : selectedPlan === "pro"
-          ? 68.0
-          : selectedPlan === "family"
-          ? 49.99
-          : 99.99,
+            ? 68.0
+            : selectedPlan === "family"
+              ? 49.99
+              : 99.99,
     });
 
     // Show download instructions
@@ -256,7 +256,7 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
         </div>
       )}
 
-      <div className="max-w-4xl w-full mx-auto">
+      <div className="max-w-4xl w-full mx-auto mt-6">
         {/* Header */}
         <div className="text-center mb-8">
           <div
@@ -386,7 +386,7 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
                 </div>
 
                 {appStatus.trialInfo.isTrialActive ||
-                licenseService.canStartTrial() ? (
+                  licenseService.canStartTrial() ? (
                   <div className="space-y-4">
                     <div className="text-center">
                       <div className="text-3xl font-bold text-green-400 mb-2">
@@ -457,7 +457,16 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
                     </div>
 
                     <button
-                      onClick={onShowPricingPlans}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        if (window.electronAPI) {
+                          window.electronAPI.openExternal(
+                            "https://localpasswordvault.com"
+                          );
+                        } else {
+                          window.open("https://localpasswordvault.com", "_blank");
+                        }
+                      }}
                       className="w-full bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white py-3 px-4 rounded-lg font-medium transition-all"
                     >
                       View Pricing Plans
