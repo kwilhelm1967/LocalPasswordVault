@@ -162,10 +162,6 @@ app.get("/", (req, res) => {
               <li><code>/webhook/stripe</code> - Processes Stripe payment and subscription webhooks</li>
               <li><code>/api/validate-license</code> - Validates license keys</li>
               <li><code>/api/activate-license</code> - Activates license keys</li>
-              <li><code>/api/create-subscription</code> - Creates a trial subscription</li>
-              <li><code>/api/transfer-license</code> - Transfers license to new device</li>
-              <li><code>/api/check-updates</code> - Checks for application updates</li>
-              <li><code>/api/analytics</code> - Receives usage analytics</li>
             </ul>
           </div>
         </div>
@@ -254,18 +250,10 @@ app.get("/admin", (req, res) => {
     </style></head><body>
       <form method="POST" action="/admin/create-license">
         <h2>Create Licenses</h2>
-        <div class="tip">Default license type is <strong>single</strong>. You can change it below if needed.</div>
         <label>Email</label>
         <input type="email" name="email" placeholder="customer@example.com" required />
         <label>Amount (number of licenses)</label>
         <input type="number" name="amount" min="1" max="100" value="1" required />
-        <label>License Type (optional)</label>
-        <select name="licenseType">
-          <option value="single" selected>single</option>
-          <option value="family">family</option>
-          <option value="pro">pro</option>
-          <option value="business">business</option>
-        </select>
         <button type="submit">Create & Send</button>
       </form>
     </body></html>
@@ -503,7 +491,7 @@ app.post("/api/admin/create-license", async (req, res) => {
       return res.status(401).json({ success: false, error: "Unauthorized" });
     }
 
-    const { email, amount, licenseType } = req.body || {};
+    const { email, amount } = req.body || {};
     if (!email)
       return res.status(400).json({ success: false, error: "Email required" });
     const n = parseInt(amount, 10);
@@ -512,11 +500,17 @@ app.post("/api/admin/create-license", async (req, res) => {
         .status(400)
         .json({ success: false, error: "Amount must be 1-100" });
     }
-    const type = (licenseType || "single").toString();
+    const type = "single"; // enforce single plan
 
     const keys = [];
+    const seen = new Set();
     for (let i = 0; i < n; i++) {
-      keys.push(generateSecureLicenseKey(type, email));
+      let key;
+      do {
+        key = generateSecureLicenseKey(type, email);
+      } while (seen.has(key));
+      seen.add(key);
+      keys.push(key);
     }
 
     // Persist to DB (associate with a synthetic order/payment)
@@ -537,11 +531,16 @@ app.post("/api/admin/create-license", async (req, res) => {
       // Continue; not fatal for emailing, but report
     }
 
-    const downloadInfo = await downloadHandler.generateDownloadLink(
-      licenseType,
-      customerEmail,
-      session.id
-    );
+    let downloadInfo = { downloadUrl: null };
+    try {
+      downloadInfo = await downloadHandler.generateDownloadLink(
+        type,
+        email,
+        syntheticOrderId
+      );
+    } catch (e) {
+      console.warn("Admin download link generation failed:", e?.message || e);
+    }
 
     // Send email with keys
     try {
@@ -584,16 +583,23 @@ app.post(
       if (!isAdminAuthed(req)) {
         return res.status(401).send("Unauthorized");
       }
-      const { email, amount, licenseType } = req.body || {};
+  const { email, amount } = req.body || {};
       if (!email) return res.status(400).send("Email required");
       const n = parseInt(amount, 10);
       if (!n || n < 1 || n > 100)
         return res.status(400).send("Amount must be 1-100");
-      const type = (licenseType || "single").toString();
+      const type = "single"; // enforce single plan
 
       const keys = [];
-      for (let i = 0; i < n; i++)
-        keys.push(generateSecureLicenseKey(type, email));
+      const seen = new Set();
+      for (let i = 0; i < n; i++) {
+        let key;
+        do {
+          key = generateSecureLicenseKey(type, email);
+        } while (seen.has(key));
+        seen.add(key);
+        keys.push(key);
+      }
 
       const syntheticOrderId = `ADMIN-${Date.now()}`;
       try {
@@ -769,7 +775,9 @@ function generateSecureLicenseKey(
   const licenseData = {
     type: licenseType,
     email: customerEmail,
-    issued: Math.floor(Date.now() / 1000), // Unix timestamp
+    issued: Math.floor(Date.now() / 1000), // Unix timestamp (seconds)
+    issuedMs: Date.now(), // milliseconds precision to avoid same-second collisions
+    nonce: crypto.randomBytes(16).toString("hex"), // per-key randomness for uniqueness
     expires: expiryDate ? Math.floor(expiryDate / 1000) : null,
     version: 1, // License format version
   };
