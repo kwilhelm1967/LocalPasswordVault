@@ -13,8 +13,6 @@ A professional-grade, offline-first password management application built with R
 - **AES-256 Encryption** - Military-grade local encryption
 - **Hardware-Bound Licensing** - Prevents unauthorized distribution
 - **Master Password Protection** - Your data, your control
-- **Auto-Lock** - Automatic locking after 15 minutes of inactivity
-- **Security Questions** - Password recovery without cloud dependency
 
 ### 💻 **Cross-Platform Desktop App**
 - **Windows** - `.exe` installer and portable version
@@ -33,7 +31,6 @@ A professional-grade, offline-first password management application built with R
 - **Freemium Model** - Free version (25 passwords) + Pro upgrade
 - **License Management** - Complete licensing system included
 - **Revenue Tracking** - Built-in sales analytics
-- **Customer Support** - Comprehensive support workflows
 
 
 ## 🏗️ Technical Architecture
