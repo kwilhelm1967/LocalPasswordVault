@@ -67,7 +67,6 @@ A professional-grade, offline-first password management application built with R
 - **Zero telemetry** - No data collection
 - **Offline operation** - No internet required
 - **Local encryption** - Data never leaves your device
-- **Open source** - Full transparency
 
 ## 🛠️ Development
 
