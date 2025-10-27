@@ -76,6 +76,38 @@ class MilitaryEncryption {
     this.encryptionKey = await this.deriveKeyFromPassword(masterPassword, salt);
   }
 
+  // Generate PBKDF2 password hash for verification
+  async generatePasswordHash(masterPassword: string, salt: Uint8Array): Promise<string> {
+    const encoder = new TextEncoder();
+    const keyMaterial = await crypto.subtle.importKey(
+      "raw",
+      encoder.encode(masterPassword),
+      { name: "PBKDF2" },
+      false,
+      ["deriveBits"]
+    );
+
+    const derivedBits = await crypto.subtle.deriveBits(
+      {
+        name: "PBKDF2",
+        salt: salt.buffer as ArrayBuffer,
+        iterations: 100000,
+        hash: "SHA-256",
+      },
+      keyMaterial,
+      256 // 256-bit hash
+    );
+
+    const hashArray = new Uint8Array(derivedBits);
+    return btoa(String.fromCharCode(...hashArray));
+  }
+
+  // Verify password against stored hash
+  async verifyPasswordHash(masterPassword: string, storedHash: string, salt: Uint8Array): Promise<boolean> {
+    const computedHash = await this.generatePasswordHash(masterPassword, salt);
+    return computedHash === storedHash;
+  }
+
   // Encrypt data using AES-256-GCM
   async encryptData(plaintext: string): Promise<string> {
     if (!this.encryptionKey) {
@@ -164,39 +196,73 @@ export class StorageService {
   // Initialize vault with master password
   async initializeVault(masterPassword: string): Promise<void> {
     await this.encryption.initializeEncryption(masterPassword);
+
+    // Store password hash for verification
+    const salt = new Uint8Array(
+      atob(localStorage.getItem("vault_salt_v2") || "")
+        .split("")
+        .map((c) => c.charCodeAt(0))
+    );
+    const passwordHash = await this.encryption.generatePasswordHash(masterPassword, salt);
+    localStorage.setItem("vault_password_hash", passwordHash);
+
+    // Create test data for verification
+    const testEncrypted = await this.encryption.encryptData("vault_test_data");
+    localStorage.setItem("vault_test_v2", testEncrypted);
   }
 
   // Unlock vault with master password
   async unlockVault(masterPassword: string): Promise<boolean> {
     try {
-      await this.encryption.initializeEncryption(masterPassword);
+      // Check if this is a new vault (no password hash stored)
+      const storedPasswordHash = localStorage.getItem("vault_password_hash");
+      const storedSalt = localStorage.getItem("vault_salt_v2");
 
-      // Test decryption with a test entry if vault exists
-      if (this.encryption.vaultExists()) {
-        const testData = localStorage.getItem("vault_test_v2");
-        if (testData) {
-          const decrypted = await this.encryption.decryptData(testData);
-          if (decrypted !== "vault_test_data") {
-            return false;
-          }
-        } else {
-          // Create test data for new vault
-          const testEncrypted = await this.encryption.encryptData(
-            "vault_test_data"
-          );
-          localStorage.setItem("vault_test_v2", testEncrypted);
-        }
-      } else {
-        // New vault - create test data
-        const testEncrypted = await this.encryption.encryptData(
-          "vault_test_data"
-        );
-        localStorage.setItem("vault_test_v2", testEncrypted);
+      if (!storedPasswordHash || !storedSalt) {
+        // No vault exists - this should be handled by initializeVault
+        return false;
       }
 
-      return true;
+      // Get the salt for password verification
+      const salt = new Uint8Array(
+        atob(storedSalt)
+          .split("")
+          .map((c) => c.charCodeAt(0))
+      );
+
+      // Verify the password using PBKDF2 hash comparison
+      const isPasswordValid = await this.encryption.verifyPasswordHash(
+        masterPassword,
+        storedPasswordHash,
+        salt
+      );
+
+      if (!isPasswordValid) {
+        return false; // Password doesn't match stored hash
+      }
+
+      // Password is valid, now initialize encryption
+      await this.encryption.initializeEncryption(masterPassword);
+
+      // Verify by decrypting test data
+      const testData = localStorage.getItem("vault_test_v2");
+      if (testData) {
+        const decrypted = await this.encryption.decryptData(testData);
+        if (decrypted !== "vault_test_data") {
+          // This shouldn't happen if password hash verification passed
+          this.encryption.lockVault();
+          return false;
+        }
+      } else {
+        // Test data is missing - this indicates vault corruption
+        this.encryption.lockVault();
+        return false;
+      }
+
+      return true; // Password verified and vault unlocked successfully
     } catch (error) {
       console.error("Failed to unlock vault:", error);
+      this.encryption.lockVault(); // Ensure key is cleared on any error
       return false;
     }
   }
