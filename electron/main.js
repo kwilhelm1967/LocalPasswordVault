@@ -3,7 +3,7 @@ const path = require("path");
 const fs = require("fs");
 const { screen, powerMonitor, globalShortcut } = require("electron");
 const Positioner = require("electron-positioner");
-const isDev = process.env.NODE_ENV === "development";
+const isDev = process.env.NODE_ENV === "development" || !app.isPackaged;
 
 // Add process error handlers for debugging
 process.on("uncaughtException", (error) => {
