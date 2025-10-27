@@ -313,8 +313,8 @@ const createFloatingWindow = () => {
     // Load the floating panel page
     if (isDev) {
       floatingWindow.loadURL("http://localhost:5173/#floating");
-      // Don't show dev tools by default to prevent flashing
-      // floatingWindow.webContents.openDevTools();
+      // Enable DevTools for floating panel in development
+      floatingWindow.webContents.openDevTools();
     } else {
       floatingWindow.loadFile(path.join(__dirname, "../dist/index.html"), {
         hash: "floating",
@@ -706,7 +706,47 @@ const createMenu = () => {
       submenu: [
         { role: "reload" },
         { role: "forceReload" },
-        { role: "toggleDevTools" },
+        {
+          label: "Toggle Developer Tools",
+          accelerator: "F12",
+          click: () => {
+            // Toggle DevTools for focused window
+            const focusedWindow = BrowserWindow.getFocusedWindow();
+            if (focusedWindow) {
+              if (focusedWindow.webContents.isDevToolsOpened()) {
+                focusedWindow.webContents.closeDevTools();
+              } else {
+                focusedWindow.webContents.openDevTools();
+              }
+            }
+          },
+        },
+        {
+          label: "Toggle Main Window DevTools",
+          accelerator: "CmdOrCtrl+Shift+I",
+          click: () => {
+            if (mainWindow && !mainWindow.isDestroyed()) {
+              if (mainWindow.webContents.isDevToolsOpened()) {
+                mainWindow.webContents.closeDevTools();
+              } else {
+                mainWindow.webContents.openDevTools();
+              }
+            }
+          },
+        },
+        {
+          label: "Toggle Floating Panel DevTools",
+          accelerator: "CmdOrCtrl+Shift+D",
+          click: () => {
+            if (floatingWindow && !floatingWindow.isDestroyed()) {
+              if (floatingWindow.webContents.isDevToolsOpened()) {
+                floatingWindow.webContents.closeDevTools();
+              } else {
+                floatingWindow.webContents.openDevTools();
+              }
+            }
+          },
+        },
         { type: "separator" },
         { role: "resetZoom" },
         { role: "zoomIn" },
@@ -1230,6 +1270,9 @@ ipcMain.handle("show-main-window", () => {
   return false;
 });
 
+// Shared data storage in main process
+let sharedEntries = null;
+
 // Entries synchronization IPC handlers
 ipcMain.handle("broadcast-entries-changed", () => {
   try {
@@ -1243,6 +1286,45 @@ ipcMain.handle("broadcast-entries-changed", () => {
     return true;
   } catch (error) {
     console.error("Failed to broadcast entries changed:", error);
+    return false;
+  }
+});
+
+// Save entries to shared storage
+ipcMain.handle("save-shared-entries", (event, entries) => {
+  try {
+    sharedEntries = entries;
+    console.log("Entries saved to shared storage:", entries.length);
+    return true;
+  } catch (error) {
+    console.error("Failed to save shared entries:", error);
+    return false;
+  }
+});
+
+// Load entries from shared storage
+ipcMain.handle("load-shared-entries", () => {
+  try {
+    console.log("Loading entries from shared storage:", sharedEntries ? sharedEntries.length : 0);
+    return sharedEntries || [];
+  } catch (error) {
+    console.error("Failed to load shared entries:", error);
+    return [];
+  }
+});
+
+// Get vault status
+ipcMain.handle("get-vault-status", () => {
+  return isVaultUnlocked;
+});
+
+// Initialize vault in floating window using existing localStorage data
+ipcMain.handle("sync-vault-to-floating", async () => {
+  try {
+    console.log("Syncing vault state to floating window");
+    return true;
+  } catch (error) {
+    console.error("Failed to sync vault to floating window:", error);
     return false;
   }
 });

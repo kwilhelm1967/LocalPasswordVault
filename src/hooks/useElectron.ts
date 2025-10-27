@@ -48,11 +48,30 @@ export const useElectron = () => {
     };
   }, []);
 
+  // Shared data methods
+  const saveSharedEntries = async (entries: any[]) => {
+    if (!window.electronAPI?.saveSharedEntries) return false;
+    return await window.electronAPI.saveSharedEntries(entries);
+  };
+
+  const loadSharedEntries = async () => {
+    if (!window.electronAPI?.loadSharedEntries) return [];
+    return await window.electronAPI.loadSharedEntries();
+  };
+
+  const broadcastEntriesChanged = async () => {
+    if (!window.electronAPI?.broadcastEntriesChanged) return false;
+    return await window.electronAPI.broadcastEntriesChanged();
+  };
+
   return {
     isElectron,
     version,
     platform,
     electronAPI: window.electronAPI,
     isVaultUnlocked,
+    saveSharedEntries,
+    loadSharedEntries,
+    broadcastEntriesChanged,
   };
 };

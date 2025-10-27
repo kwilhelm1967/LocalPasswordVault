@@ -55,6 +55,14 @@ contextBridge.exposeInMainWorld("electronAPI", {
   // Entries synchronization across windows
   broadcastEntriesChanged: () =>
     ipcRenderer.invoke("broadcast-entries-changed"),
+  saveSharedEntries: (entries) =>
+    ipcRenderer.invoke("save-shared-entries", entries),
+  loadSharedEntries: () =>
+    ipcRenderer.invoke("load-shared-entries"),
+  getVaultStatus: () =>
+    ipcRenderer.invoke("get-vault-status"),
+  syncVaultToFloating: () =>
+    ipcRenderer.invoke("sync-vault-to-floating"),
   onEntriesChanged: (callback) => {
     // Remove any existing listeners to prevent duplicates
     ipcRenderer.removeAllListeners("entries-changed");

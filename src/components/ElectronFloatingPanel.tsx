@@ -17,6 +17,7 @@ import {
 import { PasswordEntry, Category } from "../types";
 import { CategoryIcon } from "./CategoryIcon";
 import { EntryForm } from "./EntryForm";
+import { storageService } from "../utils/storage";
 
 interface ElectronFloatingPanelProps {
   entries: PasswordEntry[];
@@ -34,6 +35,7 @@ interface ElectronFloatingPanelProps {
   selectedCategory: string;
   onCategoryChange: (category: string) => void;
   onMaximize: () => void;
+  onEntriesReload?: (entries: PasswordEntry[]) => void;
 }
 
 export const ElectronFloatingPanel: React.FC<ElectronFloatingPanelProps> = ({
@@ -50,6 +52,7 @@ export const ElectronFloatingPanel: React.FC<ElectronFloatingPanelProps> = ({
   selectedCategory,
   onCategoryChange,
   onMaximize,
+  onEntriesReload,
 }) => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingEntry, setEditingEntry] = useState<PasswordEntry | null>(null);
@@ -60,9 +63,97 @@ export const ElectronFloatingPanel: React.FC<ElectronFloatingPanelProps> = ({
   const [autoLockTime] = useState(15);
   const [timeRemaining, setTimeRemaining] = useState(null);
   const [timerActive, setTimerActive] = useState(false);
+  const [isMainVaultUnlocked, setIsMainVaultUnlocked] = useState(false);
   // Removed unused positionLoaded state to avoid lint errors
 
-  // Load and set window position on component mount
+  // Initialize floating panel vault when vault is unlocked in main window
+  useEffect(() => {
+    const initializeFloatingVault = async () => {
+      if (window.electronAPI && window.electronAPI.getVaultStatus) {
+        try {
+          const mainVaultStatus = await window.electronAPI.getVaultStatus();
+          console.log("Floating panel: Main vault unlocked status:", mainVaultStatus);
+          setIsMainVaultUnlocked(mainVaultStatus);
+
+          if (mainVaultStatus && !storageService.isVaultUnlocked()) {
+            console.log("Floating panel: Attempting to sync with main vault");
+            // Try to initialize the floating panel's vault using existing data
+            await window.electronAPI.syncVaultToFloating();
+            // Load entries from shared storage
+            const sharedEntries = await window.electronAPI.loadSharedEntries();
+            if (sharedEntries && sharedEntries.length > 0) {
+              console.log("Floating panel: Loaded shared entries:", sharedEntries.length);
+              onEntriesReload?.(sharedEntries.map((entry: any) => ({
+                ...entry,
+                createdAt: new Date(entry.createdAt),
+                updatedAt: new Date(entry.updatedAt),
+              })));
+            }
+          }
+        } catch (error) {
+          console.error("Failed to initialize floating vault:", error);
+        }
+      }
+    };
+
+    initializeFloatingVault();
+  }, [onEntriesReload]);
+
+  // Handle vault status changes
+  useEffect(() => {
+    if (!window.electronAPI?.onVaultStatusChange) return;
+
+    const handleVaultStatusChange = async (_event: any, unlocked: boolean) => {
+      console.log("Floating panel: Vault status changed", unlocked);
+      setIsMainVaultUnlocked(unlocked);
+
+      if (unlocked) {
+        // Vault was unlocked in another window, reload data
+        try {
+          const sharedEntries = await window.electronAPI.loadSharedEntries();
+          if (sharedEntries && sharedEntries.length > 0) {
+            console.log("Floating panel: Reloaded entries after vault unlock:", sharedEntries.length);
+            onEntriesReload?.(sharedEntries.map((entry: any) => ({
+              ...entry,
+              createdAt: new Date(entry.createdAt),
+              updatedAt: new Date(entry.updatedAt),
+            })));
+          }
+        } catch (error) {
+          console.error("Failed to handle vault unlock in floating panel:", error);
+        }
+      }
+    };
+
+    window.electronAPI.onVaultStatusChange(handleVaultStatusChange);
+    return () => {
+      window.electronAPI?.removeVaultStatusListener?.();
+    };
+  }, [onEntriesReload]);
+
+  // Handle cross-window synchronization
+  useEffect(() => {
+    if (!window.electronAPI?.onEntriesChanged) return;
+
+    const handleEntriesChanged = async () => {
+      try {
+        // Only reload if vault is unlocked
+        if (storageService.isVaultUnlocked()) {
+          console.log("Floating panel: Entries changed event received");
+          // Reload entries when data changes in other windows
+          const loadedEntries = await storageService.loadEntries();
+          onEntriesReload?.(loadedEntries);
+        }
+      } catch (error) {
+        console.error("Failed to reload entries in floating panel:", error);
+      }
+    };
+
+    window.electronAPI.onEntriesChanged(handleEntriesChanged);
+    return () => {
+      window.electronAPI?.removeEntriesChangedListener?.(handleEntriesChanged);
+    };
+  }, [onEntriesReload]);
   useEffect(() => {
     const initializeFloatingPanel = async () => {
       if (window.electronAPI && window.electronAPI.setAlwaysOnTop) {
@@ -243,18 +334,30 @@ export const ElectronFloatingPanel: React.FC<ElectronFloatingPanelProps> = ({
     setFavorites(newFavorites);
   };
 
-  const handleAddEntry = (
+  const handleAddEntry = async (
     entryData: Omit<PasswordEntry, "id" | "createdAt" | "updatedAt">
   ) => {
-    onAddEntry(entryData);
+    // Check if main vault is unlocked (floating panel relies on main window's vault state)
+    if (!isMainVaultUnlocked) {
+      console.error("Cannot add entry: Main vault is locked");
+      return;
+    }
+
+    await onAddEntry(entryData);
     setShowAddForm(false);
   };
 
-  const handleUpdateEntry = (
+  const handleUpdateEntry = async (
     entryData: Omit<PasswordEntry, "id" | "createdAt" | "updatedAt">
   ) => {
+    // Check if main vault is unlocked (floating panel relies on main window's vault state)
+    if (!isMainVaultUnlocked) {
+      console.error("Cannot update entry: Main vault is locked");
+      return;
+    }
+
     if (editingEntry) {
-      onUpdateEntry({ ...editingEntry, ...entryData, updatedAt: new Date() });
+      await onUpdateEntry({ ...editingEntry, ...entryData, updatedAt: new Date() });
       setEditingEntry(null);
     }
   };
@@ -596,13 +699,13 @@ const EntryItem: React.FC<EntryItemProps> = ({
               <h4 className="font-bold text-white text-base mb-2 truncate group-hover:text-blue-200 transition-colors duration-300">
                 {entry.accountName}
               </h4>
-              <p className="text-slate-300 text-sm truncate flex items-center font-medium">
+              <div className="text-slate-300 text-sm truncate flex items-center font-medium">
                 <div className="relative">
                   <span className="absolute inset-0 bg-green-400 rounded-full blur-md opacity-60 animate-pulse"></span>
                   <span className="relative w-2.5 h-2.5 bg-green-400 rounded-full mr-3 shadow-lg shadow-green-400/50"></span>
                 </div>
                 {entry.username}
-              </p>
+              </div>
             </div>
           </div>
 

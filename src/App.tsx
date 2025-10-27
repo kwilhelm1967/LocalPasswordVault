@@ -72,37 +72,80 @@ const useDarkTheme = () => {
 };
 
 // Custom hook for vault data management
-const useVaultData = (isLocked: boolean, isElectron: boolean) => {
+const useVaultData = (isLocked: boolean, isElectron: boolean, loadSharedEntries?: () => Promise<any[]>, saveSharedEntries?: (entries: PasswordEntry[]) => Promise<boolean>) => {
   const [entries, setEntries] = useState<PasswordEntry[]>([]);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   const loadEntries = useCallback(async () => {
     if (isLocked || !storageService.isVaultUnlocked()) {
       setEntries([]);
+      setIsInitialized(true);
       return;
     }
 
     try {
-      const loadedEntries = await storageService.loadEntries();
+      let loadedEntries: PasswordEntry[] = [];
+
+      // In Electron, try to load from shared storage first
+      if (isElectron && loadSharedEntries) {
+        try {
+          const sharedEntries = await loadSharedEntries();
+          if (sharedEntries && sharedEntries.length > 0) {
+            console.log("Loading entries from shared storage:", sharedEntries.length);
+            loadedEntries = sharedEntries.map((entry: any) => ({
+              ...entry,
+              createdAt: new Date(entry.createdAt),
+              updatedAt: new Date(entry.updatedAt),
+            }));
+            // Also save to localStorage as backup
+            await storageService.saveEntries(loadedEntries);
+          }
+        } catch (error) {
+          console.log("Failed to load from shared storage, using localStorage");
+        }
+      }
+
+      // If no shared entries or failed to load, use localStorage
+      if (loadedEntries.length === 0) {
+        loadedEntries = await storageService.loadEntries();
+        console.log("Loading entries from localStorage:", loadedEntries.length);
+
+        // Save to shared storage if we're in Electron and we have entries
+        if (isElectron && saveSharedEntries && loadedEntries && loadedEntries.length > 0) {
+          try {
+            await saveSharedEntries(loadedEntries);
+            console.log("Saved entries to shared storage:", loadedEntries.length);
+          } catch (error) {
+            console.log("Failed to save to shared storage");
+          }
+        }
+      }
+
       setEntries(loadedEntries || []);
+      setIsInitialized(true);
 
       // Ensure fixed categories are saved
       await storageService.saveCategories(FIXED_CATEGORIES);
     } catch (error) {
       console.error("Failed to load entries:", error);
       setEntries([]);
+      setIsInitialized(true);
       if (error instanceof Error && error.message?.includes("locked")) {
         throw error;
       }
     }
-  }, [isLocked]);
+  }, [isLocked, isElectron, loadSharedEntries, saveSharedEntries]);
 
+  // Initial load only
   useEffect(() => {
-    loadEntries();
-  }, [loadEntries]);
+    if (!isInitialized) {
+      loadEntries();
+    }
+  }, [loadEntries, isInitialized]);
 
-  // Handle cross-window synchronization
+  // Handle cross-window synchronization (only after initial load)
   useEffect(() => {
-    if (!isElectron || !window.electronAPI?.onEntriesChanged) return;
+    if (!isElectron || !window.electronAPI?.onEntriesChanged || !isInitialized) return;
 
     const handleEntriesChanged = async () => {
       try {
@@ -110,8 +153,25 @@ const useVaultData = (isLocked: boolean, isElectron: boolean) => {
           setEntries([]);
           return;
         }
-        const loadedEntries = await storageService.loadEntries();
-        setEntries(loadedEntries || []);
+
+        console.log("Entries changed event received, reloading from shared storage");
+        // Reload from shared storage
+        if (loadSharedEntries) {
+          const sharedEntries = await loadSharedEntries();
+          if (sharedEntries) {
+            const mappedEntries = sharedEntries.map((entry: any) => ({
+              ...entry,
+              createdAt: new Date(entry.createdAt),
+              updatedAt: new Date(entry.updatedAt),
+            }));
+            setEntries(mappedEntries);
+            // Also update localStorage
+            await storageService.saveEntries(mappedEntries);
+          }
+        } else {
+          const loadedEntries = await storageService.loadEntries();
+          setEntries(loadedEntries || []);
+        }
       } catch (error) {
         console.error("Failed to reload entries:", error);
         setEntries([]);
@@ -122,7 +182,14 @@ const useVaultData = (isLocked: boolean, isElectron: boolean) => {
     return () => {
       window.electronAPI?.removeEntriesChangedListener?.(handleEntriesChanged);
     };
-  }, [isElectron, isLocked]);
+  }, [isElectron, isLocked, loadSharedEntries, isInitialized]);
+
+  // Reset initialization when vault locks/unlocks
+  useEffect(() => {
+    if (isLocked) {
+      setIsInitialized(false);
+    }
+  }, [isLocked]);
 
   return { entries, setEntries, loadEntries };
 };
@@ -186,13 +253,15 @@ const useVaultStatusSync = (isElectron: boolean, setIsLocked: (locked: boolean) 
 const useEntryManagement = (
   entries: PasswordEntry[],
   setEntries: (entries: PasswordEntry[]) => void,
-  isElectron: boolean
+  isElectron: boolean,
+  saveSharedEntries?: (entries: PasswordEntry[]) => Promise<boolean>,
+  broadcastEntriesChanged?: () => Promise<boolean>
 ) => {
-  const broadcastChange = useCallback(() => {
-    if (isElectron && window.electronAPI?.broadcastEntriesChanged) {
-      window.electronAPI.broadcastEntriesChanged();
+  const broadcastChange = useCallback(async () => {
+    if (isElectron && broadcastEntriesChanged) {
+      await broadcastEntriesChanged();
     }
-  }, [isElectron]);
+  }, [isElectron, broadcastEntriesChanged]);
 
   const handleAddEntry = useCallback(async (
     entryData: Omit<PasswordEntry, "id" | "createdAt" | "updatedAt">
@@ -213,13 +282,32 @@ const useEntryManagement = (
     setEntries(updatedEntries);
 
     try {
-      await storageService.saveEntries(updatedEntries);
-      broadcastChange();
+      // Check if we're in floating mode and vault is locked in this window
+      const isFloatingMode = window.location.hash === "#floating";
+      const isVaultLockedLocally = !storageService.isVaultUnlocked();
+
+      if (isElectron && isFloatingMode && isVaultLockedLocally) {
+        // In floating panel with locked local storage, only save to shared storage
+        console.log("Floating panel: Saving only to shared storage");
+        if (saveSharedEntries) {
+          await saveSharedEntries(updatedEntries);
+        }
+      } else {
+        // Normal save to localStorage and shared storage
+        await storageService.saveEntries(updatedEntries);
+
+        // Also save to shared storage in Electron
+        if (isElectron && saveSharedEntries) {
+          await saveSharedEntries(updatedEntries);
+        }
+      }
+
+      await broadcastChange();
     } catch (error) {
       console.error("Failed to add entry:", error);
       setEntries(entries); // Rollback on error
     }
-  }, [entries, setEntries, broadcastChange]);
+  }, [entries, setEntries, broadcastChange, isElectron, saveSharedEntries]);
 
   const handleUpdateEntry = useCallback(async (updatedEntry: PasswordEntry) => {
     const updatedEntries = entries.map((entry) =>
@@ -231,32 +319,70 @@ const useEntryManagement = (
     setEntries(updatedEntries);
 
     try {
-      await storageService.saveEntries(updatedEntries);
-      broadcastChange();
+      // Check if we're in floating mode and vault is locked in this window
+      const isFloatingMode = window.location.hash === "#floating";
+      const isVaultLockedLocally = !storageService.isVaultUnlocked();
+
+      if (isElectron && isFloatingMode && isVaultLockedLocally) {
+        // In floating panel with locked local storage, only save to shared storage
+        console.log("Floating panel: Updating only in shared storage");
+        if (saveSharedEntries) {
+          await saveSharedEntries(updatedEntries);
+        }
+      } else {
+        // Normal save to localStorage and shared storage
+        await storageService.saveEntries(updatedEntries);
+
+        // Also save to shared storage in Electron
+        if (isElectron && saveSharedEntries) {
+          await saveSharedEntries(updatedEntries);
+        }
+      }
+
+      await broadcastChange();
     } catch (error) {
       console.error("Failed to update entry:", error);
       setEntries(entries); // Rollback on error
     }
-  }, [entries, setEntries, broadcastChange]);
+  }, [entries, setEntries, broadcastChange, isElectron, saveSharedEntries]);
 
   const handleDeleteEntry = useCallback(async (id: string) => {
     const updatedEntries = entries.filter((entry) => entry.id !== id);
     setEntries(updatedEntries);
 
     try {
-      await storageService.saveEntries(updatedEntries);
-      broadcastChange();
+      // Check if we're in floating mode and vault is locked in this window
+      const isFloatingMode = window.location.hash === "#floating";
+      const isVaultLockedLocally = !storageService.isVaultUnlocked();
+
+      if (isElectron && isFloatingMode && isVaultLockedLocally) {
+        // In floating panel with locked local storage, only save to shared storage
+        console.log("Floating panel: Deleting only from shared storage");
+        if (saveSharedEntries) {
+          await saveSharedEntries(updatedEntries);
+        }
+      } else {
+        // Normal save to localStorage and shared storage
+        await storageService.saveEntries(updatedEntries);
+
+        // Also save to shared storage in Electron
+        if (isElectron && saveSharedEntries) {
+          await saveSharedEntries(updatedEntries);
+        }
+      }
+
+      await broadcastChange();
     } catch (error) {
       console.error("Failed to delete entry:", error);
       setEntries(entries); // Rollback on error
     }
-  }, [entries, setEntries, broadcastChange]);
+  }, [entries, setEntries, broadcastChange, isElectron, saveSharedEntries]);
 
   return { handleAddEntry, handleUpdateEntry, handleDeleteEntry };
 };
 
 function App() {
-  const { isElectron, isVaultUnlocked } = useElectron();
+  const { isElectron, isVaultUnlocked, saveSharedEntries, loadSharedEntries, broadcastEntriesChanged } = useElectron();
   const { appStatus, updateAppStatus } = useAppStatus();
   const [isLocked, setIsLocked] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -269,14 +395,16 @@ function App() {
   const [showTrialTestingTools, setShowTrialTestingTools] = useState(false);
 
   useDarkTheme();
-  const { entries, setEntries } = useVaultData(isLocked, isElectron);
+  const { entries, setEntries, loadEntries } = useVaultData(isLocked, isElectron, loadSharedEntries, saveSharedEntries);
   const isFloatingMode = useFloatingMode(isElectron);
   useVaultStatusSync(isElectron, setIsLocked);
 
   const { handleAddEntry, handleUpdateEntry, handleDeleteEntry } = useEntryManagement(
     entries,
     setEntries,
-    isElectron
+    isElectron,
+    saveSharedEntries,
+    broadcastEntriesChanged
   );
 
   const handleLock = useCallback(async () => {
@@ -407,6 +535,10 @@ function App() {
     }
   }, [showDownloadPage]);
 
+  const handleEntriesReload = useCallback(async (reloadedEntries: PasswordEntry[]) => {
+    setEntries(reloadedEntries);
+  }, [setEntries]);
+
   const floatingPanelProps = useMemo(() => ({
     entries,
     categories: FIXED_CATEGORIES,
@@ -420,7 +552,8 @@ function App() {
     onLock: handleLock,
     onExport: handleExport,
     onImport: handleImport,
-  }), [entries, handleAddEntry, handleUpdateEntry, handleDeleteEntry, searchTerm, selectedCategory, handleLock, handleExport, handleImport]);
+    onEntriesReload: handleEntriesReload,
+  }), [entries, handleAddEntry, handleUpdateEntry, handleDeleteEntry, searchTerm, selectedCategory, handleLock, handleExport, handleImport, handleEntriesReload]);
 
   const mainVaultProps = useMemo(() => ({
     ...floatingPanelProps,
