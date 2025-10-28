@@ -403,7 +403,7 @@ function App() {
   const [showTrialTestingTools, setShowTrialTestingTools] = useState(false);
 
   useDarkTheme();
-  const { entries, setEntries, loadEntries } = useVaultData(isLocked, isElectron, loadSharedEntries, saveSharedEntries);
+  const { entries, setEntries } = useVaultData(isLocked, isElectron, loadSharedEntries, saveSharedEntries);
   const isFloatingMode = useFloatingMode(isElectron);
   useVaultStatusSync(isElectron, setIsLocked);
 
