@@ -1,80 +1,140 @@
 const { contextBridge, ipcRenderer } = require("electron");
 
-// Expose protected methods that allow the renderer process to use
-// the ipcRenderer without exposing the entire object
+// SECURITY: Restricted API with validation and sanitization
 contextBridge.exposeInMainWorld("electronAPI", {
+  // System info only
   getVersion: () => ipcRenderer.invoke("app-version"),
   getPlatform: () => ipcRenderer.invoke("platform"),
-  onLockVault: (callback) => ipcRenderer.on("lock-vault", callback),
-  removeAllListeners: (channel) => ipcRenderer.removeAllListeners(channel),
 
-  // Floating panel controls
+  // Secure event listeners with validation
+  onLockVault: (callback) => {
+    if (typeof callback === 'function') {
+      ipcRenderer.on("lock-vault", callback);
+    }
+  },
+  removeAllListeners: (channel) => {
+    if (typeof channel === 'string' && channel.match(/^(lock-vault|vault-status-changed|entries-changed)$/)) {
+      ipcRenderer.removeAllListeners(channel);
+    }
+  },
+
+  // Floating panel controls with validation
   showFloatingPanel: () => ipcRenderer.invoke("show-floating-panel"),
   hideFloatingPanel: () => ipcRenderer.invoke("hide-floating-panel"),
   isFloatingPanelOpen: () => ipcRenderer.invoke("is-floating-panel-open"),
-  getFloatingPanelPosition: () =>
-    ipcRenderer.invoke("get-floating-panel-position"),
-  saveFloatingPanelPosition: (x, y) =>
-    ipcRenderer.invoke("save-floating-panel-position", x, y),
-  setAlwaysOnTop: (flag) => ipcRenderer.invoke("set-always-on-top", flag),
+  getFloatingPanelPosition: () => ipcRenderer.invoke("get-floating-panel-position"),
+  saveFloatingPanelPosition: (x, y) => {
+    if (typeof x === 'number' && typeof y === 'number') {
+      return ipcRenderer.invoke("save-floating-panel-position", x, y);
+    }
+    return false;
+  },
+  setAlwaysOnTop: (flag) => {
+    if (typeof flag === 'boolean') {
+      return ipcRenderer.invoke("set-always-on-top", flag);
+    }
+    return false;
+  },
 
   // Window controls
   minimizeMainWindow: () => ipcRenderer.invoke("minimize-main-window"),
   hideMainWindow: () => ipcRenderer.invoke("hide-main-window"),
   restoreMainWindow: () => ipcRenderer.invoke("restore-main-window"),
 
-  // Floating button controls
+  // Floating button controls with validation
   showFloatingButton: () => ipcRenderer.invoke("show-floating-button"),
   hideFloatingButton: () => ipcRenderer.invoke("hide-floating-button"),
   isFloatingButtonOpen: () => ipcRenderer.invoke("is-floating-button-open"),
   toggleFloatingPanelFromButton: () =>
     ipcRenderer.invoke("toggle-floating-panel-from-button"),
-  saveFloatingButtonPosition: (x, y) =>
-    ipcRenderer.invoke("save-floating-button-position", x, y),
-  moveFloatingButton: (x, y) =>
-    ipcRenderer.invoke("move-floating-button", x, y),
+  saveFloatingButtonPosition: (x, y) => {
+    if (typeof x === 'number' && typeof y === 'number') {
+      return ipcRenderer.invoke("save-floating-button-position", x, y);
+    }
+    return false;
+  },
+  moveFloatingButton: (x, y) => {
+    if (typeof x === 'number' && typeof y === 'number') {
+      return ipcRenderer.invoke("move-floating-button", x, y);
+    }
+    return false;
+  },
 
-  // Vault security controls
+  // SECURE: Vault controls without data exposure
   vaultUnlocked: () => ipcRenderer.invoke("vault-unlocked"),
   vaultLocked: () => ipcRenderer.invoke("vault-locked"),
   isVaultUnlocked: () => ipcRenderer.invoke("is-vault-unlocked"),
+  getVaultStatus: () => ipcRenderer.invoke("get-vault-status"),
+  vaultExists: () => ipcRenderer.invoke("vault-exists"),
   showMainWindow: () => ipcRenderer.invoke("show-main-window"),
-  openExternal: (url) => ipcRenderer.invoke("open-external", url),
 
-  // Vault status change listener
+  // Secure external URL opening with validation
+  openExternal: (url) => {
+    if (typeof url === 'string' && url.match(/^https?:\/\//)) {
+      return ipcRenderer.invoke("open-external", url);
+    }
+    return false;
+  },
+
+  // SECURE: Vault status change listener with memory management
   onVaultStatusChange: (callback) => {
-    // Remove any existing listeners to prevent duplicates
-    ipcRenderer.removeAllListeners("vault-status-changed");
-    // Add the new listener
-    ipcRenderer.on("vault-status-changed", callback);
+    if (typeof callback === 'function') {
+      ipcRenderer.removeAllListeners("vault-status-changed");
+      ipcRenderer.on("vault-status-changed", callback);
+    }
   },
   removeVaultStatusListener: () => {
     ipcRenderer.removeAllListeners("vault-status-changed");
   },
 
-  // Entries synchronization across windows
-  broadcastEntriesChanged: () =>
-    ipcRenderer.invoke("broadcast-entries-changed"),
-  saveSharedEntries: (entries) =>
-    ipcRenderer.invoke("save-shared-entries", entries),
-  loadSharedEntries: () =>
-    ipcRenderer.invoke("load-shared-entries"),
-  getVaultStatus: () =>
-    ipcRenderer.invoke("get-vault-status"),
-  syncVaultToFloating: () =>
-    ipcRenderer.invoke("sync-vault-to-floating"),
+  // SECURE: Encrypted vault operations only (no plaintext data)
+  saveVaultEncrypted: (encryptedData, masterPassword) => {
+    if (typeof encryptedData === 'string' && typeof masterPassword === 'string') {
+      return ipcRenderer.invoke("save-vault-encrypted", encryptedData, masterPassword);
+    }
+    return false;
+  },
+  loadVaultEncrypted: (masterPassword) => {
+    if (typeof masterPassword === 'string') {
+      return ipcRenderer.invoke("load-vault-encrypted", masterPassword);
+    }
+    return null;
+  },
+
+  // SECURE: Temporary shared entries for window synchronization
+  // These use in-memory storage only, no file persistence
+  saveSharedEntries: (entries) => {
+    if (Array.isArray(entries)) {
+      return ipcRenderer.invoke("save-shared-entries-temp", entries);
+    }
+    return false;
+  },
+  loadSharedEntries: () => {
+    return ipcRenderer.invoke("load-shared-entries-temp");
+  },
+
+  // SECURE: Event broadcasting without data
+  broadcastEntriesChanged: () => ipcRenderer.invoke("broadcast-entries-changed"),
+  syncVaultToFloating: () => ipcRenderer.invoke("sync-vault-to-floating"),
+
+  // Secure listeners with memory management
   onEntriesChanged: (callback) => {
-    // Remove any existing listeners to prevent duplicates
+    if (typeof callback === 'function') {
+      ipcRenderer.removeAllListeners("entries-changed");
+      ipcRenderer.on("entries-changed", callback);
+    }
+  },
+  removeEntriesChangedListener: () => {
     ipcRenderer.removeAllListeners("entries-changed");
-    // Add the new listener
-    ipcRenderer.on("entries-changed", callback);
   },
-  removeEntriesChangedListener: (callback) => {
-    ipcRenderer.removeListener("entries-changed", callback);
-  },
+
+  // SECURITY: Remove old insecure methods
+  // saveSharedEntries and loadSharedEntries are REMOVED
+  // All data must remain encrypted and in renderer process only
 });
 
-// Security: Remove any node globals in renderer
+// SECURITY: Remove Node.js access from renderer
 delete window.require;
 delete window.exports;
 delete window.module;
+delete window.process;

@@ -36,3 +36,4 @@ release/
 .cache/
 pnpm-lock.yaml
 pnpm-workspace.yaml
+CLAUDE.md

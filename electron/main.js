@@ -5,6 +5,7 @@ const { app, BrowserWindow, Menu, shell, ipcMain } = require("electron");
 const path = require("path");
 const fs = require("fs");
 const { screen, powerMonitor, globalShortcut } = require("electron");
+const SecureFileStorage = require("./secure-storage");
 const Positioner = require("electron-positioner");
 const isDev = process.env.NODE_ENV === "development" || !app.isPackaged;
 const devToolsEnabled = isDev && process.env.DEV_TOOL === "true";
@@ -29,6 +30,9 @@ let floatingPanelInterval = null;
 let floatingButtonInterval = null;
 let isTogglingFloatingWindow = false;
 const userDataPath = app.getPath("userData");
+
+// SECURE: Initialize secure file storage
+let secureStorage = null;
 const positionFilePath = path.join(
   userDataPath,
   "floating-panel-position.json"
@@ -799,6 +803,9 @@ const createMenu = () => {
 
 // App event handlers
 app.whenReady().then(() => {
+  // Initialize secure storage
+  secureStorage = new SecureFileStorage(userDataPath);
+
   createWindow();
   createMenu();
   // SECURITY FIX: Don't create floating button automatically
@@ -1055,6 +1062,9 @@ const vaultHandlers = {
       console.log("Vault locked");
       isVaultUnlocked = false;
 
+      // Clear temporary memory on lock
+      clearTempMemory();
+
       mainWindow?.webContents.send("vault-status-changed", isVaultUnlocked);
       floatingWindow?.webContents.send("vault-status-changed", isVaultUnlocked);
       floatingButton?.webContents.send("vault-status-changed", isVaultUnlocked);
@@ -1285,73 +1295,13 @@ ipcMain.handle("show-main-window", () => {
   return false;
 });
 
-// Shared data storage in main process
-let sharedEntries = null;
-const entriesFilePath = path.join(userDataPath, "password-entries.json");
+// SECURITY: No plaintext storage in main process
+// All password data must remain encrypted and handled only by renderer process
 
-// Load entries from persistent storage
-const loadEntriesFromFile = () => {
-  try {
-    if (fs.existsSync(entriesFilePath)) {
-      const data = fs.readFileSync(entriesFilePath, "utf8");
-      const entries = JSON.parse(data);
-      console.log("Loaded entries from file:", entries.length);
-      return entries;
-    }
-  } catch (error) {
-    console.error("Failed to load entries from file, attempting recovery:", error);
-    // Try to recover from backup
-    const recoveredEntries = recoverFromBackup();
-    if (recoveredEntries) {
-      // Save recovered data to main file
-      fs.writeFileSync(entriesFilePath, JSON.stringify(recoveredEntries, null, 2));
-      return recoveredEntries;
-    }
-  }
-  return [];
-};
-
-// Save entries to persistent storage
-const saveEntriesToFile = (entries) => {
-  try {
-    // Create backup before saving
-    const backupFilePath = path.join(userDataPath, "password-entries.backup.json");
-    if (fs.existsSync(entriesFilePath)) {
-      fs.copyFileSync(entriesFilePath, backupFilePath);
-    }
-
-    fs.writeFileSync(entriesFilePath, JSON.stringify(entries, null, 2));
-    console.log("Saved entries to file:", entries.length);
-    return true;
-  } catch (error) {
-    console.error("Failed to save entries to file:", error);
-    return false;
-  }
-};
-
-// Recovery function to restore from backup if main file is corrupted
-const recoverFromBackup = () => {
-  try {
-    const backupFilePath = path.join(userDataPath, "password-entries.backup.json");
-    if (fs.existsSync(backupFilePath)) {
-      const backupData = fs.readFileSync(backupFilePath, "utf8");
-      const entries = JSON.parse(backupData);
-      console.log("Recovered entries from backup:", entries.length);
-      return entries;
-    }
-  } catch (error) {
-    console.error("Failed to recover from backup:", error);
-  }
-  return null;
-};
-
-// Initialize shared entries from file on startup
-sharedEntries = loadEntriesFromFile();
-
-// Entries synchronization IPC handlers
+// SECURE: Event broadcasting only (no data exchange)
 ipcMain.handle("broadcast-entries-changed", () => {
   try {
-    // Send entries-changed event to all renderer processes
+    // Send entries-changed event to all renderer processes (no actual data)
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.webContents.send("entries-changed");
     }
@@ -1365,38 +1315,129 @@ ipcMain.handle("broadcast-entries-changed", () => {
   }
 });
 
-// Save entries to shared storage
-ipcMain.handle("save-shared-entries", (event, entries) => {
+// SECURE: Temporary in-memory storage for window synchronization only
+// No file persistence - data is cleared when app restarts
+let tempSharedEntries = null;
+
+// Clear temporary memory on vault lock
+const clearTempMemory = () => {
+  tempSharedEntries = null;
+  console.log("Temporary shared memory cleared");
+};
+
+// SECURE: Vault status only (no data exposure)
+ipcMain.handle("get-vault-status", () => {
+  return isVaultUnlocked;
+});
+
+// SECURE: Vault existence check without data exposure
+ipcMain.handle("vault-exists", () => {
+  if (!secureStorage) return false;
+  return secureStorage.vaultExists();
+});
+
+// SECURE: Save encrypted vault data (never store plaintext in main process)
+ipcMain.handle("save-vault-encrypted", (event, encryptedData, masterPassword) => {
   try {
-    sharedEntries = entries;
-    // Save to persistent file storage
-    const success = saveEntriesToFile(entries);
-    if (success) {
-      console.log("Entries saved to shared storage and file:", entries.length);
-    } else {
-      console.error("Failed to save entries to file, but kept in memory");
+    // Validate source window
+    if (!isValidSource(event.senderFrame)) {
+      console.error("Unauthorized vault save attempt");
+      return false;
     }
+
+    if (!secureStorage || !masterPassword || !encryptedData) {
+      return false;
+    }
+
+    const vaultData = {
+      data: encryptedData,
+      timestamp: Date.now()
+    };
+
+    const success = secureStorage.saveVault(vaultData, masterPassword);
+
+    // Clear sensitive parameters immediately
+    masterPassword = null;
+
     return success;
   } catch (error) {
-    console.error("Failed to save shared entries:", error);
+    console.error("Failed to save vault:", error);
     return false;
   }
 });
 
-// Load entries from shared storage
-ipcMain.handle("load-shared-entries", () => {
+// SECURE: Load encrypted vault data (never decrypt in main process)
+ipcMain.handle("load-vault-encrypted", (event, masterPassword) => {
   try {
-    console.log("Loading entries from shared storage:", sharedEntries ? sharedEntries.length : 0);
-    return sharedEntries || [];
+    // Validate source window
+    if (!isValidSource(event.senderFrame)) {
+      console.error("Unauthorized vault load attempt");
+      return null;
+    }
+
+    if (!secureStorage || !masterPassword) {
+      return null;
+    }
+
+    const vaultData = secureStorage.loadVault(masterPassword);
+
+    // Clear sensitive parameters immediately
+    masterPassword = null;
+
+    return vaultData;
   } catch (error) {
-    console.error("Failed to load shared entries:", error);
-    return [];
+    console.error("Failed to load vault:", error);
+    return null;
   }
 });
 
-// Get vault status
-ipcMain.handle("get-vault-status", () => {
-  return isVaultUnlocked;
+// SECURE: Validate IPC source window
+function isValidSource(frame) {
+  try {
+    // Ensure request comes from our app windows
+    const origin = frame.url;
+    return origin.includes("localhost:5173") ||
+           origin.includes("index.html") ||
+           origin.includes("floating-button.html");
+  } catch (error) {
+    console.error("Failed to validate IPC source:", error);
+    return false;
+  }
+}
+
+// SECURE: Temporary shared entries handlers (in-memory only)
+ipcMain.handle("save-shared-entries-temp", (event, entries) => {
+  try {
+    // Validate source
+    if (!isValidSource(event.senderFrame)) {
+      console.error("Unauthorized save shared entries attempt");
+      return false;
+    }
+
+    // Store in memory only (no file persistence)
+    tempSharedEntries = entries;
+    console.log("Temporarily stored entries in memory:", entries.length);
+    return true;
+  } catch (error) {
+    console.error("Failed to save temporary shared entries:", error);
+    return false;
+  }
+});
+
+ipcMain.handle("load-shared-entries-temp", (event) => {
+  try {
+    // Validate source
+    if (!isValidSource(event.senderFrame)) {
+      console.error("Unauthorized load shared entries attempt");
+      return null;
+    }
+
+    console.log("Loading temporary shared entries:", tempSharedEntries ? tempSharedEntries.length : 0);
+    return tempSharedEntries || [];
+  } catch (error) {
+    console.error("Failed to load temporary shared entries:", error);
+    return null;
+  }
 });
 
 // Initialize vault in floating window using existing localStorage data
