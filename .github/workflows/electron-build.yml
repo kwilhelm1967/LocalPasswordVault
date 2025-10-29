@@ -2,52 +2,81 @@ name: Electron Build
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
+    tags: ["v*"] # Triggers on tagged pushes for releases
   pull_request:
-    branches: [ main ]
-  release:
-    types: [ published ]
+    branches: [main]
 
 jobs:
   build:
+    if: "!startsWith(github.ref, 'refs/tags/v')"
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
-        cache: 'npm'
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: "npm"
 
-    - name: Install dependencies
-      run: npm ci
+      - name: Install dependencies
+        run: npm ci
 
-    - name: Build/release Electron app
-      uses: samuelmeuli/action-electron-builder@v1
-      with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
-        release: ${{ github.event_name == 'release' && github.event.action == 'published' }}
-      env:
-        CSC_LINK: ${{ secrets.CSC_LINK }}
-        CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+      - name: Build Electron app
+        uses: x6Pnda/action-electron-compiler@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          release: false
+          package_manager: NPM
+        env:
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
 
-    - name: Upload artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: ${{ matrix.os }}-build
-        path: dist/**
-        retention-days: 30
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.os }}-build
+          path: release/**
+          retention-days: 30
 
-    - name: Release assets
-      if: github.event_name == 'release' && github.event.action == 'published'
-      uses: softprops/action-gh-release@v1
-      with:
-        files: dist/**
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Release Electron app
+        uses: x6Pnda/action-electron-compiler@v1
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          release: true
+          package_manager: NPM
+        env:
+          CSC_LINK: ${{ secrets.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+
+      - name: Upload artifacts (fallback)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.os }}-release
+          path: release/**
+          retention-days: 30

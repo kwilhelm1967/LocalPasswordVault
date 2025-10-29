@@ -1,6 +1,8 @@
 {
   "appId": "com.localpasswordvault.app",
-  "productName": "Local Password Vault",
+  "productName": "LocalPasswordVault",
+  "publish": null,
+  "generateUpdatesFilesForAllChannels": true,
   "directories": {
     "output": "release",
     "buildResources": "build"
