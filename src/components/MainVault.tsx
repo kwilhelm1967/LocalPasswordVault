@@ -1,22 +1,40 @@
-import React, { useState } from 'react';
-import { Search, Plus, Download, Lock, Minimize2, Trash2, Eye, EyeOff, Copy, Edit3, X, ExternalLink } from 'lucide-react';
-import { PasswordEntry, Category } from '../types';
-import { CategoryIcon } from './CategoryIcon';
-import { EntryForm } from './EntryForm';
+import React, { useMemo, useState } from "react";
+import {
+  Search,
+  Plus,
+  Download,
+  Lock,
+  Minimize2,
+  Trash2,
+  Eye,
+  EyeOff,
+  Copy,
+  Edit3,
+  X,
+  FileText,
+} from "lucide-react";
+import { PasswordEntry, Category } from "../types";
+import { CategoryIcon } from "./CategoryIcon";
+import { EntryForm } from "./EntryForm";
+import { TrialWarningBanner } from "./TrialWarningBanner";
 
 interface MainVaultProps {
   entries: PasswordEntry[];
   categories: Category[];
-  onAddEntry: (entry: Omit<PasswordEntry, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  onAddEntry: (
+    entry: Omit<PasswordEntry, "id" | "createdAt" | "updatedAt">
+  ) => void;
   onUpdateEntry: (entry: PasswordEntry) => void;
   onDeleteEntry: (id: string) => void;
   onLock: () => void;
   onExport: () => void;
+  onImport: () => void;
   searchTerm: string;
   onSearchChange: (term: string) => void;
   selectedCategory: string;
   onCategoryChange: (category: string) => void;
   onMinimize?: () => void;
+  onShowPricingPlans?: () => void;
 }
 
 export const MainVault: React.FC<MainVaultProps> = ({
@@ -27,30 +45,44 @@ export const MainVault: React.FC<MainVaultProps> = ({
   onDeleteEntry,
   onLock,
   onExport,
+  onImport,
   searchTerm,
   onSearchChange,
   selectedCategory,
   onCategoryChange,
-  onMinimize
+  onMinimize,
+  onShowPricingPlans,
 }) => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingEntry, setEditingEntry] = useState<PasswordEntry | null>(null);
-  const [visiblePasswords, setVisiblePasswords] = useState<Set<string>>(new Set());
+  const [viewingEntry, setViewingEntry] = useState<PasswordEntry | null>(null);
+  const [visiblePasswords, setVisiblePasswords] = useState<Set<string>>(
+    new Set()
+  );
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [entryToDelete, setEntryToDelete] = useState<PasswordEntry | null>(
+    null
+  );
 
-  const filteredEntries = entries.filter(entry => {
-    const matchesSearch = entry.accountName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         entry.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (entry.notes || '').toLowerCase().includes(searchTerm.toLowerCase());
-    
-    // If there's a search term, search across all categories
-    // If no search term, filter by selected category
-    if (searchTerm.trim()) {
-      return matchesSearch;
-    } else {
-      const matchesCategory = selectedCategory === 'all' || entry.category === selectedCategory;
-      return matchesCategory;
-    }
-  });
+  console.log(entries, "entries");
+
+  const filteredEntries = useMemo(() => {
+    return entries.filter((entry) => {
+      // Search filter: if no search term, all entries match search
+      const matchesSearch =
+        !searchTerm.trim() ||
+        entry.accountName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        entry.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (entry.notes || "").toLowerCase().includes(searchTerm.toLowerCase());
+
+      // Category filter: if "all" is selected, all entries match category
+      const matchesCategory =
+        selectedCategory === "all" || entry.category === selectedCategory;
+
+      // Both filters must pass for entry to be included
+      return matchesSearch && matchesCategory;
+    });
+  }, [entries, searchTerm, selectedCategory]);
 
   const togglePasswordVisibility = (entryId: string) => {
     const newVisible = new Set(visiblePasswords);
@@ -66,52 +98,111 @@ export const MainVault: React.FC<MainVaultProps> = ({
     try {
       await navigator.clipboard.writeText(text);
     } catch (err) {
-      console.error('Failed to copy to clipboard:', err);
+      console.error("Failed to copy to clipboard:", err);
     }
   };
 
-  const handleAddEntry = (entryData: Omit<PasswordEntry, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const handleAddEntry = (
+    entryData: Omit<PasswordEntry, "id" | "createdAt" | "updatedAt">
+  ) => {
     try {
       onAddEntry(entryData);
       setShowAddForm(false);
     } catch (error) {
-      console.error('Error adding entry:', error);
+      console.error("Error adding entry:", error);
       // Keep the form open if there's an error
     }
   };
 
-  const handleUpdateEntry = (entryData: Omit<PasswordEntry, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const handleUpdateEntry = (
+    entryData: Omit<PasswordEntry, "id" | "createdAt" | "updatedAt">
+  ) => {
     if (editingEntry) {
       onUpdateEntry({ ...editingEntry, ...entryData, updatedAt: new Date() });
-      setEditingEntry(null); 
+      setEditingEntry(null);
     }
   };
 
+  const handleDeleteClick = (entry: PasswordEntry) => {
+    setEntryToDelete(entry);
+    setShowDeleteConfirm(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (entryToDelete) {
+      onDeleteEntry(entryToDelete.id);
+      setEntryToDelete(null);
+      setShowDeleteConfirm(false);
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900" style={{ backgroundColor: '#0f172a' }}>
+    <div
+      className="h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col overflow-hidden"
+      style={{ backgroundColor: "#0f172a" }}
+    >
       {/* Header */}
-      <div className="bg-slate-800/50 backdrop-blur-sm border-b border-slate-700/50 sticky top-0 z-40">
+      <div className="bg-slate-800/50 backdrop-blur-sm border-b border-slate-700/50 sticky top-0 z-40 flex-shrink-0">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'transparent', boxShadow: 'none', border: 'none', outline: 'none' }}>
-                <Lock className="w-4 h-4 text-white" style={{ filter: 'none', backgroundColor: 'transparent', boxShadow: 'none', border: 'none', outline: 'none' }} />
+              <div
+                className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center"
+                style={{
+                  backgroundColor: "transparent",
+                  boxShadow: "none",
+                  border: "none",
+                  outline: "none",
+                }}
+              >
+                <Lock
+                  className="w-4 h-4 text-white"
+                  style={{
+                    filter: "none",
+                    backgroundColor: "transparent",
+                    boxShadow: "none",
+                    border: "none",
+                    outline: "none",
+                  }}
+                />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-white">Local Password Vault</h1>
-                <p className="text-xs text-slate-400">by LocalPasswordVault.com</p>
+                <h1 className="text-xl font-bold text-white">
+                  Local Password Vault
+                </h1>
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    const url = "https://localpasswordvault.com";
+                    if (window.electronAPI) {
+                      window.electronAPI.openExternal(url);
+                    } else {
+                      window.open("https://localpasswordvault.com", "_blank");
+                    }
+                  }}
+                  className="text-xs text-slate-400 hover:underline cursor-pointer"
+                >
+                  by LocalPasswordVault.com
+                </button>
               </div>
             </div>
-            
+
             <div className="flex items-center space-x-3">
               <button
                 onClick={onExport}
                 className="p-2 text-slate-400 hover:text-white hover:bg-slate-700/50 rounded-lg transition-all"
-                title="Export Vault">
+                title="Export Vault"
+              >
                 <Download className="w-5 h-5" />
               </button>
-                            
+              <button
+                onClick={onImport}
+                className="p-2 text-slate-400 hover:text-white hover:bg-slate-700/50 rounded-lg transition-all"
+                title="Import Vault"
+              >
+                <FileText className="w-5 h-5" />
+              </button>
+
               {onMinimize && (
                 <button
                   onClick={onMinimize}
@@ -121,10 +212,10 @@ export const MainVault: React.FC<MainVaultProps> = ({
                   <Minimize2 className="w-5 h-5" />
                 </button>
               )}
-              
+
               <button
                 onClick={onLock}
-                className="p-2 text-slate-400 hover:text-white hover:bg-slate-700/50 rounded-lg transition-all"
+                className="p-2 mt-2 text-slate-400 hover:text-white hover:bg-slate-700/50 rounded-lg transition-all"
                 title="Lock Vault"
               >
                 <Lock className="w-5 h-5" />
@@ -134,176 +225,479 @@ export const MainVault: React.FC<MainVaultProps> = ({
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* Search and Controls */}
-        <div className="mb-8">
-          <div className="flex flex-col sm:flex-row gap-4 mb-6">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
-              <input
-                type="text"
-                placeholder="Search"
-                value={searchTerm}
-                onChange={(e) => onSearchChange(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
-              />
-              {searchTerm && (
-                <button
-                  onClick={() => onSearchChange('')}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-white transition-colors"
-                  title="Clear search"
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-7xl mx-auto px-6 py-8">
+          {/* Trial Warning Banner */}
+          {onShowPricingPlans && <TrialWarningBanner />}
+
+          {/* Search and Controls */}
+          <div className="mb-8">
+            <div className="flex flex-col sm:flex-row gap-4 mb-6">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
+                <input
+                  type="text"
+                  placeholder="Search"
+                  value={searchTerm}
+                  onChange={(e) => onSearchChange(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 bg-slate-800/50 border border-slate-700/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                />
+                {searchTerm && (
+                  <button
+                    onClick={() => onSearchChange("")}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-white transition-colors"
+                    title="Clear search"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                )}
+              </div>
+
+              <select
+                value={selectedCategory}
+                onChange={(e) => onCategoryChange(e.target.value)}
+                className="px-4 py-3 bg-slate-900 border border-slate-700/50 rounded-xl text-white focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+              >
+                <option value="all">All Categories</option>
+                {categories
+                  .filter((c) => c.id !== "all")
+                  .map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
+              </select>
+
+              <button
+                onClick={() => setShowAddForm(true)}
+                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl font-medium transition-all transform hover:scale-105 flex items-center space-x-2"
+              >
+                <Plus className="w-5 h-5" />
+                <span>Add Account</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Entries Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            {filteredEntries.map((entry) => {
+              const category = categories.find((c) => c.id === entry.category);
+              const isPasswordVisible = visiblePasswords.has(entry.id);
+
+              return (
+                <div
+                  key={entry.id}
+                  className="bg-gradient-to-br from-slate-800/40 via-slate-800/30 to-slate-900/40 backdrop-blur-sm border border-slate-600/50 rounded-2xl p-6 hover:bg-gradient-to-br hover:from-slate-800/60 hover:via-slate-800/50 hover:to-slate-900/60 transition-all duration-300 group shadow-xl hover:shadow-2xl hover:border-slate-500/60"
                 >
-                  <X className="w-5 h-5" />
+                  {/* Header with gradient accent */}
+                  <div className="flex items-start justify-between mb-5">
+                    <div className="flex items-center space-x-3">
+                      {category && (
+                        <div className="p-2 bg-gradient-to-br from-blue-500/20 to-indigo-500/20 rounded-xl border border-blue-500/30">
+                          <CategoryIcon
+                            name={category.icon}
+                            size={18}
+                            className="text-blue-400"
+                          />
+                        </div>
+                      )}
+                      <div>
+                        <h3 className="font-bold text-white group-hover:text-blue-400 transition-colors text-base">
+                          {entry.accountName}
+                        </h3>
+                        <p className="text-sm text-slate-400 mt-1">
+                          {entry.username}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                      <button
+                        onClick={() => setViewingEntry(entry)}
+                        className="p-2 text-slate-400 hover:text-green-400 hover:bg-green-500/20 rounded-xl transition-all border border-transparent hover:border-green-500/30"
+                        title="View Details"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => setEditingEntry(entry)}
+                        className="p-2 text-slate-400 hover:text-blue-400 hover:bg-blue-500/20 rounded-xl transition-all border border-transparent hover:border-blue-500/30"
+                        title="Edit"
+                      >
+                        <Edit3 className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteClick(entry)}
+                        className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/20 rounded-xl transition-all border border-transparent hover:border-red-500/30"
+                        title="Delete"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Content with enhanced styling */}
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between p-3 bg-slate-700/30 rounded-xl border border-slate-600/30">
+                      <span className="text-sm font-medium text-slate-300">
+                        Username
+                      </span>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-sm text-white font-medium max-w-32 truncate">
+                          {entry.username}
+                        </span>
+                        <button
+                          onClick={() => copyToClipboard(entry.username)}
+                          className="p-1.5 text-slate-400 hover:text-green-400 hover:bg-slate-600/50 rounded-lg transition-all"
+                          title="Copy username"
+                        >
+                          <Copy className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 bg-slate-700/30 rounded-xl border border-slate-600/30">
+                      <span className="text-sm font-medium text-slate-300">
+                        Password
+                      </span>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-sm text-white font-medium max-w-32 truncate">
+                          {isPasswordVisible ? entry.password : "••••••••"}
+                        </span>
+                        <button
+                          onClick={() => togglePasswordVisibility(entry.id)}
+                          className="p-1.5 text-slate-400 hover:text-blue-400 hover:bg-slate-600/50 rounded-lg transition-all"
+                          title={
+                            isPasswordVisible
+                              ? "Hide password"
+                              : "Show password"
+                          }
+                        >
+                          {isPasswordVisible ? (
+                            <EyeOff className="w-3.5 h-3.5" />
+                          ) : (
+                            <Eye className="w-3.5 h-3.5" />
+                          )}
+                        </button>
+                        <button
+                          onClick={() => copyToClipboard(entry.password)}
+                          className="p-1.5 text-slate-400 hover:text-green-400 hover:bg-slate-600/50 rounded-lg transition-all"
+                          title="Copy password"
+                        >
+                          <Copy className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {entry.balance && (
+                      <div className="p-3 bg-gradient-to-r from-slate-700/20 to-slate-600/20 rounded-xl border border-slate-600/30">
+                        <span className="text-xs font-medium text-slate-300 mb-2 block">
+                          Account Details
+                        </span>
+                        <p className="text-sm text-slate-400 leading-relaxed">
+                          {entry.balance}
+                        </p>
+                      </div>
+                    )}
+
+                    {entry.notes && (
+                      <div className="p-3 bg-gradient-to-r from-slate-700/20 to-slate-600/20 rounded-xl border border-slate-600/30">
+                        <span className="text-xs font-medium text-slate-300 mb-2 block">
+                          Notes
+                        </span>
+                        <p className="text-sm text-slate-400 leading-relaxed">
+                          {entry.notes}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {filteredEntries.length === 0 && (
+            <div className="text-center py-16">
+              <div className="w-20 h-20 bg-gradient-to-br from-slate-800/60 to-slate-700/40 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-slate-600/50 shadow-xl">
+                <Search className="w-10 h-10 text-slate-400" />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-3">
+                No accounts found
+              </h3>
+              <p className="text-slate-400 mb-8 max-w-md mx-auto leading-relaxed">
+                {searchTerm || selectedCategory !== "all"
+                  ? "Try adjusting your search or filter criteria to find what you're looking for"
+                  : "Get started by adding your first account to secure your credentials"}
+              </p>
+              {!searchTerm && selectedCategory === "all" && (
+                <button
+                  onClick={() => setShowAddForm(true)}
+                  className="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-2xl font-bold transition-all transform hover:scale-105 shadow-xl hover:shadow-2xl border border-blue-500/30"
+                >
+                  Add Your First Account
                 </button>
               )}
             </div>
-            
-            <select
-              value={selectedCategory}
-              onChange={(e) => onCategoryChange(e.target.value)}
-              className="px-4 py-3 bg-slate-900 border border-slate-700/50 rounded-xl text-white focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
-            >
-              <option value="all">All Categories</option>
-              {categories.filter(c => c.id !== 'all').map(category => (
-                <option key={category.id} value={category.id}>
-                  {category.name}
-                </option>
-              ))}
-            </select>
-            
-            <button
-              onClick={() => setShowAddForm(true)}
-              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl font-medium transition-all transform hover:scale-105 flex items-center space-x-2"
-            >
-              <Plus className="w-5 h-5" />
-              <span>Add Account</span>
-            </button>
-          </div>
-        </div>
+          )}
 
-        {/* Entries Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          {filteredEntries.map(entry => {
-            const category = categories.find(c => c.id === entry.category);
-            const isPasswordVisible = visiblePasswords.has(entry.id);
-            
-            return (
-              <div key={entry.id} className="bg-slate-800/30 backdrop-blur-sm border border-slate-700/50 rounded-xl p-6 hover:bg-slate-800/50 transition-all group">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center space-x-3">
-                    {category && <CategoryIcon name={category.icon} size={20} className="text-blue-400" />}
-                    <div>
-                      <h3 className="font-semibold text-white group-hover:text-blue-400 transition-colors">
-                        {entry.accountName}
-                      </h3>
-                      <p className="text-sm text-slate-400">{entry.username}</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                      onClick={() => setEditingEntry(entry)}
-                      className="p-1.5 text-slate-400 hover:text-blue-400 hover:bg-slate-700/50 rounded-lg transition-all"
-                      title="Edit"
-                    >
-                      <Edit3 className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => onDeleteEntry(entry.id)}
-                      className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-slate-700/50 rounded-lg transition-all"
-                      title="Delete"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-                
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-slate-400">Username</span>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm text-slate-300 font-mono">{entry.username}</span>
-                      <button
-                        onClick={() => copyToClipboard(entry.username)}
-                        className="p-1 text-slate-400 hover:text-white transition-colors"
-                        title="Copy username"
-                      >
-                        <Copy className="w-3 h-3" />
-                      </button>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-slate-400">Password</span>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm text-slate-300 font-mono">
-                        {isPasswordVisible ? entry.password : '••••••••'}
-                      </span>
-                      <button
-                        onClick={() => togglePasswordVisibility(entry.id)}
-                        className="p-1 text-slate-400 hover:text-white transition-colors"
-                        title={isPasswordVisible ? "Hide password" : "Show password"}
-                      >
-                        {isPasswordVisible ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
-                      </button>
-                      <button
-                        onClick={() => copyToClipboard(entry.password)}
-                        className="p-1 text-slate-400 hover:text-white transition-colors"
-                        title="Copy password"
-                      >
-                        <Copy className="w-3 h-3" />
-                      </button>
-                    </div>
-                  </div>
-                  
-                  {entry.balance && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-400">Account Details</span>
-                      <span className="text-sm text-slate-300 font-mono">{entry.balance}</span>
-                    </div>
-                  )}
-                  
-                  {entry.notes && (
-                    <div className="pt-2 border-t border-slate-700/50">
-                      <p className="text-xs text-slate-400">{entry.notes}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {filteredEntries.length === 0 && (
-          <div className="text-center py-12">
-            <div className="w-16 h-16 bg-slate-800/50 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Search className="w-8 h-8 text-slate-400" />
-            </div>
-            <h3 className="text-lg font-medium text-white mb-2">No passwords found</h3>
-            <p className="text-slate-400 mb-6">
-              {searchTerm || selectedCategory !== 'all' 
-                ? 'Try adjusting your search or filter criteria'
-                : 'Get started by adding your first password'
-              }
-            </p>
-            {!searchTerm && selectedCategory === 'all' && (
+          {/* Footer */}
+          <div className="py-6 text-center">
+            <p className="text-xs text-slate-500">
+              Local Password Management by{" "}
               <button
-                onClick={() => setShowAddForm(true)}
-                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-xl font-medium transition-all transform hover:scale-105"
+                onClick={(e) => {
+                  e.preventDefault();
+                  const url = "https://localpasswordvault.com";
+                  if (window.electronAPI) {
+                    window.electronAPI.openExternal(url);
+                  } else {
+                    window.open("https://localpasswordvault.com", "_blank");
+                  }
+                }}
+                className="text-xs text-slate-400 hover:underline cursor-pointer"
               >
-                Add Your First Account
+                LocalPasswordVault.com
               </button>
-            )}
+            </p>
           </div>
-        )}
-
-        {/* Footer */}
-        <div className="py-6 text-center">
-          <p className="text-xs text-slate-500">
-            Professional Password Management by LocalPasswordVault.com
-          </p>
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && entryToDelete && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 z-50">
+          <div className="bg-gradient-to-br from-slate-800 via-slate-800 to-slate-900 rounded-2xl p-6 w-full max-w-md border border-slate-600/50 shadow-2xl">
+            <div className="text-center">
+              <div className="p-3 bg-red-500/20 rounded-full w-fit mx-auto mb-4 border border-red-500/30">
+                <Trash2 className="w-6 h-6 text-red-400" />
+              </div>
+
+              <h3 className="text-white font-bold text-lg mb-2">
+                Delete Account
+              </h3>
+
+              <p className="text-slate-400 text-sm mb-6 leading-relaxed">
+                Are you sure you want to delete "
+                <span className="text-white font-medium">
+                  {entryToDelete.accountName}
+                </span>
+                "? This action cannot be undone.
+              </p>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  className="flex-1 px-4 py-3 bg-slate-600/50 hover:bg-slate-600 text-white rounded-xl font-medium transition-all text-sm border border-slate-500/50"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  onClick={handleConfirmDelete}
+                  className="flex-1 px-4 py-3 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 text-white rounded-xl font-medium transition-all text-sm shadow-lg"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* View Details Modal */}
+      {viewingEntry && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 z-50">
+          <div className="bg-gradient-to-br from-slate-800 via-slate-800 to-slate-900 rounded-2xl p-6 w-full max-w-lg border border-slate-600/50 shadow-2xl max-h-[90vh] overflow-y-auto">
+            {/* Header */}
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-gradient-to-br from-blue-500/20 to-indigo-500/20 rounded-xl border border-blue-500/30">
+                  <FileText className="w-5 h-5 text-blue-400" />
+                </div>
+                <div>
+                  <h3 className="text-white font-bold text-lg">
+                    {viewingEntry.accountName}
+                  </h3>
+                  <p className="text-slate-400 text-sm">Account Details</p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setViewingEntry(null)}
+                className="p-2 text-slate-400 hover:text-white hover:bg-slate-700/50 rounded-lg transition-all"
+                title="Close"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="space-y-4">
+              {/* Account Name */}
+              <div className="p-4 bg-slate-700/30 rounded-xl border border-slate-600/30">
+                <label className="text-slate-400 text-xs font-medium uppercase tracking-wider mb-2 block">
+                  Account Name
+                </label>
+                <div className="text-white font-medium text-lg">
+                  {viewingEntry.accountName}
+                </div>
+              </div>
+
+              {/* Username */}
+              <div className="p-4 bg-slate-700/30 rounded-xl border border-slate-600/30">
+                <label className="text-slate-400 text-xs font-medium uppercase tracking-wider mb-2 block">
+                  Username
+                </label>
+                <div className="flex items-center justify-between">
+                  <div className="text-white font-medium">
+                    {viewingEntry.username}
+                  </div>
+                  <button
+                    onClick={() => copyToClipboard(viewingEntry.username)}
+                    className="p-2 text-slate-400 hover:text-green-400 hover:bg-slate-600/50 rounded-lg transition-all"
+                    title="Copy username"
+                  >
+                    <Copy className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Password */}
+              <div className="p-4 bg-slate-700/30 rounded-xl border border-slate-600/30">
+                <label className="text-slate-400 text-xs font-medium uppercase tracking-wider mb-2 block">
+                  Password
+                </label>
+                <div className="flex items-center justify-between">
+                  <div className="text-white font-medium font-mono">
+                    {visiblePasswords.has(viewingEntry.id)
+                      ? viewingEntry.password
+                      : "••••••••••••"}
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => togglePasswordVisibility(viewingEntry.id)}
+                      className="p-2 text-slate-400 hover:text-blue-400 hover:bg-slate-600/50 rounded-lg transition-all"
+                      title={
+                        visiblePasswords.has(viewingEntry.id)
+                          ? "Hide password"
+                          : "Show password"
+                      }
+                    >
+                      {visiblePasswords.has(viewingEntry.id) ? (
+                        <EyeOff className="w-4 h-4" />
+                      ) : (
+                        <Eye className="w-4 h-4" />
+                      )}
+                    </button>
+                    <button
+                      onClick={() => copyToClipboard(viewingEntry.password)}
+                      className="p-2 text-slate-400 hover:text-green-400 hover:bg-slate-600/50 rounded-lg transition-all"
+                      title="Copy password"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Category */}
+              <div className="p-4 bg-slate-700/30 rounded-xl border border-slate-600/30">
+                <label className="text-slate-400 text-xs font-medium uppercase tracking-wider mb-2 block">
+                  Category
+                </label>
+                <div className="flex items-center space-x-2">
+                  {(() => {
+                    const category = categories.find(
+                      (c) => c.id === viewingEntry.category
+                    );
+                    return category ? (
+                      <>
+                        <CategoryIcon
+                          name={category.icon}
+                          size={16}
+                          className="text-blue-400"
+                        />
+                        <span className="text-white font-medium">
+                          {category.name}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-slate-400">Unknown Category</span>
+                    );
+                  })()}
+                </div>
+              </div>
+
+              {/* Account Details */}
+              {viewingEntry.balance && (
+                <div className="p-4 bg-slate-700/30 rounded-xl border border-slate-600/30">
+                  <label className="text-slate-400 text-xs font-medium uppercase tracking-wider mb-2 block">
+                    Account Details
+                  </label>
+                  <div className="text-white font-medium">
+                    {viewingEntry.balance}
+                  </div>
+                </div>
+              )}
+
+              {/* Notes */}
+              {viewingEntry.notes && (
+                <div className="p-4 bg-gradient-to-r from-slate-700/20 to-slate-600/20 rounded-xl border border-slate-600/30">
+                  <label className="text-slate-400 text-xs font-medium uppercase tracking-wider mb-2 block">
+                    Notes
+                  </label>
+                  <div className="text-slate-300 leading-relaxed whitespace-pre-wrap">
+                    {viewingEntry.notes}
+                  </div>
+                </div>
+              )}
+
+              {/* Metadata */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="p-4 bg-slate-800/40 rounded-xl border border-slate-700/30">
+                  <label className="text-slate-400 text-xs font-medium uppercase tracking-wider mb-2 block">
+                    Created
+                  </label>
+                  <div className="text-slate-300 text-sm">
+                    {new Date(viewingEntry.createdAt).toLocaleDateString()} at{" "}
+                    {new Date(viewingEntry.createdAt).toLocaleTimeString()}
+                  </div>
+                </div>
+                <div className="p-4 bg-slate-800/40 rounded-xl border border-slate-700/30">
+                  <label className="text-slate-400 text-xs font-medium uppercase tracking-wider mb-2 block">
+                    Last Updated
+                  </label>
+                  <div className="text-slate-300 text-sm">
+                    {new Date(viewingEntry.updatedAt).toLocaleDateString()} at{" "}
+                    {new Date(viewingEntry.updatedAt).toLocaleTimeString()}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer Actions */}
+            <div className="flex gap-3 mt-6 pt-4 border-t border-slate-700/50">
+              <button
+                onClick={() => {
+                  setViewingEntry(null);
+                  setEditingEntry(viewingEntry);
+                }}
+                className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white rounded-xl font-medium transition-all text-sm shadow-lg flex items-center justify-center space-x-2"
+              >
+                <Edit3 className="w-4 h-4" />
+                <span>Edit Account</span>
+              </button>
+
+              <button
+                onClick={() => setViewingEntry(null)}
+                className="px-6 py-3 bg-slate-600/50 hover:bg-slate-600 text-white rounded-xl font-medium transition-all text-sm border border-slate-500/50"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Add/Edit Form Modal */}
       {(showAddForm || editingEntry) && (
@@ -317,10 +711,14 @@ export const MainVault: React.FC<MainVaultProps> = ({
                 setShowAddForm(false);
                 setEditingEntry(null);
               }}
-              onDelete={editingEntry ? () => {
-                onDeleteEntry(editingEntry.id);
-                setEditingEntry(null);
-              } : undefined}
+              onDelete={
+                editingEntry
+                  ? () => {
+                    onDeleteEntry(editingEntry.id);
+                    setEditingEntry(null);
+                  }
+                  : undefined
+              }
             />
           </div>
         </div>

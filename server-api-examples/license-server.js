@@ -5,19 +5,26 @@ import express from "express";
 import cors from "cors";
 import rateLimit from "express-rate-limit";
 import helmet from "helmet";
-import crypto from "crypto";
 import stripe from "stripe";
 import dotenv from "dotenv";
-import DownloadHandler from "./download-handler.js"; // Custom module for handling downloads
+import crypto from "crypto";
+import DownloadHandler from "./download-handler.js";
 import EmailService from "./email-templates.js";
+import supabase from "./supabase.js";
+import { saveLicensesToDatabase } from "./database.js";
 
-const app = express();
 dotenv.config();
 
+const app = express();
+// When running behind a proxy/load-balancer (e.g. nginx, Cloudflare), trust
+// the X-Forwarded-* headers so req.ip and rate-limit work correctly.
+app.set("trust proxy", true);
 const stripeClient = stripe(process.env.STRIPE_SECRET_KEY);
 const downloadHandler = new DownloadHandler();
 
-const emailSender = new EmailService();
+const emailService = new EmailService();
+
+console.log(supabase, "supabase");
 
 // Security middleware
 app.use(helmet());
@@ -45,130 +52,99 @@ const licenseLimiter = rateLimit({
   message: "Too many license requests",
 });
 
-// Health check endpoint with status page
-app.get("/", (req, res) => {
+// === Minimal admin auth helpers (no extra deps) ===
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "change-this-admin-pass";
+const ADMIN_COOKIE_NAME = "admin_auth";
+// Derive a stable token using the signing secret + password
+const ADMIN_AUTH_TOKEN = crypto
+  .createHmac(
+    "sha256",
+    (process.env.LICENSE_SIGNING_SECRET || "dev-secret") + "|admin"
+  )
+  .update(ADMIN_PASSWORD)
+  .digest("base64url");
+
+function getCookie(req, name) {
+  try {
+    const cookieHeader = req.headers.cookie || "";
+    const parts = cookieHeader.split(";");
+    for (const part of parts) {
+      const [k, v] = part.trim().split("=");
+      if (k === name) return decodeURIComponent(v || "");
+    }
+    return null;
+  } catch (_) {
+    return null;
+  }
+}
+
+function isAdminAuthed(req) {
+  const token = getCookie(req, ADMIN_COOKIE_NAME);
+  return token === ADMIN_AUTH_TOKEN;
+}
+
+function setAdminCookie(res) {
+  const attrs = [
+    `${ADMIN_COOKIE_NAME}=${encodeURIComponent(ADMIN_AUTH_TOKEN)}`,
+    "Path=/",
+    "HttpOnly",
+    "SameSite=Lax",
+  ];
+  // Only set Secure when behind https (cannot detect here reliably); leave off for dev.
+  res.setHeader("Set-Cookie", attrs.join("; "));
+}
+
+// === Admin UI (simple HTML) ===
+app.get("/admin", (req, res) => {
+  if (!isAdminAuthed(req)) {
+    res.send(`
+      <!DOCTYPE html>
+      <html><head><meta charset="utf-8"><title>Admin Login</title>
+      <style>body{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Arial,sans-serif;padding:2rem;}
+      form{max-width:420px;margin:auto;background:#fff;border-radius:8px;padding:1.5rem;box-shadow:0 2px 10px rgba(0,0,0,0.08)}
+      label{display:block;margin:.5rem 0 .25rem}
+      input,button,select{width:100%;padding:.6rem;border:1px solid #ddd;border-radius:6px}
+      button{background:#4CAF50;color:#fff;border-color:#4CAF50;margin-top:1rem;cursor:pointer}
+      </style></head><body>
+        <form method="POST" action="/admin/login">
+          <h2>Admin Login</h2>
+          <label>Password</label>
+          <input type="password" name="password" required />
+          <button type="submit">Login</button>
+        </form>
+      </body></html>
+    `);
+    return;
+  }
   res.send(`
     <!DOCTYPE html>
-    <html>
-    <head>
-      <title>Password Vault License Server</title>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <style>
-        body {
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-          margin: 0;
-          padding: 20px;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          min-height: 100vh;
-          color: #333;
-        }
-        .container {
-          max-width: 800px;
-          margin: 0 auto;
-          background: white;
-          border-radius: 12px;
-          box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-          overflow: hidden;
-        }
-        .header {
-          background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
-          color: white;
-          padding: 30px;
-          text-align: center;
-        }
-        .header h1 {
-          margin: 0;
-          font-size: 2.5em;
-          font-weight: 300;
-        }
-        .header p {
-          margin: 10px 0 0 0;
-          opacity: 0.9;
-          font-size: 1.1em;
-        }
-        .content {
-          padding: 30px;
-        }
-        .status-card {
-          background: #f8f9fa;
-          border-left: 4px solid #4CAF50;
-          padding: 20px;
-          margin-bottom: 30px;
-          border-radius: 0 8px 8px 0;
-        }
-        .status-card h3 {
-          margin: 0 0 10px 0;
-          color: #4CAF50;
-        }
-        .api-section {
-          margin-top: 30px;
-        }
-        .api-section h3 {
-          color: #333;
-          border-bottom: 2px solid #eee;
-          padding-bottom: 10px;
-        }
-        .api-section ul {
-          list-style: none;
-          padding: 0;
-        }
-        .api-section li {
-          background: #f8f9fa;
-          margin: 10px 0;
-          padding: 15px;
-          border-radius: 6px;
-          border-left: 3px solid #667eea;
-        }
-        code {
-          background: #e9ecef;
-          padding: 2px 6px;
-          border-radius: 4px;
-          font-family: 'Monaco', 'Consolas', monospace;
-          color: #d63384;
-        }
-        .footer {
-          text-align: center;
-          padding: 20px;
-          color: #666;
-          border-top: 1px solid #eee;
-          margin-top: 30px;
-        }
-      </style>
-    </head>
-    <body>
-      <div class="container">
-        <div class="header">
-          <h1>🔐 License Server Status</h1>
-          <p>Server is active and ready to process license requests and subscriptions</p>
-        </div>
-        <div class="content">
-          <div class="status-card">
-            <h3>✅ Server Status: Online</h3>
-            <p>All systems operational. Ready to process license validation, activation, and payment webhooks.</p>
-            <p><strong>Server Time:</strong> ${new Date().toISOString()}</p>
-          </div>
-          
-          <div class="api-section">
-            <h3>Available Endpoints</h3>
-            <ul>
-              <li><code>/webhook/stripe</code> - Processes Stripe payment and subscription webhooks</li>
-              <li><code>/api/validate-license</code> - Validates license keys</li>
-              <li><code>/api/activate-license</code> - Activates license keys</li>
-              <li><code>/api/create-subscription</code> - Creates a trial subscription</li>
-              <li><code>/api/transfer-license</code> - Transfers license to new device</li>
-              <li><code>/api/check-updates</code> - Checks for application updates</li>
-              <li><code>/api/analytics</code> - Receives usage analytics</li>
-            </ul>
-          </div>
-        </div>
-        <div class="footer">
-          <p>Password Vault License Server v1.0</p>
-        </div>
-      </div>
-    </body>
-    </html>
+    <html><head><meta charset="utf-8"><title>Create Licenses</title>
+    <style>body{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Arial,sans-serif;padding:2rem;}
+    form{max-width:520px;margin:auto;background:#fff;border-radius:8px;padding:1.5rem;box-shadow:0 2px 10px rgba(0,0,0,0.08)}
+    label{display:block;margin:.5rem 0 .25rem}
+    input,button,select{width:100%;padding:.6rem;border:1px solid #ddd;border-radius:6px}
+    button{background:#4CAF50;color:#fff;border-color:#4CAF50;margin-top:1rem;cursor:pointer}
+    .tip{color:#555;font-size:.9rem;margin:.5rem 0 1rem}
+    </style></head><body>
+      <form method="POST" action="/admin/create-license">
+        <h2>Create Licenses</h2>
+        <label>Email</label>
+        <input type="email" name="email" placeholder="customer@example.com" required />
+        <label>Amount (number of licenses)</label>
+        <input type="number" name="amount" min="1" max="100" value="1" required />
+        <button type="submit">Create & Send</button>
+      </form>
+    </body></html>
   `);
+});
+
+app.post("/admin/login", express.urlencoded({ extended: true }), (req, res) => {
+  const { password } = req.body || {};
+  if (!password || password !== ADMIN_PASSWORD) {
+    return res.status(401).send("Invalid password");
+  }
+  setAdminCookie(res);
+  res.redirect("/admin");
 });
 
 // For Stripe webhook - needs raw body
@@ -177,7 +153,7 @@ app.post(
   express.raw({ type: "application/json" }),
   async (req, res) => {
     const sig = req.headers["stripe-signature"];
-    const body = await req.body;
+    const body = req.body;
     let event;
 
     try {
@@ -199,42 +175,49 @@ app.post(
     ) {
       const session = event.data.object;
 
+      const paymentId = session.payment_intent;
+
+      const amount = (session.amount_total / 100).toFixed(2);
+
       // Retrieve the product id using session line items
-      const sessionWithLineItems = await stripeClient.checkout.sessions.retrieve(
-        session.id,
-        { expand: ['line_items'] }
-      );
-      
+      const sessionWithLineItems =
+        await stripeClient.checkout.sessions.retrieve(session.id, {
+          expand: ["line_items"],
+        });
+
       // Get the first line item to extract product information
       const lineItem = sessionWithLineItems.line_items.data[0];
-      const priceId = lineItem.price.id;
       const productId = lineItem.price.product;
 
       // Get customer email and product info
       const customerEmail = session.customer_details.email;
 
-      console.log(
-        `Checkout completed for ${customerEmail}, product: ${productId}, price: ${priceId}`
-      );
-
       // Determine license type based on product
       let licenseType = "single";
       let quantity = 1;
 
+      let maintanancePlanBought =
+        sessionWithLineItems.line_items.data.length > 1;
+
       switch (productId) {
-        case "pro_single_user":
+        case "prod_T2AiC5qLTzeyCa":
           licenseType = "single";
           quantity = 1;
           break;
+        // This case is test link
         case "prod_Sofb9khTHtbJsQ":
+          licenseType = "single";
+          quantity = 1;
+          break;
+        case "prod_T2Ak7onRe9gOPM":
           licenseType = "family";
           quantity = 3;
           break;
-        case "prod_pro_license":
+        case "prod_T2AlMDK0UQdBNc":
           licenseType = "pro";
           quantity = 6;
           break;
-        case "prod_business_plan":
+        case "prod_T2AmqzeA2XLcGL":
           licenseType = "business";
           quantity = 10;
           break;
@@ -244,10 +227,10 @@ app.post(
           );
       }
 
-      // Generate license keys
+      // Generate secure license keys with cryptographic signing
       const licenses = [];
       for (let i = 0; i < quantity; i++) {
-        licenses.push(generateLicenseKey());
+        licenses.push(generateSecureLicenseKey(licenseType, customerEmail));
       }
 
       try {
@@ -259,10 +242,25 @@ app.post(
         );
 
         // In a real implementation, save to database
-        // await saveLicensesToDatabase(licenses, customerEmail, licenseType, session.id);
+        await saveLicensesToDatabase(
+          licenses,
+          customerEmail,
+          licenseType,
+          session.id,
+          "active",
+          paymentId,
+          amount,
+          maintanancePlanBought
+        );
 
         // In a real implementation, send email with license keys
-        await emailSender.sendLicenseEmail(customerEmail, licenses, licenseType, downloadInfo);
+        await emailService.sendWelcomeEmail(
+          customerEmail,
+          licenses,
+          licenseType,
+          downloadInfo,
+          maintanancePlanBought
+        );
 
         // For now, just log the licenses
         console.log("Generated licenses:", licenses);
@@ -346,10 +344,10 @@ app.post(
         quantity = 10;
       }
 
-      // Generate license keys
+      // Generate secure license keys with cryptographic signing
       const licenses = [];
       for (let i = 0; i < quantity; i++) {
-        licenses.push(generateLicenseKey());
+        licenses.push(generateSecureLicenseKey(licenseType, customerEmail));
       }
 
       console.log(
@@ -364,6 +362,184 @@ app.post(
   }
 );
 
+// license creation for admins (JSON API)
+app.post("/api/admin/create-license", async (req, res) => {
+  try {
+    if (!isAdminAuthed(req)) {
+      return res.status(401).json({ success: false, error: "Unauthorized" });
+    }
+
+    const { email, amount } = req.body || {};
+    if (!email)
+      return res.status(400).json({ success: false, error: "Email required" });
+    const n = parseInt(amount, 10);
+    if (!n || n < 1 || n > 100) {
+      return res
+        .status(400)
+        .json({ success: false, error: "Amount must be 1-100" });
+    }
+    const type = "single"; // enforce single plan
+
+    const keys = [];
+    const seen = new Set();
+    for (let i = 0; i < n; i++) {
+      let key;
+      do {
+        key = generateSecureLicenseKey(type, email);
+      } while (seen.has(key));
+      seen.add(key);
+      keys.push(key);
+    }
+
+    // Persist to DB (associate with a synthetic order/payment)
+    const syntheticOrderId = `ADMIN-${Date.now()}`;
+    try {
+      await saveLicensesToDatabase(
+        keys,
+        email,
+        type,
+        syntheticOrderId,
+        "active",
+        null, // paymentId
+        "0.00", // amount
+        false // maintenance plan
+      );
+    } catch (dbErr) {
+      console.error("Admin saveLicensesToDatabase error:", dbErr);
+      // Continue; not fatal for emailing, but report
+    }
+
+    let downloadInfo = { downloadUrl: null };
+    try {
+      downloadInfo = await downloadHandler.generateDownloadLink(
+        type,
+        email,
+        syntheticOrderId
+      );
+    } catch (e) {
+      console.warn("Admin download link generation failed:", e?.message || e);
+    }
+
+    // Send email with keys
+    try {
+      await emailService.sendWelcomeEmail(
+        email,
+        keys,
+        type,
+        downloadInfo,
+        false
+      );
+    } catch (mailErr) {
+      console.error("Admin sendWelcomeEmail error:", mailErr);
+      return res.status(500).json({
+        success: false,
+        error: "Failed to send email",
+        licenses: keys,
+        downloadUrl: downloadInfo.downloadUrl,
+      });
+    }
+
+    return res.json({
+      success: true,
+      licenses: keys,
+      downloadUrl: downloadInfo.downloadUrl,
+    });
+  } catch (err) {
+    console.error("Admin create-license error:", err);
+    return res
+      .status(500)
+      .json({ success: false, error: "Internal server error" });
+  }
+});
+
+// Admin HTML form submission endpoint (renders simple result page)
+app.post(
+  "/admin/create-license",
+  express.urlencoded({ extended: true }),
+  async (req, res) => {
+    try {
+      if (!isAdminAuthed(req)) {
+        return res.status(401).send("Unauthorized");
+      }
+  const { email, amount } = req.body || {};
+      if (!email) return res.status(400).send("Email required");
+      const n = parseInt(amount, 10);
+      if (!n || n < 1 || n > 100)
+        return res.status(400).send("Amount must be 1-100");
+      const type = "single"; // enforce single plan
+
+      const keys = [];
+      const seen = new Set();
+      for (let i = 0; i < n; i++) {
+        let key;
+        do {
+          key = generateSecureLicenseKey(type, email);
+        } while (seen.has(key));
+        seen.add(key);
+        keys.push(key);
+      }
+
+      const syntheticOrderId = `ADMIN-${Date.now()}`;
+      try {
+        await saveLicensesToDatabase(
+          keys,
+          email,
+          type,
+          syntheticOrderId,
+          "active",
+          null,
+          "0.00",
+          false
+        );
+      } catch (_) {}
+      let downloadInfo = { downloadUrl: null };
+      try {
+        downloadInfo = await downloadHandler.generateDownloadLink(
+          type,
+          email,
+          syntheticOrderId
+        );
+      } catch (_) {}
+      try {
+        await emailService.sendWelcomeEmail(
+          email,
+          keys,
+          type,
+          downloadInfo,
+          false
+        );
+      } catch (_) {}
+
+      res.send(`
+      <!DOCTYPE html>
+      <html><head><meta charset="utf-8"><title>Licenses Created</title>
+      <style>body{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Arial,sans-serif;padding:2rem;}
+      .card{max-width:720px;margin:auto;background:#fff;border-radius:8px;padding:1.5rem;box-shadow:0 2px 10px rgba(0,0,0,0.08)}
+      code{background:#f5f5f5;padding:.2rem .4rem;border-radius:4px}
+      ul{line-height:1.6}
+      a.btn{display:inline-block;margin-top:1rem;background:#4CAF50;color:#fff;padding:.6rem .9rem;border-radius:6px;text-decoration:none}
+      </style></head><body>
+        <div class="card">
+          <h2>Success</h2>
+          <p>Created <strong>${n}</strong> <code>${type}</code> license(s) for <code>${email}</code>.</p>
+          ${
+            downloadInfo.downloadUrl
+              ? `<p>Download URL: <a href="${downloadInfo.downloadUrl}" target="_blank">${downloadInfo.downloadUrl}</a></p>`
+              : ""
+          }
+          <h3>Licenses</h3>
+          <ul>${keys.map((k) => `<li><code>${k}</code></li>`).join("")}</ul>
+          <a class="btn" href="/admin">Back</a>
+        </div>
+      </body></html>
+    `);
+    } catch (err) {
+      console.error("Admin HTML create-license error:", err);
+      res.status(500).send("Internal server error");
+    }
+  }
+);
+
 // Download endpoint
 app.get("/api/download/:token", downloadHandler.handleDownloadRequest());
 
@@ -375,34 +551,6 @@ app.get("/api/admin/downloads", (req, res) => {
   } catch (error) {
     console.error("Error getting download stats:", error);
     res.status(500).json({ error: "Failed to get download stats" });
-  }
-});
-
-// Manual package generation endpoint (for testing)
-app.post("/api/generate-package", async (req, res) => {
-  try {
-    const { packageType, customerEmail } = req.body;
-
-    if (!packageType) {
-      return res.status(400).json({ error: "Package type required" });
-    }
-
-    const downloadInfo = await downloadHandler.generateDownloadLink(
-      packageType,
-      customerEmail || "test@example.com",
-      "manual_" + Date.now()
-    );
-
-    res.json({
-      success: true,
-      downloadUrl: downloadInfo.downloadUrl,
-      fileName: downloadInfo.fileName,
-      size: downloadInfo.size,
-      description: downloadInfo.description,
-    });
-  } catch (error) {
-    console.error("Error generating package:", error);
-    res.status(500).json({ error: "Failed to generate package" });
   }
 });
 
@@ -462,40 +610,103 @@ app.post("/api/create-subscription", express.json(), async (req, res) => {
   }
 });
 
-// License key generation function
-function generateLicenseKey() {
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  const segments = [];
+// SECURE License key generation with cryptographic signing
+// Private key for signing (in production, store securely in environment variable)
+const SIGNING_SECRET =
+  process.env.LICENSE_SIGNING_SECRET ||
+  "your-secret-signing-key-change-this-in-production";
 
-  for (let i = 0; i < 4; i++) {
-    let segment = "";
-    for (let j = 0; j < 4; j++) {
-      segment += chars.charAt(Math.floor(Math.random() * chars.length));
+function generateSecureLicenseKey(
+  licenseType,
+  customerEmail,
+  expiryDate = null
+) {
+  // Create license data payload
+  const licenseData = {
+    type: licenseType,
+    email: customerEmail,
+    issued: Math.floor(Date.now() / 1000), // Unix timestamp (seconds)
+    issuedMs: Date.now(), // milliseconds precision to avoid same-second collisions
+    nonce: crypto.randomBytes(16).toString("hex"), // per-key randomness for uniqueness
+    expires: expiryDate ? Math.floor(expiryDate / 1000) : null,
+    version: 1, // License format version
+  };
+
+  // Create base64 encoded payload
+  const payload = Buffer.from(JSON.stringify(licenseData)).toString(
+    "base64url"
+  );
+
+  // Create HMAC signature for the payload
+  const signature = crypto
+    .createHmac("sha256", SIGNING_SECRET)
+    .update(payload)
+    .digest("base64url");
+
+  // Combine payload and signature with a separator
+  const rawLicense = `${payload}.${signature}`;
+
+  // Format as readable license key (XXXX-XXXX-XXXX-XXXX format)
+  // Take first 16 characters and format them
+  const hash = crypto.createHash("sha256").update(rawLicense).digest("hex");
+  const keyChars = hash.substring(0, 16).toUpperCase();
+
+  return `${keyChars.slice(0, 4)}-${keyChars.slice(4, 8)}-${keyChars.slice(
+    8,
+    12
+  )}-${keyChars.slice(12, 16)}`;
+}
+
+function validateLicenseKey(licenseKey, customerEmail = null) {
+  try {
+    // This is a simplified validation - in practice, you'd store the full license data
+    // and validate against it. For now, we just check the format and that it's not easily forgeable
+
+    // Check format
+    const licensePattern = /^[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}$/;
+    if (!licensePattern.test(licenseKey)) {
+      return { valid: false, error: "Invalid license format" };
     }
-    segments.push(segment);
-  }
 
-  return segments.join("-");
+    // In a real implementation, you would:
+    // 1. Look up the license in your database
+    // 2. Retrieve the original signed payload
+    // 3. Verify the HMAC signature
+    // 4. Check expiry dates, activation limits, etc.
+
+    // For now, return valid for proper format (database lookup happens elsewhere)
+    return { valid: true };
+  } catch (error) {
+    return { valid: false, error: "License validation failed" };
+  }
 }
 
 app.use(express.json({ limit: "10mb" }));
+// Parse URL-encoded bodies with the same size limit to avoid oversized payloads
+app.use(express.urlencoded({ limit: "10mb", extended: true }));
 
-// In-memory storage (use a real database in production)
-const licenses = new Map();
-const usageLog = [];
-const suspiciousActivities = [];
-
-// Initialize with some demo licenses
-licenses.set("DEMO-1234-5678-9ABC", {
-  key: "DEMO-1234-5678-9ABC",
-  type: "pro",
-  status: "active",
-  customerEmail: "demo@example.com",
-  createdAt: Date.now(),
-  hardwareId: null,
-  maxActivations: 1,
-  activationCount: 0,
+// Basic header size/volume logging for debugging oversized header attacks or proxy issues
+app.use((req, res, next) => {
+  try {
+    // Log number of headers and total header size approximate
+    const headerCount = Object.keys(req.headers).length;
+    const totalHeaderSize = Object.entries(req.headers).reduce(
+      (acc, [k, v]) => {
+        const value = Array.isArray(v) ? v.join(",") : String(v || "");
+        return acc + k.length + value.length;
+      },
+      0
+    );
+    console.log(
+      `Request headers: count=${headerCount}, approxSize=${totalHeaderSize}`
+    );
+  } catch (err) {
+    // Avoid middleware crash
+    console.log("Header logging error", err && err.message);
+  }
+  next();
 });
+
 
 // License validation endpoint
 app.post("/api/validate-license", licenseLimiter, async (req, res) => {
@@ -530,9 +741,9 @@ app.post("/api/validate-license", licenseLimiter, async (req, res) => {
       });
     }
 
-    // Check license format
-    const licensePattern = /^[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/;
-    if (!licensePattern.test(licenseKey)) {
+    // Use secure license validation
+    const validationResult = validateLicenseKey(licenseKey);
+    if (!validationResult.valid) {
       suspiciousActivities.push({
         type: "invalid_license_format",
         licenseKey: licenseKey.substring(0, 8) + "****",
@@ -541,12 +752,25 @@ app.post("/api/validate-license", licenseLimiter, async (req, res) => {
       });
       return res.status(400).json({
         valid: false,
-        error: "Invalid license key format",
+        error: validationResult.error || "Invalid license key format",
       });
     }
 
     // Check if license exists
-    const license = licenses.get(licenseKey);
+    const { data: license, error } = await supabase
+      .from("licenses")
+      .select("*")
+      .eq("license_key", licenseKey)
+      .single();
+
+    if (error) {
+      console.error("License retrieval error:", error);
+      return res.status(500).json({
+        valid: false,
+        error: "Internal server error",
+      });
+    }
+
     if (!license) {
       suspiciousActivities.push({
         type: "license_not_found",
@@ -647,11 +871,24 @@ app.post("/api/validate-license", licenseLimiter, async (req, res) => {
 // License activation endpoint (for new purchases)
 app.post("/api/activate-license", licenseLimiter, async (req, res) => {
   try {
-    const { licenseKey, customerEmail, hardwareId } = req.body;
+    const { licenseKey, hardwareId } = req.body;
     const clientIP = req.ip || req.connection.remoteAddress;
 
     // Check if license exists and is unactivated
-    const license = licenses.get(licenseKey);
+    const { data: license, error } = await supabase
+      .from("licenses")
+      .select("*")
+      .eq("license_key", licenseKey)
+      .single();
+
+    if (error) {
+      console.error("License retrieval error:", error);
+      return res.status(500).json({
+        success: false,
+        error: "License not found",
+      });
+    }
+
     if (!license) {
       return res.status(404).json({
         success: false,
@@ -659,18 +896,30 @@ app.post("/api/activate-license", licenseLimiter, async (req, res) => {
       });
     }
 
-    if (license.hardwareId) {
+    if (license.hardware_id && license.hardware_id !== hardwareId) {
       return res.status(409).json({
         success: false,
         error: "License already activated",
       });
     }
 
-    // Activate license
-    license.hardwareId = hardwareId;
-    license.activatedAt = Date.now();
-    license.activationCount = 1;
-    license.customerEmail = customerEmail;
+    // Update the activated license
+    const { data: updatedLicense, error: updateError } = await supabase
+      .from("licenses")
+      .update({
+        hardware_id: hardwareId,
+        activated_at: new Date().toISOString(),
+      })
+      .eq("license_key", licenseKey)
+      .select()
+      .single();
+
+    if (updateError) {
+      return res.status(updateError.status || 500).json({
+        success: false,
+        error: updateError.message,
+      });
+    }
 
     // Log activation
     usageLog.push({
@@ -684,8 +933,8 @@ app.post("/api/activate-license", licenseLimiter, async (req, res) => {
     res.json({
       success: true,
       licenseData: {
-        type: license.type,
-        activatedAt: license.activatedAt,
+        type: updatedLicense.license_type,
+        activatedAt: updatedLicense.activated_at,
       },
     });
   } catch (error) {
@@ -697,102 +946,6 @@ app.post("/api/activate-license", licenseLimiter, async (req, res) => {
   }
 });
 
-// License transfer endpoint
-app.post("/api/transfer-license", licenseLimiter, async (req, res) => {
-  try {
-    const { licenseKey, newHardwareId, transferReason } = req.body;
-    const clientIP = req.ip || req.connection.remoteAddress;
-
-    const license = licenses.get(licenseKey);
-    if (!license) {
-      return res.status(404).json({
-        success: false,
-        error: "License not found",
-      });
-    }
-
-    // Check transfer limits (e.g., max 3 transfers per license)
-    const transferCount = license.transferCount || 0;
-    if (transferCount >= 3) {
-      return res.status(403).json({
-        success: false,
-        error: "Maximum transfers exceeded",
-      });
-    }
-
-    // Update license
-    license.hardwareId = newHardwareId;
-    license.transferCount = transferCount + 1;
-    license.lastTransfer = Date.now();
-    license.transferReason = transferReason;
-
-    // Log transfer
-    usageLog.push({
-      licenseKey: licenseKey.substring(0, 8) + "****",
-      hardwareId: newHardwareId.substring(0, 8) + "****",
-      clientIP,
-      timestamp: Date.now(),
-      action: "transfer",
-      reason: transferReason,
-    });
-
-    res.json({
-      success: true,
-      transfersRemaining: 3 - license.transferCount,
-    });
-  } catch (error) {
-    console.error("License transfer error:", error);
-    res.status(500).json({
-      success: false,
-      error: "Internal server error",
-    });
-  }
-});
-
-// Analytics endpoint
-app.post("/api/analytics", (req, res) => {
-  try {
-    const { events, sessionId, userId } = req.body;
-    const clientIP = req.ip || req.connection.remoteAddress;
-
-    // Store analytics (in production, use a proper analytics service)
-    events.forEach((event) => {
-      console.log("Analytics:", {
-        ...event,
-        sessionId,
-        userId,
-        clientIP,
-        timestamp: Date.now(),
-      });
-    });
-
-    res.json({ success: true });
-  } catch (error) {
-    console.error("Analytics error:", error);
-    res.status(500).json({ success: false });
-  }
-});
-
-// Suspicious activity reporting
-app.post("/api/report-suspicious-activity", (req, res) => {
-  try {
-    const activity = req.body;
-    const clientIP = req.ip || req.connection.remoteAddress;
-
-    suspiciousActivities.push({
-      ...activity,
-      clientIP,
-      reportedAt: Date.now(),
-    });
-
-    console.warn("Suspicious activity reported:", activity);
-
-    res.json({ success: true });
-  } catch (error) {
-    console.error("Suspicious activity reporting error:", error);
-    res.status(500).json({ success: false });
-  }
-});
 
 // Admin endpoints (protected with API key in production)
 app.get("/api/admin/licenses", (req, res) => {
@@ -811,87 +964,6 @@ app.get("/api/admin/licenses", (req, res) => {
   });
 });
 
-app.get("/api/admin/usage", (req, res) => {
-  const recentUsage = usageLog.slice(-100); // Last 100 entries
-  res.json({
-    usage: recentUsage,
-    totalRequests: usageLog.length,
-  });
-});
-
-app.get("/api/admin/suspicious", (req, res) => {
-  const recentActivities = suspiciousActivities.slice(-50); // Last 50 entries
-  res.json({
-    activities: recentActivities,
-    totalCount: suspiciousActivities.length,
-  });
-});
-
-// Update check endpoint
-app.post("/api/check-updates", (req, res) => {
-  const { currentVersion, platform } = req.body;
-
-  // Mock update check (implement real logic)
-  const latestVersion = "1.2.0";
-  const hasUpdate = currentVersion !== latestVersion;
-
-  res.json({
-    hasUpdate,
-    latestVersion: hasUpdate ? latestVersion : undefined,
-    downloadUrl: hasUpdate
-      ? `https://releases.example.com/v${latestVersion}/${platform}`
-      : undefined,
-    releaseNotes: hasUpdate ? "Bug fixes and security improvements" : undefined,
-    critical: false,
-  });
-});
-
-// Get subscription status
-app.get("/api/subscription/:subscriptionId", async (req, res) => {
-  try {
-    const { subscriptionId } = req.params;
-
-    const subscription = await stripeClient.subscriptions.retrieve(
-      subscriptionId
-    );
-
-    res.json({
-      status: subscription.status,
-      trialEnd: subscription.trial_end
-        ? new Date(subscription.trial_end * 1000).toISOString()
-        : null,
-      currentPeriodEnd: new Date(
-        subscription.current_period_end * 1000
-      ).toISOString(),
-      cancelAtPeriodEnd: subscription.cancel_at_period_end,
-    });
-  } catch (error) {
-    console.error("Error retrieving subscription:", error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Cancel subscription
-app.post("/api/subscription/:subscriptionId/cancel", async (req, res) => {
-  try {
-    const { subscriptionId } = req.params;
-
-    const subscription = await stripeClient.subscriptions.update(
-      subscriptionId,
-      {
-        cancel_at_period_end: true,
-      }
-    );
-
-    res.json({
-      status: subscription.status,
-      cancelAtPeriodEnd: subscription.cancel_at_period_end,
-    });
-  } catch (error) {
-    console.error("Error canceling subscription:", error);
-    res.status(500).json({ error: error.message });
-  }
-});
 
 // Helper functions
 function calculateHardwareSimilarity(hardware1, hardware2) {

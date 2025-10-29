@@ -1,31 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
 
-interface ElectronAPI {
-  getVersion: () => Promise<string>;
-  getPlatform: () => Promise<string>;
-  onLockVault: (callback: () => void) => void;
-  removeAllListeners: (channel: string) => void;
-  showFloatingPanel: () => Promise<any>;
-  hideFloatingPanel: () => Promise<boolean>;
-  isFloatingPanelOpen: () => Promise<boolean>;
-  getFloatingPanelPosition: () => Promise<{x: number, y: number}>;
-  saveFloatingPanelPosition: (x: number, y: number) => Promise<boolean>;
-  setAlwaysOnTop: (flag: boolean) => Promise<boolean>;
-  minimizeMainWindow: () => Promise<boolean>;
-  hideMainWindow: () => Promise<boolean>;
-  restoreMainWindow: () => Promise<boolean>;
-}
-
-declare global {
-  interface Window {
-    electronAPI?: ElectronAPI;
-  }
-}
+// Using the global ElectronAPI type from vite-env.d.ts
 
 export const useElectron = () => {
   const [isElectron, setIsElectron] = useState(false);
-  const [version, setVersion] = useState<string>('');
-  const [platform, setPlatform] = useState<string>('');
+  const [version, setVersion] = useState<string>("");
+  const [platform, setPlatform] = useState<string>("");
+  const [isVaultUnlocked, setIsVaultUnlocked] = useState<boolean>(false);
 
   useEffect(() => {
     const checkElectron = async () => {
@@ -34,10 +15,13 @@ export const useElectron = () => {
         try {
           const appVersion = await window.electronAPI.getVersion();
           const appPlatform = await window.electronAPI.getPlatform();
+          const vaultUnlocked = await window.electronAPI.isVaultUnlocked();
+
           setVersion(appVersion);
           setPlatform(appPlatform);
+          setIsVaultUnlocked(vaultUnlocked);
         } catch (error) {
-          console.error('Failed to get electron info:', error);
+          console.error("Failed to get electron info:", error);
         }
       }
     };
@@ -45,10 +29,30 @@ export const useElectron = () => {
     checkElectron();
   }, []);
 
+  // Listen for vault status changes from main process
+  useEffect(() => {
+    if (!window.electronAPI?.onVaultStatusChange) return;
+
+    const handleVaultStatusChange = (_event: any, unlocked: boolean) => {
+      setIsVaultUnlocked(unlocked);
+    };
+
+    // Set up the listener
+    window.electronAPI.onVaultStatusChange(handleVaultStatusChange);
+
+    // Cleanup listener on unmount
+    return () => {
+      if (window.electronAPI?.removeVaultStatusListener) {
+        window.electronAPI.removeVaultStatusListener();
+      }
+    };
+  }, []);
+
   return {
     isElectron,
     version,
     platform,
-    electronAPI: window.electronAPI
+    electronAPI: window.electronAPI,
+    isVaultUnlocked,
   };
 };

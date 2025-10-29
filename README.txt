@@ -13,6 +13,8 @@ A professional-grade, offline-first password management application built with R
 - **AES-256 Encryption** - Military-grade local encryption
 - **Hardware-Bound Licensing** - Prevents unauthorized distribution
 - **Master Password Protection** - Your data, your control
+- **Auto-Lock** - Automatic locking after 15 minutes of inactivity
+- **Security Questions** - Password recovery without cloud dependency
 
 ### 💻 **Cross-Platform Desktop App**
 - **Windows** - `.exe` installer and portable version
@@ -31,7 +33,23 @@ A professional-grade, offline-first password management application built with R
 - **Freemium Model** - Free version (25 passwords) + Pro upgrade
 - **License Management** - Complete licensing system included
 - **Revenue Tracking** - Built-in sales analytics
+- **Customer Support** - Comprehensive support workflows
 
+## 🎯 Perfect For
+
+- **Privacy-Conscious Users** - Keep passwords truly private
+- **Security Professionals** - Offline-first security model
+- **Small Businesses** - Team password management
+- **Developers** - Complete source code included
+- **Entrepreneurs** - Ready-to-launch business
+
+## 📊 Business Model
+
+### Pricing Tiers
+- **Free**: 25 passwords, basic features
+- **Pro**: $68.00 - Unlimited passwords, export/import, 6 devices
+- **Family**: $49.99 - 3 devices, family sharing
+- **Business**: $99.99 - 10 devices, admin features
 
 ## 🏗️ Technical Architecture
 
@@ -64,6 +82,7 @@ A professional-grade, offline-first password management application built with R
 - **Zero telemetry** - No data collection
 - **Offline operation** - No internet required
 - **Local encryption** - Data never leaves your device
+- **Open source** - Full transparency
 
 ## 🛠️ Development
 
@@ -94,12 +113,24 @@ npm run dist
 - **macOS**: `LocalPasswordVault.dmg`
 - **Linux**: `LocalPasswordVault.AppImage`
 
+## 📈 Marketing & Sales
+
+### Target Market
+- **Security-conscious professionals** (50M+ users globally)
+- **Privacy-focused consumers** (100M+ users globally)
+- **Small-medium businesses** (10M+ businesses globally)
+
 ### Competitive Advantages
 1. **True offline operation** - No cloud dependency
 2. **One-time purchase** - No subscription fatigue
 3. **Hardware-bound licensing** - Prevents piracy
 4. **Modern UI/UX** - Apple-level design quality
+5. **Complete business package** - Ready to launch
 
+**Start your password vault business today!** 🚀
 
+---
+
+**Live Demo**: [https://localpasswordvault.com](https://localpasswordvault.com)  
 **Official Website**: [LocalPasswordVault.com](https://LocalPasswordVault.com)  
 **Contact**: support@LocalPasswordVault.com

@@ -1,14 +1,34 @@
 import nodemailer from "nodemailer";
+import SibApiV3Sdk from "sib-api-v3-sdk";
+import dotenv from "dotenv";
+
+// Load environment variables early so BREVO_API_KEY is available
+dotenv.config();
+
+// Configure Brevo API client with API key (will also be re-applied before send)
+const defaultClient = SibApiV3Sdk.ApiClient.instance;
+const apiKey = defaultClient.authentications["api-key"];
+apiKey.apiKey = process.env.BREVO_API_KEY; // must be the full xkeysib-... string
 
 class EmailService {
   constructor() {
-    this.transporter = nodemailer.createTransport({
-      service: process.env.EMAIL_SERVICE || "gmail",
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-    });
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+      console.warn(
+        "Email service not configured - emails will be logged instead of sent"
+      );
+      this.transporter = null;
+    } else {
+      this.transporter = nodemailer.createTransport({
+        host: process.env.EMAIL_HOST,
+        port: Number(process.env.EMAIL_PORT),
+        secure: Number(process.env.EMAIL_PORT) === 465,
+        auth: {
+          user: process.env.EMAIL_USER,
+          pass: process.env.EMAIL_PASS,
+        },
+      });
+    }
+    this.api = new SibApiV3Sdk.TransactionalEmailsApi();
   }
 
   // Send license email with download link
@@ -21,7 +41,7 @@ class EmailService {
       );
 
       const mailOptions = {
-        from: process.env.EMAIL_USER,
+        from: process.env.EMAIL_SERVICE,
         to: customerEmail,
         subject: `Your Local Password Vault ${this.getLicenseDisplayName(
           licenseType
@@ -29,15 +49,132 @@ class EmailService {
         html: template,
       };
 
-      await this.transporter.sendMail(mailOptions);
-      console.log(`License email sent to ${customerEmail}`);
+      const response = await this.transporter.sendMail(mailOptions);
+      console.log("send response", response);
+
+      // Check if email was actually accepted
+      if (response.rejected && response.rejected.length > 0) {
+        console.error("Some emails were rejected:", response.rejected);
+      }
+
+      if (response.accepted && response.accepted.length > 0) {
+        console.log("✅ Email accepted by server for:", response.accepted);
+        console.log(
+          "📧 Check Brevo dashboard and spam folder for delivery status"
+        );
+      }
     } catch (error) {
       console.error("Failed to send license email:", error);
       throw error;
     }
   }
 
+  // async sendBrevoTemplateEmails(
+  //   customerEmail,
+  //   licenses,
+  //   licenseType,
+  //   downloadInfo
+  // ) {
+  //   // Variables that are in the email template, which need to be replaced
+  //   /**
+  //    * Email template variables
+  //    * - first name
+  //    * - licenseKeys
+  //    * - productname
+  //    * - download url
+  //    */
+  //   const templateVariables = {
+  //     FIRSTNAME: "Customer",
+  //     PRODUCT_NAME: licenseType,
+  //     LICENSE_KEY: licenses,
+  //     DOWNLOAD_URL: downloadInfo.link,
+  //   };
+
+  //   // Send email using Brevo (formerly SendinBlue) API
+  //   try {
+  //     const response = await brevoClient.sendTransacEmail({
+  //       sender: { email: process.env.EMAIL_SERVICE },
+  //       to: [{ email: customerEmail }],
+  //       subject: `Your Local Password Vault ${this.getLicenseDisplayName(
+  //         licenseType
+  //       )} License`,
+  //       html: ,
+  //     });
+
+  //     console.log("Brevo email sent:", response);
+  //   } catch (error) {
+  //     console.error("Failed to send Brevo email:", error);
+  //     throw error;
+  //   }
+  // }
+
   // Get email template based on license type
+  // ...existing code...
+  async sendWelcomeEmail(customerEmail, licenses, licenseType, downloadInfo, maintanancePlanBought) {
+    if (!process.env.BREVO_API_KEY) {
+      console.error("BREVO_API_KEY is missing");
+      throw new Error("Brevo API key not configured");
+    }
+    // Ensure Brevo client has the latest API key (handles late env loading)
+    try {
+      const dc = SibApiV3Sdk.ApiClient.instance;
+      dc.authentications["api-key"].apiKey = process.env.BREVO_API_KEY;
+    } catch (e) {
+      console.warn("Unable to set Brevo API key on client:", e?.message || e);
+    }
+    const templateId = Number(process.env.BREVO_TEMPLATE_ID || 0);
+    if (!templateId) {
+      console.error("BREVO_TEMPLATE_ID is missing/invalid");
+      throw new Error("Brevo templateId not configured");
+    }
+
+    const base = (process.env.SERVER_URL || "").replace(/\/$/, "");
+    const rawUrl = downloadInfo?.downloadUrl || downloadInfo?.link || "";
+    const downloadUrl = base + rawUrl;
+
+    const payload = new SibApiV3Sdk.SendSmtpEmail();
+    payload.to = [{ email: customerEmail, name: "Customer" }];
+    payload.templateId = templateId;
+
+    // Provide a verified sender from your Brevo account
+    payload.sender = {
+      email: process.env.BREVO_SENDER_EMAIL || process.env.EMAIL_SERVICE,
+      name: process.env.BREVO_SENDER_NAME || "Local Password Vault",
+    };
+    if (process.env.SUPPORT_EMAIL) {
+      payload.replyTo = { email: process.env.SUPPORT_EMAIL, name: "Support" };
+    }
+
+    const licenseString = licenses.join(", ");
+
+    // Match template variable names exactly (case-sensitive)
+    payload.params = {
+      FIRSTNAME: "Customer",
+      PRODUCT_NAME: this.getLicenseDisplayName(licenseType),
+      DOWNLOAD_URL: downloadUrl,
+      // If your template loops over keys:
+      LICENSE_KEY: licenseString,
+      MAINTANANCE_STATUS: maintanancePlanBought ? "Yes" : "No",
+      // If your template expects HTML and uses |safe:
+      // LICENSE_KEYS_HTML: (Array.isArray(licenses) ? licenses : [licenses])
+      //   .map((k) => `<strong>${k}</strong>`)
+      //   .join("<br/>"),
+    };
+
+    payload.tags = ["lpv-purchase"];
+
+    try {
+      const res = await this.api.sendTransacEmail(payload);
+      console.log("Brevo sendTransacEmail OK:", res?.messageId || res);
+      return res;
+    } catch (err) {
+      const details =
+        err?.response?.body || err?.response?.text || err?.message || err;
+      console.error("Brevo sendTransacEmail error:", details);
+      throw err;
+    }
+  }
+
   getEmailTemplate(licenseType, licenses, downloadInfo) {
     const licenseKeys = Array.isArray(licenses) ? licenses : [licenses];
     const displayName = this.getLicenseDisplayName(licenseType);

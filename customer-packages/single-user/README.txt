@@ -49,7 +49,7 @@ Choose your operating system:
 ✅ **Unlimited Password Storage** - Store as many passwords as you need
 ✅ **AES-256 Encryption** - Military-grade local encryption
 ✅ **Floating Panel** - Quick access mini-vault
-✅ **Import/Export** - Transfer data from other password managers
+✅ **Export** - Transfer data from other password managers
 ✅ **Password Generator** - Create strong, unique passwords
 ✅ **Auto-Lock** - Automatic security after inactivity
 ✅ **Offline Operation** - No internet required
@@ -57,6 +57,7 @@ Choose your operating system:
 ## Important Security Notes
 
 - **Master Password:** This is the ONLY way to access your vault. We cannot recover it if lost.
+- **Security Questions:** Set these up for password recovery
 - **Regular Backups:** Export your vault regularly
 - **Keep Software Updated:** Install updates when available
 
@@ -65,20 +66,22 @@ Choose your operating system:
 - **Knowledge Base:** LocalPasswordVault.com/support
 - **Email Support:** support@LocalPasswordVault.com
 - **Response Time:** Within 48 hours
+- **Community Forum:** community.LocalPasswordVault.com
 
 ## License Terms
 
 Your Single User license allows:
 - Installation on 1 device
 - All features included in Single User tier
-- Transfer to new device 
+- Free updates and bug fixes
+- Transfer to new device (contact support)
 
 ## Need More Devices?
 
 Upgrade options:
-- **Family Plan:** 3 devices + priority support
-- **Pro:** 6 devices + priority support
-- **Business Plan:** 10+ devices + enterprise features
+- **Family Plan ($49.99):** 3 devices + priority support
+- **Pro ($68.00):** 6 devices + priority support
+- **Business Plan ($99.99):** 10+ devices + enterprise features
 
 Visit LocalPasswordVault.com/upgrade to learn more.
 

@@ -1,25 +1,69 @@
-const { contextBridge, ipcRenderer } = require('electron');
+const { contextBridge, ipcRenderer } = require("electron");
 
 // Expose protected methods that allow the renderer process to use
 // the ipcRenderer without exposing the entire object
-contextBridge.exposeInMainWorld('electronAPI', {
-  getVersion: () => ipcRenderer.invoke('app-version'),
-  getPlatform: () => ipcRenderer.invoke('platform'),
-  onLockVault: (callback) => ipcRenderer.on('lock-vault', callback),
+contextBridge.exposeInMainWorld("electronAPI", {
+  getVersion: () => ipcRenderer.invoke("app-version"),
+  getPlatform: () => ipcRenderer.invoke("platform"),
+  onLockVault: (callback) => ipcRenderer.on("lock-vault", callback),
   removeAllListeners: (channel) => ipcRenderer.removeAllListeners(channel),
-  
+
   // Floating panel controls
-  showFloatingPanel: () => ipcRenderer.invoke('show-floating-panel'),
-  hideFloatingPanel: () => ipcRenderer.invoke('hide-floating-panel'),
-  isFloatingPanelOpen: () => ipcRenderer.invoke('is-floating-panel-open'),
-  getFloatingPanelPosition: () => ipcRenderer.invoke('get-floating-panel-position'),
-  saveFloatingPanelPosition: (x, y) => ipcRenderer.invoke('save-floating-panel-position', x, y),
-  setAlwaysOnTop: (flag) => ipcRenderer.invoke('set-always-on-top', flag),
-  
+  showFloatingPanel: () => ipcRenderer.invoke("show-floating-panel"),
+  hideFloatingPanel: () => ipcRenderer.invoke("hide-floating-panel"),
+  isFloatingPanelOpen: () => ipcRenderer.invoke("is-floating-panel-open"),
+  getFloatingPanelPosition: () =>
+    ipcRenderer.invoke("get-floating-panel-position"),
+  saveFloatingPanelPosition: (x, y) =>
+    ipcRenderer.invoke("save-floating-panel-position", x, y),
+  setAlwaysOnTop: (flag) => ipcRenderer.invoke("set-always-on-top", flag),
+
   // Window controls
-  minimizeMainWindow: () => ipcRenderer.invoke('minimize-main-window'),
-  hideMainWindow: () => ipcRenderer.invoke('hide-main-window'),
-  restoreMainWindow: () => ipcRenderer.invoke('restore-main-window')
+  minimizeMainWindow: () => ipcRenderer.invoke("minimize-main-window"),
+  hideMainWindow: () => ipcRenderer.invoke("hide-main-window"),
+  restoreMainWindow: () => ipcRenderer.invoke("restore-main-window"),
+
+  // Floating button controls
+  showFloatingButton: () => ipcRenderer.invoke("show-floating-button"),
+  hideFloatingButton: () => ipcRenderer.invoke("hide-floating-button"),
+  isFloatingButtonOpen: () => ipcRenderer.invoke("is-floating-button-open"),
+  toggleFloatingPanelFromButton: () =>
+    ipcRenderer.invoke("toggle-floating-panel-from-button"),
+  saveFloatingButtonPosition: (x, y) =>
+    ipcRenderer.invoke("save-floating-button-position", x, y),
+  moveFloatingButton: (x, y) =>
+    ipcRenderer.invoke("move-floating-button", x, y),
+
+  // Vault security controls
+  vaultUnlocked: () => ipcRenderer.invoke("vault-unlocked"),
+  vaultLocked: () => ipcRenderer.invoke("vault-locked"),
+  isVaultUnlocked: () => ipcRenderer.invoke("is-vault-unlocked"),
+  showMainWindow: () => ipcRenderer.invoke("show-main-window"),
+  openExternal: (url) => ipcRenderer.invoke("open-external", url),
+
+  // Vault status change listener
+  onVaultStatusChange: (callback) => {
+    // Remove any existing listeners to prevent duplicates
+    ipcRenderer.removeAllListeners("vault-status-changed");
+    // Add the new listener
+    ipcRenderer.on("vault-status-changed", callback);
+  },
+  removeVaultStatusListener: () => {
+    ipcRenderer.removeAllListeners("vault-status-changed");
+  },
+
+  // Entries synchronization across windows
+  broadcastEntriesChanged: () =>
+    ipcRenderer.invoke("broadcast-entries-changed"),
+  onEntriesChanged: (callback) => {
+    // Remove any existing listeners to prevent duplicates
+    ipcRenderer.removeAllListeners("entries-changed");
+    // Add the new listener
+    ipcRenderer.on("entries-changed", callback);
+  },
+  removeEntriesChangedListener: (callback) => {
+    ipcRenderer.removeListener("entries-changed", callback);
+  },
 });
 
 // Security: Remove any node globals in renderer
