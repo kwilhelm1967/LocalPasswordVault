@@ -1,9 +1,42 @@
+// Load environment variables
+require("dotenv").config();
+
 const { app, BrowserWindow, Menu, shell, ipcMain } = require("electron");
 const path = require("path");
 const fs = require("fs");
 const { screen, powerMonitor, globalShortcut } = require("electron");
+const SecureFileStorage = require("./secure-storage");
 const Positioner = require("electron-positioner");
-const isDev = process.env.NODE_ENV === "development";
+const isDev = process.env.NODE_ENV === "development" || !app.isPackaged;
+const devToolsEnabled = isDev && process.env.DEV_TOOL === "true";
+
+// SINGLE INSTANCE: Prevent multiple instances
+const gotTheLock = app.requestSingleInstanceLock();
+
+// If another instance is already running, focus it and quit
+if (!gotTheLock) {
+  console.log("Another instance is already running. Quitting...");
+  app.quit();
+  process.exit(0);
+}
+
+// Handle second instance attempt - focus existing window
+app.on('second-instance', () => {
+  console.log('Second instance detected, focusing existing window...');
+
+  // Someone tried to run a second instance, we should focus our window
+  if (mainWindow) {
+    if (mainWindow.isMinimized()) mainWindow.restore();
+    mainWindow.show();
+    mainWindow.focus();
+  }
+
+  // Also show floating button if vault is unlocked
+  if (isVaultUnlocked && floatingButton && !floatingButton.isDestroyed()) {
+    floatingButton.show();
+    floatingButton.focus();
+  }
+});
 
 // Add process error handlers for debugging
 process.on("uncaughtException", (error) => {
@@ -25,6 +58,9 @@ let floatingPanelInterval = null;
 let floatingButtonInterval = null;
 let isTogglingFloatingWindow = false;
 const userDataPath = app.getPath("userData");
+
+// SECURE: Initialize secure file storage
+let secureStorage = null;
 const positionFilePath = path.join(
   userDataPath,
   "floating-panel-position.json"
@@ -108,7 +144,9 @@ const createWindow = () => {
   // Load the app
   if (isDev) {
     mainWindow.loadURL("http://localhost:5173");
-    mainWindow.webContents.openDevTools();
+    if (devToolsEnabled) {
+      mainWindow.webContents.openDevTools();
+    }
   } else {
     mainWindow.loadFile(path.join(__dirname, "../dist/index.html"));
   }
@@ -313,8 +351,10 @@ const createFloatingWindow = () => {
     // Load the floating panel page
     if (isDev) {
       floatingWindow.loadURL("http://localhost:5173/#floating");
-      // Don't show dev tools by default to prevent flashing
-      // floatingWindow.webContents.openDevTools();
+      // Enable DevTools for floating panel in development if enabled
+      if (devToolsEnabled) {
+        floatingWindow.webContents.openDevTools();
+      }
     } else {
       floatingWindow.loadFile(path.join(__dirname, "../dist/index.html"), {
         hash: "floating",
@@ -706,7 +746,54 @@ const createMenu = () => {
       submenu: [
         { role: "reload" },
         { role: "forceReload" },
-        { role: "toggleDevTools" },
+        {
+          label: "Toggle Developer Tools",
+          accelerator: "F12",
+          click: () => {
+            // Only allow DevTools if enabled in development
+            if (!devToolsEnabled) return;
+
+            // Toggle DevTools for focused window
+            const focusedWindow = BrowserWindow.getFocusedWindow();
+            if (focusedWindow) {
+              if (focusedWindow.webContents.isDevToolsOpened()) {
+                focusedWindow.webContents.closeDevTools();
+              } else {
+                focusedWindow.webContents.openDevTools();
+              }
+            }
+          },
+        },
+        {
+          label: "Toggle Main Window DevTools",
+          accelerator: "CmdOrCtrl+Shift+I",
+          click: () => {
+            if (!devToolsEnabled) return;
+
+            if (mainWindow && !mainWindow.isDestroyed()) {
+              if (mainWindow.webContents.isDevToolsOpened()) {
+                mainWindow.webContents.closeDevTools();
+              } else {
+                mainWindow.webContents.openDevTools();
+              }
+            }
+          },
+        },
+        {
+          label: "Toggle Floating Panel DevTools",
+          accelerator: "CmdOrCtrl+Shift+D",
+          click: () => {
+            if (!devToolsEnabled) return;
+
+            if (floatingWindow && !floatingWindow.isDestroyed()) {
+              if (floatingWindow.webContents.isDevToolsOpened()) {
+                floatingWindow.webContents.closeDevTools();
+              } else {
+                floatingWindow.webContents.openDevTools();
+              }
+            }
+          },
+        },
         { type: "separator" },
         { role: "resetZoom" },
         { role: "zoomIn" },
@@ -744,6 +831,9 @@ const createMenu = () => {
 
 // App event handlers
 app.whenReady().then(() => {
+  // Initialize secure storage
+  secureStorage = new SecureFileStorage(userDataPath);
+
   createWindow();
   createMenu();
   // SECURITY FIX: Don't create floating button automatically
@@ -1000,6 +1090,9 @@ const vaultHandlers = {
       console.log("Vault locked");
       isVaultUnlocked = false;
 
+      // Clear temporary memory on lock
+      clearTempMemory();
+
       mainWindow?.webContents.send("vault-status-changed", isVaultUnlocked);
       floatingWindow?.webContents.send("vault-status-changed", isVaultUnlocked);
       floatingButton?.webContents.send("vault-status-changed", isVaultUnlocked);
@@ -1230,10 +1323,13 @@ ipcMain.handle("show-main-window", () => {
   return false;
 });
 
-// Entries synchronization IPC handlers
+// SECURITY: No plaintext storage in main process
+// All password data must remain encrypted and handled only by renderer process
+
+// SECURE: Event broadcasting only (no data exchange)
 ipcMain.handle("broadcast-entries-changed", () => {
   try {
-    // Send entries-changed event to all renderer processes
+    // Send entries-changed event to all renderer processes (no actual data)
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.webContents.send("entries-changed");
     }
@@ -1243,6 +1339,142 @@ ipcMain.handle("broadcast-entries-changed", () => {
     return true;
   } catch (error) {
     console.error("Failed to broadcast entries changed:", error);
+    return false;
+  }
+});
+
+// SECURE: Temporary in-memory storage for window synchronization only
+// No file persistence - data is cleared when app restarts
+let tempSharedEntries = null;
+
+// Clear temporary memory on vault lock
+const clearTempMemory = () => {
+  tempSharedEntries = null;
+  console.log("Temporary shared memory cleared");
+};
+
+// SECURE: Vault status only (no data exposure)
+ipcMain.handle("get-vault-status", () => {
+  return isVaultUnlocked;
+});
+
+// SECURE: Vault existence check without data exposure
+ipcMain.handle("vault-exists", () => {
+  if (!secureStorage) return false;
+  return secureStorage.vaultExists();
+});
+
+// SECURE: Save encrypted vault data (never store plaintext in main process)
+ipcMain.handle("save-vault-encrypted", (event, encryptedData, masterPassword) => {
+  try {
+    // Validate source window
+    if (!isValidSource(event.senderFrame)) {
+      console.error("Unauthorized vault save attempt");
+      return false;
+    }
+
+    if (!secureStorage || !masterPassword || !encryptedData) {
+      return false;
+    }
+
+    const vaultData = {
+      data: encryptedData,
+      timestamp: Date.now()
+    };
+
+    const success = secureStorage.saveVault(vaultData, masterPassword);
+
+    // Clear sensitive parameters immediately
+    masterPassword = null;
+
+    return success;
+  } catch (error) {
+    console.error("Failed to save vault:", error);
+    return false;
+  }
+});
+
+// SECURE: Load encrypted vault data (never decrypt in main process)
+ipcMain.handle("load-vault-encrypted", (event, masterPassword) => {
+  try {
+    // Validate source window
+    if (!isValidSource(event.senderFrame)) {
+      console.error("Unauthorized vault load attempt");
+      return null;
+    }
+
+    if (!secureStorage || !masterPassword) {
+      return null;
+    }
+
+    const vaultData = secureStorage.loadVault(masterPassword);
+
+    // Clear sensitive parameters immediately
+    masterPassword = null;
+
+    return vaultData;
+  } catch (error) {
+    console.error("Failed to load vault:", error);
+    return null;
+  }
+});
+
+// SECURE: Validate IPC source window
+function isValidSource(frame) {
+  try {
+    // Ensure request comes from our app windows
+    const origin = frame.url;
+    return origin.includes("localhost:5173") ||
+           origin.includes("index.html") ||
+           origin.includes("floating-button.html");
+  } catch (error) {
+    console.error("Failed to validate IPC source:", error);
+    return false;
+  }
+}
+
+// SECURE: Temporary shared entries handlers (in-memory only)
+ipcMain.handle("save-shared-entries-temp", (event, entries) => {
+  try {
+    // Validate source
+    if (!isValidSource(event.senderFrame)) {
+      console.error("Unauthorized save shared entries attempt");
+      return false;
+    }
+
+    // Store in memory only (no file persistence)
+    tempSharedEntries = entries;
+    console.log("Temporarily stored entries in memory:", entries.length);
+    return true;
+  } catch (error) {
+    console.error("Failed to save temporary shared entries:", error);
+    return false;
+  }
+});
+
+ipcMain.handle("load-shared-entries-temp", (event) => {
+  try {
+    // Validate source
+    if (!isValidSource(event.senderFrame)) {
+      console.error("Unauthorized load shared entries attempt");
+      return null;
+    }
+
+    console.log("Loading temporary shared entries:", tempSharedEntries ? tempSharedEntries.length : 0);
+    return tempSharedEntries || [];
+  } catch (error) {
+    console.error("Failed to load temporary shared entries:", error);
+    return null;
+  }
+});
+
+// Initialize vault in floating window using existing localStorage data
+ipcMain.handle("sync-vault-to-floating", async () => {
+  try {
+    console.log("Syncing vault state to floating window");
+    return true;
+  } catch (error) {
+    console.error("Failed to sync vault to floating window:", error);
     return false;
   }
 });

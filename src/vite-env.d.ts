@@ -42,6 +42,16 @@ declare global {
       ) => void;
       removeVaultStatusListener: () => void;
 
+      // Entries synchronization
+      broadcastEntriesChanged: () => Promise<boolean>;
+      saveSharedEntries: (entries: any[]) => Promise<boolean>;
+      loadSharedEntries: () => Promise<any[]>;
+      getVaultStatus: () => Promise<boolean>;
+      syncVaultToFloating: () => Promise<boolean>;
+      onEntriesChanged: (callback: (event: any) => void) => void;
+      removeEntriesChangedListener: (callback: (event: any) => void) => void;
+      openExternal: (url: string) => Promise<boolean>;
+
       // Allow for dynamic properties
       [key: string]: any;
     };

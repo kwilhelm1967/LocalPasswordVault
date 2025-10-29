@@ -1,4 +1,5 @@
 import { PasswordEntry, Category } from "../types";
+import { memorySecurity } from "./memorySecurity";
 
 // FIXED CATEGORIES - SINGLE SOURCE OF TRUTH
 const FIXED_CATEGORIES: Category[] = [
@@ -59,21 +60,33 @@ class MilitaryEncryption {
   async initializeEncryption(masterPassword: string): Promise<void> {
     let salt: Uint8Array;
 
-    // Check if salt exists, if not create one
-    const storedSalt = localStorage.getItem("vault_salt_v2");
-    if (storedSalt) {
-      salt = new Uint8Array(
-        atob(storedSalt)
-          .split("")
-          .map((c) => c.charCodeAt(0))
-      );
-    } else {
-      // Generate new salt for new vault
-      salt = crypto.getRandomValues(new Uint8Array(32)); // 256-bit salt
-      localStorage.setItem("vault_salt_v2", btoa(String.fromCharCode(...salt)));
-    }
+    try {
+      // Track password as sensitive data
+      memorySecurity.trackSensitiveData(masterPassword);
 
-    this.encryptionKey = await this.deriveKeyFromPassword(masterPassword, salt);
+      // Check if salt exists, if not create one
+      const storedSalt = localStorage.getItem("vault_salt_v2");
+      if (storedSalt) {
+        salt = new Uint8Array(
+          atob(storedSalt)
+            .split("")
+            .map((c) => c.charCodeAt(0))
+        );
+      } else {
+        // Generate new salt for new vault
+        salt = memorySecurity.generateSecureRandom(32); // 256-bit salt
+        localStorage.setItem("vault_salt_v2", btoa(String.fromCharCode(...salt)));
+      }
+
+      this.encryptionKey = await this.deriveKeyFromPassword(masterPassword, salt);
+
+      // Clear password from memory immediately after key derivation
+      memorySecurity.clearString(masterPassword);
+    } catch (error) {
+      // Ensure password is cleared even on error
+      memorySecurity.clearString(masterPassword);
+      throw error;
+    }
   }
 
   // Generate PBKDF2 password hash for verification
@@ -173,7 +186,11 @@ class MilitaryEncryption {
 
   // Lock the vault (clear encryption key from memory)
   lockVault(): void {
+    // Clear encryption key
     this.encryptionKey = null;
+
+    // Perform memory cleanup
+    memorySecurity.onVaultLock();
   }
 
   // Check if vault exists (has salt)
@@ -309,6 +326,22 @@ export class StorageService {
       // Encrypt the entries before saving
       const entriesJson = JSON.stringify(validEntries);
       const encryptedData = await this.encryption.encryptData(entriesJson);
+
+      // SECURE: Try to save to secure file storage first (Electron)
+      if (window.electronAPI && window.electronAPI.saveVaultEncrypted) {
+        // For Electron app, we need the master password for secure file storage
+        // This is a security limitation - master password should never be exposed
+        // to renderer process in production. For now, fallback to localStorage.
+        console.warn("Secure file storage requires master password in renderer - using localStorage fallback");
+      }
+
+      // Fallback: localStorage with encryption (less secure than file storage)
+      // Create backup before saving new data
+      const currentData = localStorage.getItem("password_entries_v2");
+      if (currentData) {
+        localStorage.setItem("password_entries_v2_backup", currentData);
+      }
+
       localStorage.setItem("password_entries_v2", encryptedData);
 
       // Also handle migration from old unencrypted data
@@ -332,20 +365,45 @@ export class StorageService {
       // Try to load encrypted data first
       const encryptedData = localStorage.getItem("password_entries_v2");
       if (encryptedData) {
-        const decryptedJson = await this.encryption.decryptData(encryptedData);
-        const entries = JSON.parse(decryptedJson);
+        try {
+          const decryptedJson = await this.encryption.decryptData(encryptedData);
+          const entries = JSON.parse(decryptedJson);
 
-        // Ensure entries is an array and has proper date objects
-        if (!Array.isArray(entries)) {
-          console.warn("Loaded entries is not an array, returning empty array");
-          return [];
+          // Ensure entries is an array and has proper date objects
+          if (!Array.isArray(entries)) {
+            console.warn("Loaded entries is not an array, returning empty array");
+            return [];
+          }
+
+          return entries.map((entry: any) => ({
+            ...entry,
+            createdAt: new Date(entry.createdAt),
+            updatedAt: new Date(entry.updatedAt),
+          }));
+        } catch (decryptError) {
+          console.error("Failed to decrypt main data, trying backup:", decryptError);
+          // Try to recover from backup
+          const backupData = localStorage.getItem("password_entries_v2_backup");
+          if (backupData) {
+            try {
+              const decryptedBackup = await this.encryption.decryptData(backupData);
+              const entries = JSON.parse(decryptedBackup);
+
+              if (Array.isArray(entries)) {
+                console.log("Successfully recovered from backup");
+                // Restore backup as main data
+                localStorage.setItem("password_entries_v2", backupData);
+                return entries.map((entry: any) => ({
+                  ...entry,
+                  createdAt: new Date(entry.createdAt),
+                  updatedAt: new Date(entry.updatedAt),
+                }));
+              }
+            } catch (backupError) {
+              console.error("Backup recovery failed:", backupError);
+            }
+          }
         }
-
-        return entries.map((entry: any) => ({
-          ...entry,
-          createdAt: new Date(entry.createdAt),
-          updatedAt: new Date(entry.updatedAt),
-        }));
       }
 
       // Handle migration from old unencrypted data

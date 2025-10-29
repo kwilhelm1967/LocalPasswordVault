@@ -256,7 +256,7 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
         </div>
       )}
 
-      <div className="max-w-4xl w-full mx-auto mt-6">
+      <div className="max-w-4xl w-full mx-auto mt-6 overflow-y-auto max-h-[calc(100vh-2rem)]">
         {/* Header */}
         <div className="text-center mb-8">
           <div

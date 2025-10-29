@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
 import {
-  Search,
   Plus,
   Download,
   Lock,
@@ -10,13 +9,12 @@ import {
   EyeOff,
   Copy,
   Edit3,
-  X,
-  Clock,
   FileText,
 } from "lucide-react";
 import { PasswordEntry, Category } from "../types";
 import { CategoryIcon } from "./CategoryIcon";
 import { EntryForm } from "./EntryForm";
+import { storageService } from "../utils/storage";
 
 interface ElectronFloatingPanelProps {
   entries: PasswordEntry[];
@@ -29,11 +27,10 @@ interface ElectronFloatingPanelProps {
   onLock: () => void;
   onExport: () => void;
   onImport: () => void;
-  searchTerm: string;
-  onSearchChange: (term: string) => void;
   selectedCategory: string;
   onCategoryChange: (category: string) => void;
   onMaximize: () => void;
+  onEntriesReload?: (entries: PasswordEntry[]) => void;
 }
 
 export const ElectronFloatingPanel: React.FC<ElectronFloatingPanelProps> = ({
@@ -45,11 +42,10 @@ export const ElectronFloatingPanel: React.FC<ElectronFloatingPanelProps> = ({
   onLock,
   onExport,
   onImport,
-  searchTerm,
-  onSearchChange,
   selectedCategory,
   onCategoryChange,
   onMaximize,
+  onEntriesReload,
 }) => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingEntry, setEditingEntry] = useState<PasswordEntry | null>(null);
@@ -57,11 +53,97 @@ export const ElectronFloatingPanel: React.FC<ElectronFloatingPanelProps> = ({
     new Set()
   );
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
-  const [autoLockTime] = useState(15);
-  const [timeRemaining, setTimeRemaining] = useState(autoLockTime * 60);
+  const [isMainVaultUnlocked, setIsMainVaultUnlocked] = useState(false);
   // Removed unused positionLoaded state to avoid lint errors
 
-  // Load and set window position on component mount
+  // Initialize floating panel vault when vault is unlocked in main window
+  useEffect(() => {
+    const initializeFloatingVault = async () => {
+      if (window.electronAPI && window.electronAPI.getVaultStatus) {
+        try {
+          const mainVaultStatus = await window.electronAPI.getVaultStatus();
+          console.log("Floating panel: Main vault unlocked status:", mainVaultStatus);
+          setIsMainVaultUnlocked(mainVaultStatus);
+
+          if (mainVaultStatus && !storageService.isVaultUnlocked()) {
+            console.log("Floating panel: Attempting to sync with main vault");
+            // Try to initialize the floating panel's vault using existing data
+            await window.electronAPI.syncVaultToFloating();
+            // Load entries from shared storage
+            const sharedEntries = await window.electronAPI.loadSharedEntries();
+            if (sharedEntries && sharedEntries.length > 0) {
+              console.log("Floating panel: Loaded shared entries:", sharedEntries.length);
+              onEntriesReload?.(sharedEntries.map((entry: any) => ({
+                ...entry,
+                createdAt: new Date(entry.createdAt),
+                updatedAt: new Date(entry.updatedAt),
+              })));
+            }
+          }
+        } catch (error) {
+          console.error("Failed to initialize floating vault:", error);
+        }
+      }
+    };
+
+    initializeFloatingVault();
+  }, [onEntriesReload]);
+
+  // Handle vault status changes
+  useEffect(() => {
+    if (!window.electronAPI?.onVaultStatusChange) return;
+
+    const handleVaultStatusChange = async (_event: any, unlocked: boolean) => {
+      console.log("Floating panel: Vault status changed", unlocked);
+      setIsMainVaultUnlocked(unlocked);
+
+      if (unlocked) {
+        // Vault was unlocked in another window, reload data
+        try {
+          const sharedEntries = await window.electronAPI.loadSharedEntries();
+          if (sharedEntries && sharedEntries.length > 0) {
+            console.log("Floating panel: Reloaded entries after vault unlock:", sharedEntries.length);
+            onEntriesReload?.(sharedEntries.map((entry: any) => ({
+              ...entry,
+              createdAt: new Date(entry.createdAt),
+              updatedAt: new Date(entry.updatedAt),
+            })));
+          }
+        } catch (error) {
+          console.error("Failed to handle vault unlock in floating panel:", error);
+        }
+      }
+    };
+
+    window.electronAPI.onVaultStatusChange(handleVaultStatusChange);
+    return () => {
+      window.electronAPI?.removeVaultStatusListener?.();
+    };
+  }, [onEntriesReload]);
+
+  // Handle cross-window synchronization
+  useEffect(() => {
+    if (!window.electronAPI?.onEntriesChanged) return;
+
+    const handleEntriesChanged = async () => {
+      try {
+        // Only reload if vault is unlocked
+        if (storageService.isVaultUnlocked()) {
+          console.log("Floating panel: Entries changed event received");
+          // Reload entries when data changes in other windows
+          const loadedEntries = await storageService.loadEntries();
+          onEntriesReload?.(loadedEntries);
+        }
+      } catch (error) {
+        console.error("Failed to reload entries in floating panel:", error);
+      }
+    };
+
+    window.electronAPI.onEntriesChanged(handleEntriesChanged);
+    return () => {
+      window.electronAPI?.removeEntriesChangedListener?.(handleEntriesChanged);
+    };
+  }, [onEntriesReload]);
   useEffect(() => {
     const initializeFloatingPanel = async () => {
       if (window.electronAPI && window.electronAPI.setAlwaysOnTop) {
@@ -90,36 +172,7 @@ export const ElectronFloatingPanel: React.FC<ElectronFloatingPanelProps> = ({
     return () => clearInterval(interval);
   }, []);
 
-  // Auto-lock countdown
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setTimeRemaining((prev) => {
-        if (prev <= 1) {
-          onLock();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [onLock]);
-
-  // Reset timer on user activity
-  useEffect(() => {
-    const resetTimer = () => {
-      setTimeRemaining(autoLockTime * 60);
-    };
-
-    document.addEventListener("mousedown", resetTimer);
-    document.addEventListener("keydown", resetTimer);
-
-    return () => {
-      document.removeEventListener("mousedown", resetTimer);
-      document.removeEventListener("keydown", resetTimer);
-    };
-  }, [autoLockTime]);
-
+  
   // Load favorites from localStorage
   // useEffect(() => {
   //   const stored = localStorage.getItem("floating_panel_favorites");
@@ -142,21 +195,14 @@ export const ElectronFloatingPanel: React.FC<ElectronFloatingPanelProps> = ({
 
   const filteredEntries = useMemo(() => {
     return entries.filter((entry) => {
-      // Search filter: if no search term, all entries match search
-      const matchesSearch =
-        !searchTerm.trim() ||
-        entry.accountName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        entry.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (entry.notes || "").toLowerCase().includes(searchTerm.toLowerCase());
-
       // Category filter: if "all" is selected, all entries match category
       const matchesCategory =
         selectedCategory === "all" || entry.category === selectedCategory;
 
-      // Both filters must pass for entry to be included
-      return matchesSearch && matchesCategory;
+      // Only category filter is applied
+      return matchesCategory;
     });
-  }, [entries, searchTerm, selectedCategory]);
+  }, [entries, selectedCategory]);
 
   const favoriteEntries = filteredEntries.filter((entry) =>
     favorites.has(entry.id)
@@ -206,32 +252,35 @@ export const ElectronFloatingPanel: React.FC<ElectronFloatingPanelProps> = ({
     setFavorites(newFavorites);
   };
 
-  const handleAddEntry = (
+  const handleAddEntry = async (
     entryData: Omit<PasswordEntry, "id" | "createdAt" | "updatedAt">
   ) => {
-    onAddEntry(entryData);
+    // Check if main vault is unlocked (floating panel relies on main window's vault state)
+    if (!isMainVaultUnlocked) {
+      console.error("Cannot add entry: Main vault is locked");
+      return;
+    }
+
+    await onAddEntry(entryData);
     setShowAddForm(false);
   };
 
-  const handleUpdateEntry = (
+  const handleUpdateEntry = async (
     entryData: Omit<PasswordEntry, "id" | "createdAt" | "updatedAt">
   ) => {
+    // Check if main vault is unlocked (floating panel relies on main window's vault state)
+    if (!isMainVaultUnlocked) {
+      console.error("Cannot update entry: Main vault is locked");
+      return;
+    }
+
     if (editingEntry) {
-      onUpdateEntry({ ...editingEntry, ...entryData, updatedAt: new Date() });
+      await onUpdateEntry({ ...editingEntry, ...entryData, updatedAt: new Date() });
       setEditingEntry(null);
     }
   };
 
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, "0")}`;
-  };
-
-  const getProgressPercentage = () => {
-    return ((autoLockTime * 60 - timeRemaining) / (autoLockTime * 60)) * 100;
-  };
-
+  
   return (
     <div
       className="h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 flex flex-col backdrop-blur-xl border border-slate-800/50 shadow-2xl"
@@ -252,20 +301,6 @@ export const ElectronFloatingPanel: React.FC<ElectronFloatingPanelProps> = ({
         </div>
 
         <div className="flex items-center space-x-3 no-drag">
-          {/* Enhanced Auto-lock timer */}
-          <div className="flex items-center space-x-2 bg-slate-800/50 rounded-lg px-3 py-1.5 border border-slate-700/50">
-            <Clock className="w-3.5 h-3.5 text-blue-400" />
-            <span className="text-xs  text-slate-300">
-              {formatTime(timeRemaining)}
-            </span>
-            <div className="w-12 h-1.5 bg-slate-700 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-blue-500 to-cyan-400 transition-all duration-1000 rounded-full"
-                style={{ width: `${getProgressPercentage()}%` }}
-              />
-            </div>
-          </div>
-
           <div className="flex items-center space-x-2">
             <button
               onClick={onExport}
@@ -291,23 +326,6 @@ export const ElectronFloatingPanel: React.FC<ElectronFloatingPanelProps> = ({
               <Maximize2 className="w-4 h-4" />
             </button>
           </div>
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 group-focus-within:text-blue-400 w-4 h-4 transition-colors" />
-          <input
-            type="text"
-            placeholder="Quick Search"
-            value={searchTerm}
-            onChange={(e) => onSearchChange(e.target.value)}
-            className="w-full pl-10 pr-10 py-3 bg-slate-800/50 border border-slate-600/50 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all text-sm backdrop-blur-sm no-drag"
-          />
-          {searchTerm && (
-            <button
-              onClick={() => onSearchChange("")}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-white hover:bg-slate-700/50 rounded-md p-1 transition-all no-drag"
-              title="Clear search"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          )}
         </div>
       </div>
 
@@ -324,6 +342,7 @@ export const ElectronFloatingPanel: React.FC<ElectronFloatingPanelProps> = ({
             <button
               key={category.id}
               onClick={() => onCategoryChange(category.id)}
+              data-category-button
               className={`flex items-center space-x-1.5 px-2.5 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all duration-200 no-drag border flex-shrink-0 ${selectedCategory === category.id
                   ? "bg-gradient-to-r from-blue-600 to-blue-500 text-white border-blue-400/30 shadow-md"
                   : "bg-slate-800/60 text-slate-300 hover:bg-slate-700/60 border-slate-600/40"
@@ -349,7 +368,7 @@ export const ElectronFloatingPanel: React.FC<ElectronFloatingPanelProps> = ({
       {/* Enhanced Entries List */}
       <div className="flex-1 overflow-y-auto no-drag bg-gradient-to-b from-transparent to-slate-900/20">
         <div className="p-4 space-y-2">
-          {regularEntries.slice(0, 8).map((entry) => (
+          {displayEntries.slice(0, 8).map((entry) => (
             <EntryItem
               key={entry.id}
               entry={entry}
@@ -367,10 +386,10 @@ export const ElectronFloatingPanel: React.FC<ElectronFloatingPanelProps> = ({
           {displayEntries.length === 0 && (
             <div className="text-center py-12 text-slate-400">
               <div className="bg-slate-800/30 rounded-2xl p-8 border border-slate-700/30">
-                <Search className="w-12 h-12 mx-auto mb-4 opacity-40" />
+                <Plus className="w-12 h-12 mx-auto mb-4 opacity-40" />
                 <p className="text-sm font-medium mb-2">No passwords found</p>
                 <p className="text-xs opacity-60">
-                  Try adjusting your search or add a new password
+                  Add a new password to get started
                 </p>
               </div>
             </div>
@@ -416,7 +435,7 @@ export const ElectronFloatingPanel: React.FC<ElectronFloatingPanelProps> = ({
       {/* Enhanced Add/Edit Form Modal */}
       {(showAddForm || editingEntry) && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 z-50">
-          <div className="bg-gradient-to-br from-slate-800 via-slate-800 to-slate-900 rounded-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto border border-slate-600/50 shadow-2xl">
+          <div className="bg-gradient-to-br from-slate-800 via-slate-800 to-slate-900 rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto border border-slate-600/50 shadow-2xl">
             <EntryForm
               entry={editingEntry}
               categories={categories}
@@ -441,7 +460,7 @@ export const ElectronFloatingPanel: React.FC<ElectronFloatingPanelProps> = ({
   );
 };
 
-// Entry Item Component
+// Enhanced Entry Item Component
 interface EntryItemProps {
   entry: PasswordEntry;
   categories: Category[];
@@ -452,6 +471,7 @@ interface EntryItemProps {
   onToggleFavorite: (id: string) => void;
   onEdit: (entry: PasswordEntry) => void;
   onDelete: (id: string) => void;
+  index?: number;
 }
 
 const EntryItem: React.FC<EntryItemProps> = ({
