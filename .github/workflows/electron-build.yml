@@ -27,14 +27,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # --- FIXED STEP ---
+      # Runs your "dist" script from package.json
+      # (which is: "npm run build-only && electron-builder --publish=never")
       - name: Build Electron app
-        uses: x6pnda/action-electron-compiler@v1.0.1
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          release: false
-          package_manager: NPM
-          skip_build: false
+        run: npm run dist
         env:
+          # GITHUB_TOKEN is not needed here, as we are not publishing
           CSC_LINK: ${{ secrets.CSC_LINK }}
           CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
 
@@ -64,14 +63,15 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Release Electron app
-        uses: x6pnda/action-electron-compiler@v1.0.1
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          release: true
-          package_manager: NPM
-          skip_build: false
+      # --- FIXED STEP ---
+      # Runs the "build-only" script first, then runs electron-builder
+      # with the "--publish always" flag to release to GitHub.
+      - name: Build and Release Electron app
+        run: |
+          npm run build-only
+          npm exec electron-builder -- --publish always
         env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_LINK: ${{ secrets.CSC_LINK }}
           CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
 
