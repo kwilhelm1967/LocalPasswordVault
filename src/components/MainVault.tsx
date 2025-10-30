@@ -1,8 +1,9 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import {
   Search,
   Plus,
-  Download,
+  FileUp,
+  FileDown,
   Lock,
   Minimize2,
   Trash2,
@@ -12,6 +13,10 @@ import {
   Edit3,
   X,
   FileText,
+  ChevronDown,
+  ChevronRight,
+  Check,
+  FolderUp,
 } from "lucide-react";
 import { PasswordEntry, Category } from "../types";
 import { CategoryIcon } from "./CategoryIcon";
@@ -63,8 +68,47 @@ export const MainVault: React.FC<MainVaultProps> = ({
   const [entryToDelete, setEntryToDelete] = useState<PasswordEntry | null>(
     null
   );
+  const [collapsedEntries, setCollapsedEntries] = useState<Set<string>>(
+    new Set()
+  );
+  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   console.log(entries, "entries");
+
+  // Handle cross-window synchronization
+  useEffect(() => {
+    if (!window.electronAPI?.onEntriesChanged) return;
+
+    const handleEntriesChanged = async () => {
+      console.log("Main vault: Entries changed event received");
+      // Trigger a reload through the parent component if available
+      // This will be handled by the parent App.tsx component
+    };
+
+    window.electronAPI.onEntriesChanged(handleEntriesChanged);
+    return () => {
+      window.electronAPI?.removeEntriesChangedListener?.(handleEntriesChanged);
+    };
+  }, []);
+
+  // Initialize all entries as collapsed by default
+  useEffect(() => {
+    const allEntryIds = new Set(entries.map(entry => entry.id));
+    setCollapsedEntries(allEntryIds);
+  }, [entries.length]); // Only update when entries array length changes
+
+  // Handle clicks outside the dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setShowCategoryDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const filteredEntries = useMemo(() => {
     return entries.filter((entry) => {
@@ -136,6 +180,16 @@ export const MainVault: React.FC<MainVaultProps> = ({
     }
   };
 
+  const toggleCollapsed = (entryId: string) => {
+    const newCollapsed = new Set(collapsedEntries);
+    if (newCollapsed.has(entryId)) {
+      newCollapsed.delete(entryId);
+    } else {
+      newCollapsed.add(entryId);
+    }
+    setCollapsedEntries(newCollapsed);
+  };
+
   return (
     <div
       className="h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex flex-col overflow-hidden"
@@ -193,14 +247,14 @@ export const MainVault: React.FC<MainVaultProps> = ({
                 className="p-2 text-slate-400 hover:text-white hover:bg-slate-700/50 rounded-lg transition-all"
                 title="Export Vault"
               >
-                <Download className="w-5 h-5" />
+                <FileDown className="w-5 h-5" />
               </button>
               <button
                 onClick={onImport}
                 className="p-2 text-slate-400 hover:text-white hover:bg-slate-700/50 rounded-lg transition-all"
                 title="Import Vault"
               >
-                <FileText className="w-5 h-5" />
+                <FileUp className="w-5 h-5" />
               </button>
 
               {onMinimize && (
@@ -253,20 +307,69 @@ export const MainVault: React.FC<MainVaultProps> = ({
                 )}
               </div>
 
-              <select
-                value={selectedCategory}
-                onChange={(e) => onCategoryChange(e.target.value)}
-                className="px-4 py-3 bg-slate-900 border border-slate-700/50 rounded-xl text-white focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
-              >
-                <option value="all">All Categories</option>
-                {categories
-                  .filter((c) => c.id !== "all")
-                  .map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {category.name}
-                    </option>
-                  ))}
-              </select>
+              <div ref={dropdownRef} className="relative">
+                <button
+                  type="button"
+                  onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}
+                  className="px-4 py-3 bg-slate-700/50 border border-slate-600/50 rounded-xl text-white focus:outline-none focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all text-sm flex items-center justify-between text-left whitespace-nowrap min-w-[150px]"
+                >
+                  <span className={selectedCategory !== "all" ? "text-white" : "text-slate-400"}>
+                    {selectedCategory !== "all"
+                      ? categories.find(c => c.id === selectedCategory)?.name || "Select a category"
+                      : "All Categories"
+                    }
+                  </span>
+                  <ChevronDown
+                    className={`w-4 h-4 transition-transform duration-200 ${showCategoryDropdown ? 'rotate-180' : ''}`}
+                  />
+                </button>
+
+                {showCategoryDropdown && (
+                  <div className="absolute z-[9999] top-full left-0 mt-1 bg-slate-800 border border-slate-600/50 rounded-xl shadow-2xl max-h-60 overflow-y-auto whitespace-nowrap min-w-[200px]">
+                    <div className="p-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onCategoryChange("all");
+                          setShowCategoryDropdown(false);
+                        }}
+                        className={`w-full px-3 py-2 text-left text-sm rounded-lg transition-all flex items-center justify-between ${
+                          selectedCategory === "all"
+                            ? "bg-blue-600/30 text-white"
+                            : "text-slate-300 hover:bg-slate-700/50 hover:text-white"
+                        }`}
+                      >
+                        <span>All Categories</span>
+                        {selectedCategory === "all" && (
+                          <Check className="w-3 h-3 text-blue-400" />
+                        )}
+                      </button>
+                      {categories
+                        .filter((c) => c.id !== "all")
+                        .map((category) => (
+                          <button
+                            key={category.id}
+                            type="button"
+                            onClick={() => {
+                              onCategoryChange(category.id);
+                              setShowCategoryDropdown(false);
+                            }}
+                            className={`w-full px-3 py-2 text-left text-sm rounded-lg transition-all flex items-center justify-between ${
+                              selectedCategory === category.id
+                                ? "bg-blue-600/30 text-white"
+                                : "text-slate-300 hover:bg-slate-700/50 hover:text-white"
+                            }`}
+                          >
+                            <span>{category.name}</span>
+                            {selectedCategory === category.id && (
+                              <Check className="w-3 h-3 text-blue-400" />
+                            )}
+                          </button>
+                        ))}
+                    </div>
+                  </div>
+                )}
+              </div>
 
               <button
                 onClick={() => setShowAddForm(true)}
@@ -283,15 +386,27 @@ export const MainVault: React.FC<MainVaultProps> = ({
             {filteredEntries.map((entry) => {
               const category = categories.find((c) => c.id === entry.category);
               const isPasswordVisible = visiblePasswords.has(entry.id);
+              const isCollapsed = collapsedEntries.has(entry.id);
 
               return (
                 <div
                   key={entry.id}
-                  className="bg-gradient-to-br from-slate-800/40 via-slate-800/30 to-slate-900/40 backdrop-blur-sm border border-slate-600/50 rounded-2xl p-6 hover:bg-gradient-to-br hover:from-slate-800/60 hover:via-slate-800/50 hover:to-slate-900/60 transition-all duration-300 group shadow-xl hover:shadow-2xl hover:border-slate-500/60"
+                  className="bg-gradient-to-br from-slate-800/40 via-slate-800/30 to-slate-900/40 backdrop-blur-sm border border-slate-600/50 rounded-2xl p-4 hover:bg-gradient-to-br hover:from-slate-800/60 hover:via-slate-800/50 hover:to-slate-900/60 transition-all duration-300 group shadow-xl hover:shadow-2xl hover:border-slate-500/60 h-fit"
                 >
                   {/* Header with gradient accent */}
-                  <div className="flex items-start justify-between mb-5">
-                    <div className="flex items-center space-x-3">
+                  <div className={`flex items-start justify-between ${!isCollapsed && "mb-5"}`}>
+                    <div
+                      className="flex items-center flex-1 min-w-0 cursor-pointer"
+                      onClick={() => toggleCollapsed(entry.id)}
+                    >
+                      <button className="p-1 text-slate-400 hover:text-white transition-colors">
+                        {isCollapsed ? (
+                          <ChevronRight className="w-4 h-4" />
+                        ) : (
+                          <ChevronDown className="w-4 h-4" />
+                        )}
+                      </button>
+
                       {category && (
                         <div className="p-2 bg-gradient-to-br from-blue-500/20 to-indigo-500/20 rounded-xl border border-blue-500/30">
                           <CategoryIcon
@@ -301,7 +416,7 @@ export const MainVault: React.FC<MainVaultProps> = ({
                           />
                         </div>
                       )}
-                      <div>
+                      <div className="min-w-0 flex-1 ml-2">
                         <h3 className="font-bold text-white group-hover:text-blue-400 transition-colors text-base">
                           {entry.accountName}
                         </h3>
@@ -311,7 +426,7 @@ export const MainVault: React.FC<MainVaultProps> = ({
                       </div>
                     </div>
 
-                    <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                    <div className="flex items-center space-x-1 mt-2">
                       <button
                         onClick={() => setViewingEntry(entry)}
                         className="p-2 text-slate-400 hover:text-green-400 hover:bg-green-500/20 rounded-xl transition-all border border-transparent hover:border-green-500/30"
@@ -337,7 +452,8 @@ export const MainVault: React.FC<MainVaultProps> = ({
                   </div>
 
                   {/* Content with enhanced styling */}
-                  <div className="space-y-4">
+                  {!isCollapsed && (
+                    <div className="space-y-4">
                     <div className="flex items-center justify-between p-3 bg-slate-700/30 rounded-xl border border-slate-600/30">
                       <span className="text-sm font-medium text-slate-300">
                         Username
@@ -411,6 +527,7 @@ export const MainVault: React.FC<MainVaultProps> = ({
                       </div>
                     )}
                   </div>
+                  )}
                 </div>
               );
             })}
@@ -702,7 +819,7 @@ export const MainVault: React.FC<MainVaultProps> = ({
       {/* Add/Edit Form Modal */}
       {(showAddForm || editingEntry) && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-slate-800 rounded-xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
+          <div className="bg-slate-800 rounded-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
             <EntryForm
               entry={editingEntry}
               categories={categories}
