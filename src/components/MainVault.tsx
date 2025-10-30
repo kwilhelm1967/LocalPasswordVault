@@ -87,6 +87,12 @@ export const MainVault: React.FC<MainVaultProps> = ({
     };
   }, []);
 
+  // Initialize all entries as collapsed by default
+  useEffect(() => {
+    const allEntryIds = new Set(entries.map(entry => entry.id));
+    setCollapsedEntries(allEntryIds);
+  }, [entries.length]); // Only update when entries array length changes
+
   const filteredEntries = useMemo(() => {
     return entries.filter((entry) => {
       // Search filter: if no search term, all entries match search
