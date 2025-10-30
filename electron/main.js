@@ -1329,13 +1329,25 @@ ipcMain.handle("show-main-window", () => {
 // SECURE: Event broadcasting only (no data exchange)
 ipcMain.handle("broadcast-entries-changed", () => {
   try {
+    console.log("Broadcasting entries-changed event to all windows");
+
     // Send entries-changed event to all renderer processes (no actual data)
     if (mainWindow && !mainWindow.isDestroyed()) {
+      console.log("Sending to main window");
       mainWindow.webContents.send("entries-changed");
     }
+
     if (floatingWindow && !floatingWindow.isDestroyed()) {
+      console.log("Sending to floating window");
       floatingWindow.webContents.send("entries-changed");
     }
+
+    // Also send to floating button if it exists
+    if (floatingButton && !floatingButton.isDestroyed()) {
+      console.log("Sending to floating button");
+      floatingButton.webContents.send("entries-changed");
+    }
+
     return true;
   } catch (error) {
     console.error("Failed to broadcast entries changed:", error);
@@ -1444,7 +1456,13 @@ ipcMain.handle("save-shared-entries-temp", (event, entries) => {
 
     // Store in memory only (no file persistence)
     tempSharedEntries = entries;
-    console.log("Temporarily stored entries in memory:", entries.length);
+    console.log("Temporarily stored entries in memory:", entries.length, "entries from", event.senderFrame.url);
+
+    // Debug: Log first entry to verify data structure
+    if (entries && entries.length > 0) {
+      console.log("First entry:", entries[0]);
+    }
+
     return true;
   } catch (error) {
     console.error("Failed to save temporary shared entries:", error);
@@ -1460,7 +1478,14 @@ ipcMain.handle("load-shared-entries-temp", (event) => {
       return null;
     }
 
-    console.log("Loading temporary shared entries:", tempSharedEntries ? tempSharedEntries.length : 0);
+    console.log("Loading temporary shared entries for", event.senderFrame.url + ":", tempSharedEntries ? tempSharedEntries.length : 0);
+
+    if (tempSharedEntries && tempSharedEntries.length > 0) {
+      console.log("Returning entries:", tempSharedEntries.length);
+      // Debug: Log first entry to verify data structure
+      console.log("First entry being returned:", tempSharedEntries[0]);
+    }
+
     return tempSharedEntries || [];
   } catch (error) {
     console.error("Failed to load temporary shared entries:", error);

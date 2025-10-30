@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { X, RefreshCw, Copy, Eye, EyeOff, Trash2, Save, ChevronDown, Check } from "lucide-react";
 import { PasswordEntry, Category } from "../types";
+import { storageService } from "../utils/storage";
 
 interface EntryFormProps {
   entry?: PasswordEntry | null;
@@ -65,7 +66,7 @@ export const EntryForm: React.FC<EntryFormProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (
@@ -75,14 +76,44 @@ export const EntryForm: React.FC<EntryFormProps> = ({
       formData.category
     ) {
       try {
-        onSubmit({
+        const entryData = {
           ...formData,
           accountName: formData.accountName.trim(),
           username: formData.username.trim(),
           password: formData.password.trim(),
           notes: formData.notes?.trim() || "",
           balance: formData.balance?.trim() || "",
-        });
+        };
+
+        // Submit to parent component
+        await onSubmit(entryData);
+
+        // Enhanced synchronization - ensure floating panel gets updates
+        try {
+          // Small delay to ensure storage has processed the changes
+          await new Promise(resolve => setTimeout(resolve, 100));
+
+          // Save current entries to temporary shared storage for floating panel
+          const currentEntries = await storageService.loadEntries();
+          if (window.electronAPI?.saveSharedEntries) {
+            await window.electronAPI.saveSharedEntries(currentEntries);
+            console.log("EntryForm: Saved entries to shared storage for floating panel");
+          }
+
+          // Force immediate cross-window sync after saving
+          if (window.electronAPI?.broadcastEntriesChanged) {
+            await window.electronAPI.broadcastEntriesChanged();
+            console.log("EntryForm: Broadcasted entries changed event");
+          }
+
+          // Also trigger sync to floating panel if available
+          if (window.electronAPI?.syncVaultToFloating) {
+            await window.electronAPI.syncVaultToFloating();
+            console.log("EntryForm: Synced vault to floating panel");
+          }
+        } catch (error) {
+          console.error("EntryForm: Failed to synchronize entries:", error);
+        }
       } catch (error) {
         console.error("Error submitting form:", error);
         // Don't crash the app, just log the error
@@ -94,10 +125,43 @@ export const EntryForm: React.FC<EntryFormProps> = ({
     setShowDeleteConfirm(true);
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (onDelete) {
-      onDelete();
-      setShowDeleteConfirm(false);
+      try {
+        // Execute the delete operation
+        await onDelete();
+        setShowDeleteConfirm(false);
+
+        // Enhanced synchronization - ensure floating panel gets updates after delete
+        try {
+          // Small delay to ensure storage has processed the changes
+          await new Promise(resolve => setTimeout(resolve, 100));
+
+          // Save current entries to temporary shared storage for floating panel
+          const currentEntries = await storageService.loadEntries();
+          if (window.electronAPI?.saveSharedEntries) {
+            await window.electronAPI.saveSharedEntries(currentEntries);
+            console.log("EntryForm: Saved entries to shared storage for floating panel after delete");
+          }
+
+          // Force immediate cross-window sync after saving
+          if (window.electronAPI?.broadcastEntriesChanged) {
+            await window.electronAPI.broadcastEntriesChanged();
+            console.log("EntryForm: Broadcasted entries changed event after delete");
+          }
+
+          // Also trigger sync to floating panel if available
+          if (window.electronAPI?.syncVaultToFloating) {
+            await window.electronAPI.syncVaultToFloating();
+            console.log("EntryForm: Synced vault to floating panel after delete");
+          }
+        } catch (error) {
+          console.error("EntryForm: Failed to synchronize entries after delete:", error);
+        }
+      } catch (error) {
+        console.error("Error deleting entry:", error);
+        setShowDeleteConfirm(false);
+      }
     }
   };
 

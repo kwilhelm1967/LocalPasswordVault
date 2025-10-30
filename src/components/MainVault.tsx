@@ -81,8 +81,13 @@ export const MainVault: React.FC<MainVaultProps> = ({
 
     const handleEntriesChanged = async () => {
       console.log("Main vault: Entries changed event received");
-      // Trigger a reload through the parent component if available
-      // This will be handled by the parent App.tsx component
+
+      // For updates from floating panel, we might want to reload from shared storage
+      // But typically the MainVault is the source of truth, so we might not need to do anything here
+      // The parent App.tsx will handle the actual reloading if needed
+
+      // Log that we received the event for debugging
+      console.log("Main vault: Entries changed event processed");
     };
 
     window.electronAPI.onEntriesChanged(handleEntriesChanged);

@@ -128,10 +128,25 @@ export const ElectronFloatingPanel: React.FC<ElectronFloatingPanelProps> = ({
 
     const handleEntriesChanged = async () => {
       try {
-        // Only reload if vault is unlocked
+        console.log("Floating panel: Entries changed event received");
+
+        // Try to load from shared storage first (for updates from MainVault)
+        if (window.electronAPI?.loadSharedEntries) {
+          const sharedEntries = await window.electronAPI.loadSharedEntries();
+          if (sharedEntries && sharedEntries.length > 0) {
+            console.log("Floating panel: Loaded entries from shared storage:", sharedEntries.length);
+            onEntriesReload?.(sharedEntries.map((entry: any) => ({
+              ...entry,
+              createdAt: new Date(entry.createdAt),
+              updatedAt: new Date(entry.updatedAt),
+            })));
+            return;
+          }
+        }
+
+        // Fallback: reload from localStorage if vault is unlocked
         if (storageService.isVaultUnlocked()) {
-          console.log("Floating panel: Entries changed event received");
-          // Reload entries when data changes in other windows
+          console.log("Floating panel: Fallback - loading from localStorage");
           const loadedEntries = await storageService.loadEntries();
           onEntriesReload?.(loadedEntries);
         }
@@ -142,7 +157,12 @@ export const ElectronFloatingPanel: React.FC<ElectronFloatingPanelProps> = ({
 
     window.electronAPI.onEntriesChanged(handleEntriesChanged);
     return () => {
-      window.electronAPI?.removeEntriesChangedListener?.(handleEntriesChanged);
+      try {
+        // Remove the specific listener
+        window.electronAPI?.removeEntriesChangedListener?.(handleEntriesChanged);
+      } catch (error) {
+        console.error("Error removing entries changed listener:", error);
+      }
     };
   }, [onEntriesReload]);
   useEffect(() => {
