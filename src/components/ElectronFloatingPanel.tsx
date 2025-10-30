@@ -10,6 +10,8 @@ import {
   Copy,
   Edit3,
   FileText,
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react";
 import { PasswordEntry, Category } from "../types";
 import { CategoryIcon } from "./CategoryIcon";
@@ -54,6 +56,7 @@ export const ElectronFloatingPanel: React.FC<ElectronFloatingPanelProps> = ({
   );
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [isMainVaultUnlocked, setIsMainVaultUnlocked] = useState(false);
+  const [collapsedEntries, setCollapsedEntries] = useState<Set<string>>(new Set());
   // Removed unused positionLoaded state to avoid lint errors
 
   // Initialize floating panel vault when vault is unlocked in main window
@@ -212,6 +215,12 @@ export const ElectronFloatingPanel: React.FC<ElectronFloatingPanelProps> = ({
   );
   const displayEntries = [...favoriteEntries, ...regularEntries];
 
+  // Initialize all entries as collapsed by default
+  useEffect(() => {
+    const allEntryIds = new Set(displayEntries.map(entry => entry.id));
+    setCollapsedEntries(allEntryIds);
+  }, [entries.length]); // Only update when entries array length changes
+
   const togglePasswordVisibility = (entryId: string) => {
     const newVisible = new Set(visiblePasswords);
     if (newVisible.has(entryId)) {
@@ -250,6 +259,16 @@ export const ElectronFloatingPanel: React.FC<ElectronFloatingPanelProps> = ({
       newFavorites.add(entryId);
     }
     setFavorites(newFavorites);
+  };
+
+  const toggleCollapsed = (entryId: string) => {
+    const newCollapsed = new Set(collapsedEntries);
+    if (newCollapsed.has(entryId)) {
+      newCollapsed.delete(entryId);
+    } else {
+      newCollapsed.add(entryId);
+    }
+    setCollapsedEntries(newCollapsed);
   };
 
   const handleAddEntry = async (
@@ -375,9 +394,11 @@ export const ElectronFloatingPanel: React.FC<ElectronFloatingPanelProps> = ({
               categories={categories}
               visiblePasswords={visiblePasswords}
               favorites={favorites}
+              collapsedEntries={collapsedEntries}
               onTogglePassword={togglePasswordVisibility}
               onCopy={copyToClipboard}
               onToggleFavorite={toggleFavorite}
+              onToggleCollapsed={toggleCollapsed}
               onEdit={setEditingEntry}
               onDelete={onDeleteEntry}
             />
@@ -466,9 +487,11 @@ interface EntryItemProps {
   categories: Category[];
   visiblePasswords: Set<string>;
   favorites: Set<string>;
+  collapsedEntries: Set<string>;
   onTogglePassword: (id: string) => void;
   onCopy: (text: string) => void;
   onToggleFavorite: (id: string) => void;
+  onToggleCollapsed: (id: string) => void;
   onEdit: (entry: PasswordEntry) => void;
   onDelete: (id: string) => void;
   index?: number;
@@ -478,14 +501,17 @@ const EntryItem: React.FC<EntryItemProps> = ({
   entry,
   categories,
   visiblePasswords,
+  collapsedEntries,
   onTogglePassword,
   onCopy,
+  onToggleCollapsed,
   onEdit,
   onDelete,
 }) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const category = categories.find((c) => c.id === entry.category);
   const isPasswordVisible = visiblePasswords.has(entry.id);
+  const isCollapsed = collapsedEntries.has(entry.id);
 
   const handleDelete = () => {
     onDelete(entry.id);
@@ -494,8 +520,19 @@ const EntryItem: React.FC<EntryItemProps> = ({
 
   return (
     <div className="bg-gradient-to-br from-slate-800/50 via-slate-800/30 to-slate-700/40 backdrop-blur-sm rounded-xl p-4 mb-3 border border-slate-600/30 hover:border-slate-500/50 hover:shadow-lg hover:shadow-blue-500/10 transition-all duration-300 group">
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex items-center space-x-3 flex-1 min-w-0">
+      <div className={`flex items-start justify-between ${!isCollapsed && "mb-4"}`}>
+        <div
+          className="flex items-center space-x-3 flex-1 min-w-0 cursor-pointer"
+          onClick={() => onToggleCollapsed(entry.id)}
+        >
+          <button className="p-1 text-slate-400 hover:text-white transition-colors">
+            {isCollapsed ? (
+              <ChevronRight className="w-4 h-4" />
+            ) : (
+              <ChevronDown className="w-4 h-4" />
+            )}
+          </button>
+
           {category && (
             <div className="p-2 bg-blue-500/20 rounded-lg border border-blue-400/30">
               <CategoryIcon
@@ -516,7 +553,7 @@ const EntryItem: React.FC<EntryItemProps> = ({
           </div>
         </div>
 
-        <div className="flex items-center space-x-1 opacity-60 group-hover:opacity-100 transition-opacity duration-200">
+        <div className="flex items-center space-x-1 opacity-60 group-hover:opacity-100 transition-opacity duration-200 mt-1">
           <button
             onClick={() => onEdit(entry)}
             className="p-2 text-slate-400 hover:text-blue-400 hover:bg-blue-500/20 rounded-lg transition-all duration-200"
@@ -535,7 +572,8 @@ const EntryItem: React.FC<EntryItemProps> = ({
         </div>
       </div>
 
-      <div className="space-y-3">
+      {!isCollapsed && (
+        <div className="space-y-3">
         {/* Password Field */}
         <div className="bg-slate-800/40 rounded-lg p-3 border border-slate-700/50 hover:border-slate-600/50 transition-all">
           <div className="flex items-center justify-between mb-2">
@@ -610,7 +648,8 @@ const EntryItem: React.FC<EntryItemProps> = ({
             </div>
           </div>
         )}
-      </div>
+        </div>
+      )}
 
       {/* Delete Confirmation Dialog */}
       {showDeleteConfirm && (
