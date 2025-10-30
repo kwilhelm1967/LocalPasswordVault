@@ -28,8 +28,6 @@ jobs:
         run: npm ci
 
       # --- FIXED STEP ---
-      # Runs your "dist" script from package.json
-      # The 'env' block for code signing has been REMOVED from this build-only job.
       - name: Build Electron app
         run: npm run dist
 
@@ -59,8 +57,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # --- This step is correct ---
-      # The 'env' block is kept here for the release job to sign and publish.
+      # --- This step is the fix! ---
       - name: Build and Release Electron app
         run: |
           npm run build-only
@@ -69,6 +66,15 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CSC_LINK: ${{ secrets.CSC_LINK }}
           CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+
+          # 🚨 FIX: macOS requires these secrets for notarization/signing
+          # The entire release job requires these to be set as GitHub Secrets
+          # You may need to replace 'CSC_IDENTITY_AUTO_DISCOVERY' with your actual key name
+          MAC_CSC_LINK: ${{ secrets.MAC_CSC_LINK }}
+          MAC_CSC_KEY_PASSWORD: ${{ secrets.MAC_CSC_KEY_PASSWORD }}
+          # For Apple Notarization (required by macOS)
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
 
       - name: Upload artifacts (fallback)
         if: failure()
