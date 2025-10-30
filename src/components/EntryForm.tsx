@@ -31,6 +31,7 @@ export const EntryForm: React.FC<EntryFormProps> = ({
   const [showPassword, setShowPassword] = useState(false);
   const [copySuccess, setCopySuccess] = useState(false);
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const generatePassword = () => {
@@ -86,6 +87,17 @@ export const EntryForm: React.FC<EntryFormProps> = ({
         console.error("Error submitting form:", error);
         // Don't crash the app, just log the error
       }
+    }
+  };
+
+  const handleDeleteClick = () => {
+    setShowDeleteConfirm(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (onDelete) {
+      onDelete();
+      setShowDeleteConfirm(false);
     }
   };
 
@@ -312,7 +324,7 @@ export const EntryForm: React.FC<EntryFormProps> = ({
             {onDelete && (
               <button
                 type="button"
-                onClick={onDelete}
+                onClick={handleDeleteClick}
                 className="flex items-center justify-center p-3 bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white rounded-xl font-medium transition-all border border-red-500/30 hover:border-red-500"
                 title="Delete Account"
               >
@@ -322,6 +334,47 @@ export const EntryForm: React.FC<EntryFormProps> = ({
           </div>
         </form>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 z-[9999]">
+          <div className="bg-gradient-to-br from-slate-800 via-slate-800 to-slate-900 rounded-2xl p-6 w-full max-w-md border border-slate-600/50 shadow-2xl">
+            <div className="text-center">
+              <div className="p-3 bg-red-500/20 rounded-full w-fit mx-auto mb-4 border border-red-500/30">
+                <Trash2 className="w-6 h-6 text-red-400" />
+              </div>
+
+              <h3 className="text-white font-bold text-lg mb-2">
+                Delete Account
+              </h3>
+
+              <p className="text-slate-400 text-sm mb-6 leading-relaxed">
+                Are you sure you want to delete "
+                <span className="text-white font-medium">
+                  {entry?.accountName || "this account"}
+                </span>
+                "? This action cannot be undone.
+              </p>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  className="flex-1 px-4 py-3 bg-slate-600/50 hover:bg-slate-600 text-white rounded-xl font-medium transition-all text-sm border border-slate-500/50"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  onClick={handleConfirmDelete}
+                  className="flex-1 px-4 py-3 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 text-white rounded-xl font-medium transition-all text-sm shadow-lg"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
