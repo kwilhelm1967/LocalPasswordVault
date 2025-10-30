@@ -12,6 +12,8 @@ import {
   Edit3,
   X,
   FileText,
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react";
 import { PasswordEntry, Category } from "../types";
 import { CategoryIcon } from "./CategoryIcon";
@@ -62,6 +64,9 @@ export const MainVault: React.FC<MainVaultProps> = ({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [entryToDelete, setEntryToDelete] = useState<PasswordEntry | null>(
     null
+  );
+  const [collapsedEntries, setCollapsedEntries] = useState<Set<string>>(
+    new Set()
   );
 
   console.log(entries, "entries");
@@ -134,6 +139,16 @@ export const MainVault: React.FC<MainVaultProps> = ({
       setEntryToDelete(null);
       setShowDeleteConfirm(false);
     }
+  };
+
+  const toggleCollapsed = (entryId: string) => {
+    const newCollapsed = new Set(collapsedEntries);
+    if (newCollapsed.has(entryId)) {
+      newCollapsed.delete(entryId);
+    } else {
+      newCollapsed.add(entryId);
+    }
+    setCollapsedEntries(newCollapsed);
   };
 
   return (
@@ -283,15 +298,27 @@ export const MainVault: React.FC<MainVaultProps> = ({
             {filteredEntries.map((entry) => {
               const category = categories.find((c) => c.id === entry.category);
               const isPasswordVisible = visiblePasswords.has(entry.id);
+              const isCollapsed = collapsedEntries.has(entry.id);
 
               return (
                 <div
                   key={entry.id}
-                  className="bg-gradient-to-br from-slate-800/40 via-slate-800/30 to-slate-900/40 backdrop-blur-sm border border-slate-600/50 rounded-2xl p-6 hover:bg-gradient-to-br hover:from-slate-800/60 hover:via-slate-800/50 hover:to-slate-900/60 transition-all duration-300 group shadow-xl hover:shadow-2xl hover:border-slate-500/60"
+                  className="bg-gradient-to-br from-slate-800/40 via-slate-800/30 to-slate-900/40 backdrop-blur-sm border border-slate-600/50 rounded-2xl p-4 hover:bg-gradient-to-br hover:from-slate-800/60 hover:via-slate-800/50 hover:to-slate-900/60 transition-all duration-300 group shadow-xl hover:shadow-2xl hover:border-slate-500/60"
                 >
                   {/* Header with gradient accent */}
-                  <div className="flex items-start justify-between mb-5">
-                    <div className="flex items-center space-x-3">
+                  <div className={`flex items-start justify-between ${!isCollapsed && "mb-5"}`}>
+                    <div
+                      className="flex items-center flex-1 min-w-0 cursor-pointer"
+                      onClick={() => toggleCollapsed(entry.id)}
+                    >
+                      <button className="p-1 text-slate-400 hover:text-white transition-colors">
+                        {isCollapsed ? (
+                          <ChevronRight className="w-4 h-4" />
+                        ) : (
+                          <ChevronDown className="w-4 h-4" />
+                        )}
+                      </button>
+
                       {category && (
                         <div className="p-2 bg-gradient-to-br from-blue-500/20 to-indigo-500/20 rounded-xl border border-blue-500/30">
                           <CategoryIcon
@@ -301,7 +328,7 @@ export const MainVault: React.FC<MainVaultProps> = ({
                           />
                         </div>
                       )}
-                      <div>
+                      <div className="min-w-0 flex-1 ml-2">
                         <h3 className="font-bold text-white group-hover:text-blue-400 transition-colors text-base">
                           {entry.accountName}
                         </h3>
@@ -311,7 +338,7 @@ export const MainVault: React.FC<MainVaultProps> = ({
                       </div>
                     </div>
 
-                    <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                    <div className="flex items-center space-x-1 mt-2">
                       <button
                         onClick={() => setViewingEntry(entry)}
                         className="p-2 text-slate-400 hover:text-green-400 hover:bg-green-500/20 rounded-xl transition-all border border-transparent hover:border-green-500/30"
@@ -337,7 +364,8 @@ export const MainVault: React.FC<MainVaultProps> = ({
                   </div>
 
                   {/* Content with enhanced styling */}
-                  <div className="space-y-4">
+                  {!isCollapsed && (
+                    <div className="space-y-4">
                     <div className="flex items-center justify-between p-3 bg-slate-700/30 rounded-xl border border-slate-600/30">
                       <span className="text-sm font-medium text-slate-300">
                         Username
@@ -411,6 +439,7 @@ export const MainVault: React.FC<MainVaultProps> = ({
                       </div>
                     )}
                   </div>
+                  )}
                 </div>
               );
             })}
@@ -702,7 +731,7 @@ export const MainVault: React.FC<MainVaultProps> = ({
       {/* Add/Edit Form Modal */}
       {(showAddForm || editingEntry) && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-slate-800 rounded-xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
+          <div className="bg-slate-800 rounded-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
             <EntryForm
               entry={editingEntry}
               categories={categories}
