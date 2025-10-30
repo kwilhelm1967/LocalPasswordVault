@@ -57,6 +57,8 @@ export const ElectronFloatingPanel: React.FC<ElectronFloatingPanelProps> = ({
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [isMainVaultUnlocked, setIsMainVaultUnlocked] = useState(false);
   const [collapsedEntries, setCollapsedEntries] = useState<Set<string>>(new Set());
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [entryToDelete, setEntryToDelete] = useState<PasswordEntry | null>(null);
   // Removed unused positionLoaded state to avoid lint errors
 
   // Initialize floating panel vault when vault is unlocked in main window
@@ -299,6 +301,19 @@ export const ElectronFloatingPanel: React.FC<ElectronFloatingPanelProps> = ({
     }
   };
 
+  const handleDeleteClick = (entry: PasswordEntry) => {
+    setEntryToDelete(entry);
+    setShowDeleteConfirm(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (entryToDelete) {
+      onDeleteEntry(entryToDelete.id);
+      setEntryToDelete(null);
+      setShowDeleteConfirm(false);
+    }
+  };
+
   
   return (
     <div
@@ -400,7 +415,7 @@ export const ElectronFloatingPanel: React.FC<ElectronFloatingPanelProps> = ({
               onToggleFavorite={toggleFavorite}
               onToggleCollapsed={toggleCollapsed}
               onEdit={setEditingEntry}
-              onDelete={onDeleteEntry}
+              onDelete={handleDeleteClick}
             />
           ))}
 
@@ -477,6 +492,47 @@ export const ElectronFloatingPanel: React.FC<ElectronFloatingPanelProps> = ({
           </div>
         </div>
       )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && entryToDelete && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 z-[9999]">
+          <div className="bg-gradient-to-br from-slate-800 via-slate-800 to-slate-900 rounded-2xl p-6 w-full max-w-md border border-slate-600/50 shadow-2xl">
+            <div className="text-center">
+              <div className="p-3 bg-red-500/20 rounded-full w-fit mx-auto mb-4 border border-red-500/30">
+                <Trash2 className="w-6 h-6 text-red-400" />
+              </div>
+
+              <h3 className="text-white font-bold text-lg mb-2">
+                Delete Account
+              </h3>
+
+              <p className="text-slate-400 text-sm mb-6 leading-relaxed">
+                Are you sure you want to delete "
+                <span className="text-white font-medium">
+                  {entryToDelete.accountName}
+                </span>
+                "? This action cannot be undone.
+              </p>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  className="flex-1 px-4 py-3 bg-slate-600/50 hover:bg-slate-600 text-white rounded-xl font-medium transition-all text-sm border border-slate-500/50"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  onClick={handleConfirmDelete}
+                  className="flex-1 px-4 py-3 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 text-white rounded-xl font-medium transition-all text-sm shadow-lg"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -493,7 +549,7 @@ interface EntryItemProps {
   onToggleFavorite: (id: string) => void;
   onToggleCollapsed: (id: string) => void;
   onEdit: (entry: PasswordEntry) => void;
-  onDelete: (id: string) => void;
+  onDelete: (entry: PasswordEntry) => void;
   index?: number;
 }
 
@@ -508,18 +564,12 @@ const EntryItem: React.FC<EntryItemProps> = ({
   onEdit,
   onDelete,
 }) => {
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const category = categories.find((c) => c.id === entry.category);
   const isPasswordVisible = visiblePasswords.has(entry.id);
   const isCollapsed = collapsedEntries.has(entry.id);
 
-  const handleDelete = () => {
-    onDelete(entry.id);
-    setShowDeleteConfirm(false);
-  };
-
   return (
-    <div className="bg-gradient-to-br from-slate-800/50 via-slate-800/30 to-slate-700/40 backdrop-blur-sm rounded-xl p-4 mb-3 border border-slate-600/30 hover:border-slate-500/50 hover:shadow-lg hover:shadow-blue-500/10 transition-all duration-300 group">
+    <div className="bg-gradient-to-br from-slate-800/50 via-slate-800/30 to-slate-700/40 backdrop-blur-sm rounded-xl p-4 mb-3 border border-slate-600/30 hover:border-slate-500/50 hover:shadow-lg hover:shadow-blue-500/10 transition-all duration-300 group relative">
       <div className={`flex items-start justify-between ${!isCollapsed && "mb-4"}`}>
         <div
           className="flex items-center space-x-3 flex-1 min-w-0 cursor-pointer"
@@ -542,7 +592,7 @@ const EntryItem: React.FC<EntryItemProps> = ({
               />
             </div>
           )}
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0 flex-1 ml-2">
             <h4 className="font-semibold text-white text-sm mb-1 truncate">
               {entry.accountName}
             </h4>
@@ -563,7 +613,7 @@ const EntryItem: React.FC<EntryItemProps> = ({
           </button>
 
           <button
-            onClick={() => setShowDeleteConfirm(true)}
+            onClick={() => onDelete(entry)}
             className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/20 rounded-lg transition-all duration-200"
             title="Delete entry"
           >
@@ -648,47 +698,6 @@ const EntryItem: React.FC<EntryItemProps> = ({
             </div>
           </div>
         )}
-        </div>
-      )}
-
-      {/* Delete Confirmation Dialog */}
-      {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 z-50">
-          <div className="bg-gradient-to-br from-slate-800 via-slate-800 to-slate-900 rounded-2xl p-6 w-full max-w-md border border-slate-600/50 shadow-2xl">
-            <div className="text-center">
-              <div className="p-3 bg-red-500/20 rounded-full w-fit mx-auto mb-4 border border-red-500/30">
-                <Trash2 className="w-6 h-6 text-red-400" />
-              </div>
-
-              <h3 className="text-white font-bold text-lg mb-2">
-                Delete Account
-              </h3>
-
-              <p className="text-slate-400 text-sm mb-6 leading-relaxed">
-                Are you sure you want to delete "
-                <span className="text-white font-medium">
-                  {entry.accountName}
-                </span>
-                "? This action cannot be undone.
-              </p>
-
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setShowDeleteConfirm(false)}
-                  className="flex-1 px-4 py-3 bg-slate-600/50 hover:bg-slate-600 text-white rounded-xl font-medium transition-all text-sm border border-slate-500/50"
-                >
-                  Cancel
-                </button>
-
-                <button
-                  onClick={handleDelete}
-                  className="flex-1 px-4 py-3 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 text-white rounded-xl font-medium transition-all text-sm shadow-lg"
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-          </div>
         </div>
       )}
     </div>
