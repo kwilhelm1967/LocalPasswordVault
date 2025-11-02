@@ -29,11 +29,10 @@ export const environment: Environment = {
   ),
   licenseServerUrl: getEnvVar(
     "VITE_LICENSE_SERVER_URL",
-    isProductionMode ? "https://server.localpasswordvault.com" : "http://localhost:5000"
+    "https://server.localpasswordvault.com"
   ),
   analyticsEnabled: getEnvVar("VITE_ANALYTICS_ENABLED", "false") === "true",
 };
-
 
 // Feature flags based on environment
 export const features = {
