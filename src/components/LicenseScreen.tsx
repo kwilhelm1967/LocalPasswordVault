@@ -4,10 +4,8 @@ import {
   Key,
   Shield,
   Users,
-  Building,
   CheckCircle,
   XCircle,
-  Clock,
   ExternalLink,
   CreditCard,
   ArrowLeft,
@@ -40,8 +38,8 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
   );
   const [showPayment, setShowPayment] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState<
-    "single" | "pro" | "family" | "business"
-  >("single");
+    "personal" | "family"
+  >("personal");
   const [showEula, setShowEula] = useState(false);
   const [showDownloadInstructions, setShowDownloadInstructions] =
     useState(false);
@@ -146,39 +144,8 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
     );
   };
 
-  const handleStartTrial = () => {
-    if (appStatus.trialInfo.isTrialActive) {
-      // Show EULA before continuing trial
-      setPendingLicenseKey("TRIAL");
-      setShowEula(true);
-    } else if (licenseService.canStartTrial()) {
-      // Start new trial
-      setPendingLicenseKey("TRIAL");
-      setShowEula(true);
-    } else {
-      // Trial expired or already used
-      if (onShowPricingPlans) {
-        onShowPricingPlans();
-      }
-      analyticsService.trackConversion("trial_expired_purchase_shown");
-    }
-  };
-
-  const handleTrialEulaAccept = () => {
-    if (!appStatus.trialInfo.isTrialActive && licenseService.canStartTrial()) {
-      // Start new trial
-      licenseService.startTrial();
-      setAppStatus(licenseService.getAppStatus());
-      analyticsService.trackLicenseEvent("trial_started");
-    } else {
-      // Continue existing trial
-      analyticsService.trackLicenseEvent("trial_continued");
-    }
-    onLicenseValid();
-    setShowEula(false);
-  };
-
-  const handlePurchase = (plan: "single" | "pro" | "family" | "business") => {
+  
+  const handlePurchase = (plan: "personal" | "family") => {
     setSelectedPlan(plan);
     setShowPayment(true);
     analyticsService.trackConversion("purchase_started", { plan });
@@ -191,14 +158,7 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
     analyticsService.trackConversion("payment_completed", {
       plan: selectedPlan,
       licenseKey: licenseKey.substring(0, 8) + "****",
-      amount:
-        selectedPlan === "single"
-          ? 29.99
-          : selectedPlan === "pro"
-            ? 68.0
-            : selectedPlan === "family"
-              ? 49.99
-              : 99.99,
+      amount: selectedPlan === "personal" ? 29.99 : 49.99,
     });
 
     // Show download instructions
@@ -232,11 +192,7 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
       {/* EULA Modal */}
       {showEula && (
         <EulaAgreement
-          onAccept={
-            pendingLicenseKey === "TRIAL"
-              ? handleTrialEulaAccept
-              : handleEulaAccept
-          }
+          onAccept={handleEulaAccept}
           error={error}
           isLoading={isActivating}
           onDecline={handleEulaDecline}
@@ -326,7 +282,7 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
         </div>
 
         {!showPricingPlans ? (
-          <div className="grid md:grid-cols-2 gap-8 mb-8">
+          <div className="max-w-md mx-auto mb-8">
             {/* License Activation */}
             <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-6">
               <div className="flex bg-transparent items-center space-x-3 mb-6">
@@ -397,107 +353,6 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
                 </div>
               </div>
             </div>
-
-            {/* Trial Status */}
-            <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-6">
-              <div className="bg-transparent">
-                <div className="flex items-center space-x-3 mb-6">
-                  <Clock className="w-6 h-6 text-green-400" />
-                  <h2 className="text-xl font-semibold text-white">
-                    Trial Status
-                  </h2>
-                </div>
-
-                {appStatus.trialInfo.isTrialActive ||
-                  licenseService.canStartTrial() ? (
-                  <div className="space-y-4">
-                    <div className="text-center">
-                      <div className="text-3xl font-bold text-green-400 mb-2">
-                        {appStatus.trialInfo.daysRemaining}
-                      </div>
-                      <p className="text-slate-300">
-                        {appStatus.trialInfo.daysRemaining === 1
-                          ? "day"
-                          : "days"}{" "}
-                        {appStatus.trialInfo.isTrialActive
-                          ? "remaining in trial"
-                          : "available"}
-                      </p>
-
-                      {appStatus.trialInfo.isTrialActive && (
-                        <div className="mt-3">
-                          <div className="w-full bg-slate-700 rounded-full h-2">
-                            <div
-                              className="bg-gradient-to-r from-orange-500 to-red-500 h-2 rounded-full transition-all duration-300"
-                              style={{
-                                width: `${licenseService.getTrialProgress()}%`,
-                              }}
-                            ></div>
-                          </div>
-                          <p className="text-xs text-slate-400 mt-1">
-                            {licenseService.getTrialTimeRemaining()}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="bg-slate-700/50 rounded-lg p-4">
-                      <div className="bg-transparent">
-                        <h3 className="font-medium text-white mb-2">
-                          Trial includes:
-                        </h3>
-                        <ul className="space-y-1 text-sm text-slate-300">
-                          <li>• Unlimited password storage</li>
-                          <li>• Export functionality</li>
-                          <li>• Floating panel access</li>
-                        </ul>
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={handleStartTrial}
-                      className="w-full bg-green-400 text-white py-3 px-4 rounded-lg font-medium transition-all"
-                    >
-                      {appStatus.trialInfo.isTrialActive
-                        ? "Continue Trial"
-                        : "Start Free Trial"}
-                    </button>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <div className="text-center">
-                      <div className="text-3xl font-bold text-red-400 mb-2">
-                        Expired
-                      </div>
-                      <p className="text-slate-300">Your trial has ended</p>
-                    </div>
-
-                    <div className="bg-red-900/20 border border-red-800/50 rounded-lg p-4">
-                      <p className="text-red-300 text-sm text-center">
-                        Purchase a license to continue using Local Password
-                        Vault
-                      </p>
-                    </div>
-
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        if (window.electronAPI) {
-                          window.electronAPI.openExternal(
-                            "https://localpasswordvault.com"
-                          );
-                        } else {
-                          window.open("https://localpasswordvault.com", "_blank");
-                        }
-                      }}
-                      className="w-full bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white py-3 px-4 rounded-lg font-medium transition-all"
-                    >
-                      View Pricing Plans
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
           </div>
         ) : (
           /* Pricing Plans */
@@ -511,13 +366,13 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
               </p>
             </div>
 
-            <div className="grid md:grid-cols-4 gap-4">
+            <div className="grid md:grid-cols-2 gap-4 max-w-4xl mx-auto">
               {/* Single User */}
               <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-6 hover:border-blue-500/50 transition-all">
                 <div className="text-center mb-6">
                   <Shield className="w-12 h-12 text-blue-400 mx-auto mb-4" />
                   <h3 className="text-xl font-semibold text-white mb-2">
-                    Single User
+                    Personal License
                   </h3>
                   <div className="text-3xl font-bold text-white mb-1">
                     $29.99
@@ -549,11 +404,11 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
                 </ul>
 
                 <button
-                  onClick={() => handlePurchase("single")}
+                  onClick={() => handlePurchase("personal")}
                   className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-medium transition-all text-center flex items-center justify-center space-x-2"
                 >
                   <CreditCard className="w-4 h-4" />
-                  <span>Purchase Single User</span>
+                  <span>Purchase Personal</span>
                 </button>
               </div>
 
@@ -583,7 +438,7 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
                   </li>
                   <li className="flex items-center space-x-2 text-slate-300">
                     <CheckCircle className="w-4 h-4 text-green-400" />
-                    <span>3 devices</span>
+                    <span>5 separate license keys</span>
                   </li>
                   <li className="flex items-center space-x-2 text-slate-300">
                     <CheckCircle className="w-4 h-4 text-green-400" />
@@ -605,96 +460,6 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
                 >
                   <CreditCard className="w-4 h-4" />
                   <span>Purchase Family Plan</span>
-                </button>
-              </div>
-
-              {/* Pro */}
-              <div className="bg-slate-800/50 backdrop-blur-sm border border-indigo-500 rounded-xl p-6 hover:border-indigo-400/50 transition-all">
-                <div className="text-center mb-6">
-                  <Shield className="w-12 h-12 text-indigo-400 mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold text-white mb-2">
-                    Pro License
-                  </h3>
-                  <div className="text-3xl font-bold text-white mb-1">
-                    $68.00
-                  </div>
-                  <p className="text-slate-400 text-sm">One-time purchase</p>
-                </div>
-
-                <ul className="space-y-3 mb-6">
-                  <li className="flex items-center space-x-2 text-slate-300">
-                    <CheckCircle className="w-4 h-4 text-green-400" />
-                    <span>Unlimited passwords</span>
-                  </li>
-                  <li className="flex items-center space-x-2 text-slate-300">
-                    <CheckCircle className="w-4 h-4 text-green-400" />
-                    <span>Advanced encryption</span>
-                  </li>
-                  <li className="flex items-center space-x-2 text-slate-300">
-                    <CheckCircle className="w-4 h-4 text-green-400" />
-                    <span>Export data</span>
-                  </li>
-                  <li className="flex items-center space-x-2 text-slate-300">
-                    <CheckCircle className="w-4 h-4 text-green-400" />
-                    <span>Floating panel</span>
-                  </li>
-                  <li className="flex items-center space-x-2 text-slate-300">
-                    <CheckCircle className="w-4 h-4 text-green-400" />
-                    <span>6 devices</span>
-                  </li>
-                </ul>
-
-                <button
-                  onClick={() => handlePurchase("pro")}
-                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 px-4 rounded-lg font-medium transition-all text-center flex items-center justify-center space-x-2"
-                >
-                  <CreditCard className="w-4 h-4" />
-                  <span>Purchase Pro</span>
-                </button>
-              </div>
-
-              {/* Business Plan */}
-              <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-6 hover:border-green-500/50 transition-all">
-                <div className="text-center mb-6">
-                  <Building className="w-12 h-12 text-green-400 mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold text-white mb-2">
-                    Business Plan
-                  </h3>
-                  <div className="text-3xl font-bold text-white mb-1">
-                    $99.99
-                  </div>
-                  <p className="text-slate-400 text-sm">One-time purchase</p>
-                </div>
-
-                <ul className="space-y-3 mb-6">
-                  <li className="flex items-center space-x-2 text-slate-300">
-                    <CheckCircle className="w-4 h-4 text-green-400" />
-                    <span>Everything in Family Plan</span>
-                  </li>
-                  <li className="flex items-center space-x-2 text-slate-300">
-                    <CheckCircle className="w-4 h-4 text-green-400" />
-                    <span>10 devices</span>
-                  </li>
-                  <li className="flex items-center space-x-2 text-slate-300">
-                    <CheckCircle className="w-4 h-4 text-green-400" />
-                    <span>Floating panel</span>
-                  </li>
-                  <li className="flex items-center space-x-2 text-slate-300">
-                    <CheckCircle className="w-4 h-4 text-green-400" />
-                    <span>Team management</span>
-                  </li>
-                  <li className="hidden items-center space-x-2 text-slate-300">
-                    <CheckCircle className="w-4 h-4 text-green-400" />
-                    <span>Enterprise support</span>
-                  </li>
-                </ul>
-
-                <button
-                  onClick={() => handlePurchase("business")}
-                  className="w-full bg-green-600 hover:bg-green-700 text-white py-3 px-4 rounded-lg font-medium transition-all text-center flex items-center justify-center space-x-2"
-                >
-                  <CreditCard className="w-4 h-4" />
-                  <span>Purchase Business Plan</span>
                 </button>
               </div>
             </div>

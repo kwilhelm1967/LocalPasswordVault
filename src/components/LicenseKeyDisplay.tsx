@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Key, Calendar, Tag, Copy, CheckCircle } from "lucide-react";
+import { Calendar, Copy, CheckCircle } from "lucide-react";
 import {
   singleUserLicenses,
   proLicenses,

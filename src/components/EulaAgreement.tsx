@@ -203,7 +203,6 @@ export const EulaAgreement: React.FC<EulaAgreementProps> = ({
                       <p className="text-red-400 text-xs">
                         <strong>Troubleshooting:</strong><br/>
                         • Check your internet connection<br/>
-                        • Ensure the backend server is running on port 5000<br/>
                         • Try again in a few moments
                       </p>
                     </div>

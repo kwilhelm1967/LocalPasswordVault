@@ -1,7 +1,7 @@
 import environment from "../config/environment";
 import { trialService, TrialInfo } from "./trialService";
 
-export type LicenseType = "single" | "family" | "pro" | "business";
+export type LicenseType = "personal" | "family" | "trial";
 
 export interface LicenseInfo {
   isValid: boolean;
@@ -101,17 +101,17 @@ export class LicenseService {
     const licenseInfo = this.getLicenseInfo();
     const trialInfo = trialService.getTrialInfo();
 
-    const canUseApp = licenseInfo.isValid || trialInfo.isTrialActive;
-    const requiresPurchase =
-      !licenseInfo.isValid &&
-      (trialInfo.isExpired || !trialInfo.hasTrialBeenUsed);
+    // For license key-based trials, trial licenses are handled through licenseInfo.isValid
+    // Backend validates trial expiration during activation
+    const canUseApp = licenseInfo.isValid;
+    const requiresPurchase = !licenseInfo.isValid;
 
     return {
       isLicensed: licenseInfo.isValid,
       licenseInfo,
       trialInfo,
       canUseApp,
-      requiresPurchase: requiresPurchase && trialInfo.hasTrialBeenUsed,
+      requiresPurchase,
     };
   }
 
@@ -137,6 +137,32 @@ export class LicenseService {
         key: null,
         activatedDate: null,
       };
+    }
+
+    // For trial licenses, check if they have expired locally
+    if (type === 'trial') {
+      // Try to get trial expiry from the stored license token
+      try {
+        const storedData = localStorage.getItem('license_token');
+        if (storedData) {
+          const tokenData = JSON.parse(atob(storedData.split('.')[1])); // Decode JWT payload
+          if (tokenData.trialExpiryDate) {
+            const trialExpiryDate = new Date(tokenData.trialExpiryDate);
+            if (new Date() > trialExpiryDate) {
+              // Trial has expired, remove license
+              this.removeLicense();
+              return {
+                isValid: false,
+                type: null,
+                key: null,
+                activatedDate: null,
+              };
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error checking trial expiration:', error);
+      }
     }
 
     // In lifetime mode we NEVER schedule or perform background validation after first activation.
@@ -221,13 +247,17 @@ export class LicenseService {
 
         // Map backend plan type to frontend license type
         const planTypeMap: Record<string, LicenseType> = {
-          'personal': 'single',
+          'personal': 'personal',
           'family': 'family',
-          'pro': 'pro',
-          'business': 'business'
-        };
+          'trial': 'trial'        
+};
 
-        licenseType = planTypeMap[result.data?.planType] || 'single';
+        licenseType = planTypeMap[result.data?.planType] || 'personal';
+
+        // Store the license token for offline validation and trial expiration checking
+        if (result.token) {
+          localStorage.setItem('license_token', result.token);
+        }
       } else {
         // Already activated earlier and lifetime mode is ON; trust stored type
         licenseType = (localStorage.getItem(
@@ -305,6 +335,7 @@ export class LicenseService {
     localStorage.removeItem(LicenseService.LICENSE_ACTIVATED_STORAGE);
     localStorage.removeItem(LicenseService.LAST_VALIDATION_STORAGE);
     localStorage.removeItem(LicenseService.HARDWARE_ID_STORAGE);
+    localStorage.removeItem('license_token');
   }
 
   /**
@@ -321,10 +352,9 @@ export class LicenseService {
    */
   getLicenseDisplayName(type: LicenseType): string {
     const names = {
-      single: "Single User License",
+      personal: "Single User License",
       family: "Family Plan",
-      pro: "Pro License",
-      business: "Business Plan",
+      trial: "7-Day Trial License",
     };
     return names[type];
   }
