@@ -11,6 +11,10 @@ export class TrialService {
   private static instance: TrialService;
   private static readonly TRIAL_START_KEY = "trial_start_date";
   private static readonly TRIAL_USED_KEY = "trial_used";
+  private countdownInterval: NodeJS.Timeout | null = null;
+  private expirationCallbacks: (() => void)[] = [];
+  private expirationConfirmed: boolean = false;
+  private expirationConfirmationCount: number = 0;
 
   // Configurable trial duration - set to 5 minutes for testing, 7 days for production
   // Set this to true for 5-minute testing mode, false for normal 7-day trial
@@ -43,6 +47,11 @@ export class TrialService {
 
     localStorage.setItem(TrialService.TRIAL_START_KEY, now.toISOString());
     localStorage.setItem(TrialService.TRIAL_USED_KEY, "true");
+
+    // Start countdown logging for test mode
+    if (TrialService.USE_TEST_MODE) {
+      this.startCountdownLogging();
+    }
 
     return this.getTrialInfo();
   }
@@ -105,6 +114,54 @@ export class TrialService {
   isTrialExpired(): boolean {
     const trialInfo = this.getTrialInfo();
     return trialInfo.hasTrialBeenUsed && trialInfo.isExpired;
+  }
+
+  /**
+   * Check and handle trial expiration (triggers callbacks if expired)
+   */
+  checkAndHandleExpiration(): boolean {
+    const trialInfo = this.getTrialInfo();
+
+    // If trial is not used or not expired, no need to check further
+    if (!trialInfo.hasTrialBeenUsed || !trialInfo.isExpired) {
+      return false;
+    }
+
+    // If expiration is confirmed, limit further checking
+    if (this.expirationConfirmed) {
+      this.expirationConfirmationCount++;
+      console.log(`🔍 Expiration confirmed check #${this.expirationConfirmationCount} (max 3)`);
+
+      // Only verify 2-3 times after initial confirmation
+      if (this.expirationConfirmationCount >= 3) {
+        console.log("✅ Expiration fully confirmed - stopping further checks");
+        return true;
+      }
+    } else {
+      // First time detecting expiration
+      console.log("🚨 TRIAL EXPIRATION DETECTED - Triggering callbacks");
+      this.expirationConfirmed = true;
+      this.expirationConfirmationCount = 1;
+      this.triggerExpirationCallbacks();
+    }
+
+    return true;
+  }
+
+  /**
+   * Check if expiration has been confirmed
+   */
+  isExpirationConfirmed(): boolean {
+    return this.expirationConfirmed;
+  }
+
+  /**
+   * Reset expiration confirmation (for testing)
+   */
+  resetExpirationConfirmation(): void {
+    this.expirationConfirmed = false;
+    this.expirationConfirmationCount = 0;
+    console.log("🔄 Expiration confirmation reset");
   }
 
   /**
@@ -182,6 +239,11 @@ export class TrialService {
   resetTrial(): void {
     localStorage.removeItem(TrialService.TRIAL_START_KEY);
     localStorage.removeItem(TrialService.TRIAL_USED_KEY);
+
+    // Stop countdown logging if running
+    this.stopCountdownLogging();
+
+    console.log("🔄 TRIAL RESET - Countdown stopped");
   }
 
   /**
@@ -196,6 +258,14 @@ export class TrialService {
     );
     localStorage.setItem(TrialService.TRIAL_START_KEY, pastDate.toISOString());
     localStorage.setItem(TrialService.TRIAL_USED_KEY, "true");
+
+    // Stop countdown logging if running
+    this.stopCountdownLogging();
+
+    // Trigger expiration callbacks since trial ended
+    this.triggerExpirationCallbacks();
+
+    console.log("🛑 TRIAL ENDED - Countdown stopped - Expiration callbacks triggered");
   }
 
   /**
@@ -229,6 +299,234 @@ export class TrialService {
    */
   static setTestMode(enabled: boolean): void {
     (TrialService as any).USE_TEST_MODE = enabled;
+  }
+
+  /**
+   * Add callback for trial expiration
+   */
+  addExpirationCallback(callback: () => void): void {
+    this.expirationCallbacks.push(callback);
+  }
+
+  /**
+   * Remove expiration callback
+   */
+  removeExpirationCallback(callback: () => void): void {
+    const index = this.expirationCallbacks.indexOf(callback);
+    if (index > -1) {
+      this.expirationCallbacks.splice(index, 1);
+    }
+  }
+
+  /**
+   * Trigger all expiration callbacks
+   */
+  private triggerExpirationCallbacks(): void {
+    console.log("🚨 TRIGGERING TRIAL EXPIRATION CALLBACKS");
+    this.expirationCallbacks.forEach(callback => {
+      try {
+        callback();
+      } catch (error) {
+        console.error("Error in expiration callback:", error);
+      }
+    });
+  }
+
+  /**
+   * Start countdown logging for test mode
+   */
+  private startCountdownLogging(): void {
+    // Clear any existing countdown
+    if (this.countdownInterval) {
+      clearInterval(this.countdownInterval);
+    }
+
+    console.log("🕒 TRIAL COUNTDOWN STARTED");
+    console.log("================================");
+
+    // Update countdown every second in test mode, every minute in production
+    const updateInterval = TrialService.USE_TEST_MODE ? 1000 : 60000;
+
+    this.countdownInterval = setInterval(() => {
+      const trialInfo = this.getTrialInfo();
+
+      if (!trialInfo.hasTrialBeenUsed) {
+        if (this.countdownInterval) {
+          clearInterval(this.countdownInterval);
+          this.countdownInterval = null;
+        }
+        console.log("⏸️  Trial not started yet");
+        return;
+      }
+
+      const now = new Date();
+      const remainingMs = trialInfo.endDate!.getTime() - now.getTime();
+
+      // Check if trial has expired (with high precision)
+      if (remainingMs <= 0) {
+        if (this.countdownInterval) {
+          clearInterval(this.countdownInterval);
+          this.countdownInterval = null;
+        }
+        console.log("⏰ TRIAL EXPIRED!");
+        console.log("================================");
+        console.log(`🔴 EXPIRATION TIME: ${trialInfo.endDate!.toISOString()}`);
+        console.log(`🔴 CURRENT TIME: ${now.toISOString()}`);
+        console.log(`🔴 OVERDUE BY: ${Math.abs(remainingMs)}ms`);
+
+        // Trigger expiration callbacks
+        this.triggerExpirationCallbacks();
+        return;
+      }
+
+      // Calculate remaining time with high precision
+      const totalSeconds = Math.max(0, Math.floor(remainingMs / 1000));
+      const minutes = Math.floor(totalSeconds / 60);
+      const seconds = totalSeconds % 60;
+      const milliseconds = remainingMs % 1000;
+
+      // Format time display based on mode
+      let timeDisplay: string;
+      if (TrialService.USE_TEST_MODE) {
+        // Precise display for testing
+        if (minutes > 0) {
+          timeDisplay = `${minutes}m ${seconds}s ${milliseconds}ms`;
+        } else if (seconds > 0) {
+          timeDisplay = `${seconds}s ${milliseconds}ms`;
+        } else {
+          timeDisplay = `${milliseconds}ms`;
+        }
+      } else {
+        // Simple display for production
+        if (totalSeconds >= 86400) {
+          const days = Math.floor(totalSeconds / 86400);
+          timeDisplay = `${days} day${days === 1 ? '' : 's'}`;
+        } else if (totalSeconds >= 3600) {
+          const hours = Math.floor(totalSeconds / 3600);
+          timeDisplay = `${hours} hour${hours === 1 ? '' : 's'}`;
+        } else if (totalSeconds >= 60) {
+          timeDisplay = `${minutes}m ${seconds}s`;
+        } else {
+          timeDisplay = `${seconds}s`;
+        }
+      }
+
+      // Calculate percentage with high precision
+      const percentage = Math.round(this.getTrialProgress() * 100) / 100;
+
+      // Create progress bar
+      const barLength = 20;
+      const filledLength = Math.round((percentage / 100) * barLength);
+      const progressBar = '█'.repeat(filledLength) + '░'.repeat(barLength - filledLength);
+
+      console.log(`⏱️  [${progressBar}] ${percentage}% | ${timeDisplay} remaining | Status: ${trialInfo.isTrialActive ? 'ACTIVE' : 'EXPIRED'}`);
+
+      // Warning levels based on mode
+      if (TrialService.USE_TEST_MODE) {
+        // Test mode warnings
+        if (totalSeconds <= 30 && totalSeconds > 0) {
+          console.log(`⚠️  WARNING: Less than 30 seconds remaining!`);
+        }
+        if (totalSeconds <= 10 && totalSeconds > 0) {
+          console.log(`🚨 FINAL COUNTDOWN: ${totalSeconds} seconds left!`);
+        }
+        if (totalSeconds <= 5 && totalSeconds > 0) {
+          console.log(`🔴 CRITICAL: ${totalSeconds} seconds remaining!`);
+        }
+      } else {
+        // Production mode warnings
+        const totalHours = totalSeconds / 3600;
+        if (totalHours <= 24 && totalHours > 0) {
+          console.log(`⚠️  WARNING: Less than 24 hours remaining!`);
+        }
+        if (totalHours <= 1 && totalHours > 0) {
+          console.log(`🚨 FINAL COUNTDOWN: Less than 1 hour remaining!`);
+        }
+      }
+    }, updateInterval);
+  }
+
+  /**
+   * Stop countdown logging
+   */
+  private stopCountdownLogging(): void {
+    if (this.countdownInterval) {
+      clearInterval(this.countdownInterval);
+      this.countdownInterval = null;
+      console.log("🛑 TRIAL COUNTDOWN STOPPED");
+    }
+  }
+
+  /**
+   * Validate trial timing accuracy (for testing)
+   */
+  validateTrialAccuracy(): {
+    isAccurate: boolean;
+    expectedDuration: number;
+    actualDuration: number;
+    variance: number;
+    details: string;
+  } {
+    const trialInfo = this.getTrialInfo();
+
+    if (!trialInfo.hasTrialBeenUsed || !trialInfo.startDate || !trialInfo.endDate) {
+      return {
+        isAccurate: false,
+        expectedDuration: TrialService.TRIAL_DURATION_MS,
+        actualDuration: 0,
+        variance: 0,
+        details: "Trial not started"
+      };
+    }
+
+    const expectedDuration = TrialService.TRIAL_DURATION_MS;
+    const actualDuration = trialInfo.endDate.getTime() - trialInfo.startDate.getTime();
+    const variance = Math.abs(actualDuration - expectedDuration);
+    const variancePercent = (variance / expectedDuration) * 100;
+
+    const isAccurate = variance <= 1000; // Allow 1 second variance
+
+    const mode = TrialService.USE_TEST_MODE ? "Test Mode" : "Production Mode";
+    const expectedDisplay = TrialService.USE_TEST_MODE ? "5 minutes" : "7 days";
+
+    return {
+      isAccurate,
+      expectedDuration,
+      actualDuration,
+      variance,
+      details: `${mode}: Expected ${expectedDisplay} (${expectedDuration}ms), got ${actualDuration}ms, variance: ${variancePercent.toFixed(2)}%`
+    };
+  }
+
+  /**
+   * Get precise trial status with millisecond accuracy
+   */
+  getPreciseTrialStatus(): {
+    isActive: boolean;
+    isExpired: boolean;
+    remainingMs: number;
+    remainingSeconds: number;
+    progressPercent: number;
+    expiresAt: Date | null;
+    startedAt: Date | null;
+  } {
+    const trialInfo = this.getTrialInfo();
+    const now = new Date();
+
+    let remainingMs = 0;
+    if (trialInfo.endDate) {
+      remainingMs = Math.max(0, trialInfo.endDate.getTime() - now.getTime());
+    }
+
+    return {
+      isActive: trialInfo.isTrialActive,
+      isExpired: trialInfo.isExpired,
+      remainingMs,
+      remainingSeconds: Math.max(0, Math.floor(remainingMs / 1000)),
+      progressPercent: this.getTrialProgress(),
+      expiresAt: trialInfo.endDate,
+      startedAt: trialInfo.startDate
+    };
   }
 }
 

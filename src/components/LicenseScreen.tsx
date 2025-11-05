@@ -16,17 +16,16 @@ import { licenseService } from "../utils/licenseService";
 import { EulaAgreement } from "./EulaAgreement";
 import { DownloadInstructions } from "./DownloadInstructions";
 import { DownloadPage } from "./DownloadPage";
+import { TrialExpirationBanner } from "./TrialExpirationBanner";
 
 interface LicenseScreenProps {
   onLicenseValid: () => void;
-  onShowPricingPlans?: () => void;
   showPricingPlans?: boolean;
   onHidePricingPlans?: () => void;
 }
 
 export const LicenseScreen: React.FC<LicenseScreenProps> = ({
   onLicenseValid,
-  onShowPricingPlans,
   showPricingPlans = false,
   onHidePricingPlans,
 }) => {
@@ -36,15 +35,28 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
   const [appStatus, setAppStatus] = useState(() =>
     licenseService.getAppStatus()
   );
-  const [showPayment, setShowPayment] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState<
-    "personal" | "family"
-  >("personal");
+  const [selectedPlan, setSelectedPlan] = useState<"single" | "family">(
+    "single"
+  );
   const [showEula, setShowEula] = useState(false);
   const [showDownloadInstructions, setShowDownloadInstructions] =
     useState(false);
   const [pendingLicenseKey, setPendingLicenseKey] = useState("");
   const [showDownloadPage, setShowDownloadPage] = useState(false);
+  const [showLicenseInput, setShowLicenseInput] = useState(false);
+
+  const handleApplyLicenseKey = () => {
+    setShowLicenseInput(true);
+    // Scroll to the license activation section
+    setTimeout(() => {
+      const licenseSection = document.getElementById(
+        "license-activation-section"
+      );
+      if (licenseSection) {
+        licenseSection.scrollIntoView({ behavior: "smooth" });
+      }
+    }, 100);
+  };
 
   useEffect(() => {
     // Update app status every minute to check trial expiration
@@ -87,15 +99,20 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
         let enhancedError = result.error || "License activation failed";
 
         if (result.error?.includes("fetch")) {
-          enhancedError = "Unable to connect to license server. Please check your internet connection and ensure the backend server is running.";
+          enhancedError =
+            "Unable to connect to license server. Please check your internet connection and ensure the backend server is running.";
         } else if (result.error?.includes("409")) {
-          enhancedError = "This license key is already activated on another device. Each license can only be used on one device at a time.";
+          enhancedError =
+            "This license key is already activated on another device. Each license can only be used on one device at a time.";
         } else if (result.error?.includes("404")) {
-          enhancedError = "License key not found. Please double-check your license key and try again.";
+          enhancedError =
+            "License key not found. Please double-check your license key and try again.";
         } else if (result.error?.includes("validation")) {
-          enhancedError = "Invalid license key format. Please ensure your key is in the format: XXXX-XXXX-XXXX-XXXX";
+          enhancedError =
+            "Invalid license key format. Please ensure your key is in the format: XXXX-XXXX-XXXX-XXXX";
         } else if (result.error?.includes("network")) {
-          enhancedError = "Network error occurred. Please check your connection and try again.";
+          enhancedError =
+            "Network error occurred. Please check your connection and try again.";
         }
 
         setError(enhancedError);
@@ -112,7 +129,8 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
       let enhancedError = "License activation failed. Please try again.";
 
       if (error instanceof TypeError && error.message.includes("fetch")) {
-        enhancedError = "Unable to connect to license server. Please check your internet connection and try again.";
+        enhancedError =
+          "Unable to connect to license server. Please check your internet connection and try again.";
       } else if (error instanceof Error) {
         enhancedError = `License activation failed: ${error.message}`;
       }
@@ -144,25 +162,9 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
     );
   };
 
-  
-  const handlePurchase = (plan: "personal" | "family") => {
+  const handlePurchase = (plan: "single" | "family") => {
     setSelectedPlan(plan);
-    setShowPayment(true);
     analyticsService.trackConversion("purchase_started", { plan });
-  };
-
-  const handlePaymentComplete = (licenseKey: string) => {
-    setPendingLicenseKey(licenseKey);
-    setShowEula(true);
-    setShowPayment(false);
-    analyticsService.trackConversion("payment_completed", {
-      plan: selectedPlan,
-      licenseKey: licenseKey.substring(0, 8) + "****",
-      amount: selectedPlan === "personal" ? 29.99 : 49.99,
-    });
-
-    // Show download instructions
-    setShowDownloadInstructions(true);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -188,7 +190,7 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
   };
 
   return (
-    <>
+    <div className="min-h-screen bg-slate-900 overflow-y-auto">
       {/* EULA Modal */}
       {showEula && (
         <EulaAgreement
@@ -210,17 +212,6 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
         />
       )}
 
-      {/* {showPayment && (
-        <PaymentScreen
-          onBack={() => {
-            setShowPayment(false);
-            window.scrollTo(0, 0);
-          }}
-          onPaymentComplete={handlePaymentComplete}
-          selectedPlan={selectedPlan}
-        />
-      )} */}
-
       {showDownloadPage && (
         <div className="fixed inset-0 z-50 bg-slate-900/95 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
           <div className="max-w-4xl w-full">
@@ -235,273 +226,294 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
         </div>
       )}
 
-      <div className="max-w-4xl w-full mx-auto mt-6 overflow-y-auto max-h-[calc(100vh-2rem)]">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div
-            className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4"
-            style={{
-              backgroundColor: "transparent",
-              boxShadow: "none",
-              border: "none",
-              outline: "none",
-            }}
-          >
-            <Lock
-              className="w-8 h-8 text-white"
+      <div className="min-h-screen flex flex-col bg-slate-900 overflow-y-auto">
+        <div className="flex-1 max-w-4xl w-full mx-auto py-6 px-4 overflow-y-auto">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <div
+              className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4"
               style={{
-                filter: "none",
                 backgroundColor: "transparent",
                 boxShadow: "none",
                 border: "none",
                 outline: "none",
               }}
-            />
-          </div>
-          <h1 className="text-3xl font-bold text-white mb-2">
-            Local Password Vault
-          </h1>
-          <p className="text-slate-400">Local Offline Password Management</p>
-          <p className="text-xs text-slate-500 mt-2">
-            by{" "}
-            <button
-              onClick={(e) => {
-                e.preventDefault();
-                const url = "https://localpasswordvault.com";
-                if (window.electronAPI) {
-                  window.electronAPI.openExternal(url);
-                } else {
-                  window.open("https://localpasswordvault.com", "_blank");
-                }
-              }}
-              className="text-xs text-slate-400 hover:underline cursor-pointer"
             >
-              LocalPasswordVault.com
-            </button>
-          </p>
-        </div>
+              <Lock
+                className="w-8 h-8 text-white"
+                style={{
+                  filter: "none",
+                  backgroundColor: "transparent",
+                  boxShadow: "none",
+                  border: "none",
+                  outline: "none",
+                }}
+              />
+            </div>
+            <h1 className="text-3xl font-bold text-white mb-2">
+              Local Password Vault
+            </h1>
+            <p className="text-slate-400">Local Offline Password Management</p>
+            <p className="text-xs text-slate-500 mt-2">
+              by{" "}
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  const url = "https://localpasswordvault.com";
+                  if (window.electronAPI) {
+                    window.electronAPI.openExternal(url);
+                  } else {
+                    window.open("https://localpasswordvault.com", "_blank");
+                  }
+                }}
+                className="text-xs text-slate-400 hover:underline cursor-pointer"
+              >
+                LocalPasswordVault.com
+              </button>
+            </p>
+          </div>
 
-        {!showPricingPlans ? (
-          <div className="max-w-md mx-auto mb-8">
-            {/* License Activation */}
-            <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-6">
-              <div className="flex bg-transparent items-center space-x-3 mb-6">
-                <Key className="w-6 h-6 text-blue-400" />
-                <h2 className="text-xl font-semibold text-white">
-                  Activate License
-                </h2>
-              </div>
+          {/* Advanced Trial Expiration Banner */}
+          <TrialExpirationBanner
+            trialInfo={appStatus.trialInfo}
+            onApplyLicenseKey={handleApplyLicenseKey}
+          />
 
-              <div className="space-y-4 bg-transparent">
-                <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-2">
-                    License Key
-                  </label>
-                  <input
-                    type="text"
-                    value={licenseKey}
-                    onChange={handleLicenseKeyChange}
-                    onKeyPress={handleKeyPress}
-                    placeholder="XXXX-XXXX-XXXX-XXXX"
-                    className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all  text-center tracking-wider"
-                    maxLength={19}
-                  />
+          {!showPricingPlans ? (
+            <div className="max-w-md mx-auto mb-8">
+              {/* License Activation */}
+              <div
+                id="license-activation-section"
+                className={`${
+                  showLicenseInput || !appStatus.trialInfo.isExpired
+                    ? "block"
+                    : "hidden"
+                }`}
+              >
+                <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-6">
+                  <div className="flex bg-transparent items-center space-x-3 mb-6">
+                    <Key className="w-6 h-6 text-blue-400" />
+                    <h2 className="text-xl font-semibold text-white">
+                      Activate License
+                    </h2>
+                  </div>
                 </div>
 
-                {error && (
-                  <div className="flex items-center space-x-2 text-red-400 text-sm">
-                    <XCircle className="w-4 h-4" />
-                    <span>{error}</span>
+                <div className="space-y-4 bg-transparent">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                      License Key
+                    </label>
+                    <input
+                      type="text"
+                      value={licenseKey}
+                      onChange={handleLicenseKeyChange}
+                      onKeyPress={handleKeyPress}
+                      placeholder="XXXX-XXXX-XXXX-XXXX"
+                      className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all  text-center tracking-wider"
+                      maxLength={19}
+                    />
                   </div>
-                )}
 
-                <button
-                  onClick={handleActivateLicense}
-                  disabled={isActivating || !licenseKey.trim()}
-                  className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:from-slate-600 disabled:to-slate-600 text-white py-3 px-4 rounded-lg font-medium transition-all disabled:cursor-not-allowed flex items-center justify-center space-x-2"
-                >
-                  {isActivating ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      <span>Activating...</span>
-                    </>
-                  ) : (
-                    <>
-                      <CheckCircle className="w-4 h-4" />
-                      <span>Activate License</span>
-                    </>
+                  {error && (
+                    <div className="flex items-center space-x-2 text-red-400 text-sm">
+                      <XCircle className="w-4 h-4" />
+                      <span>{error}</span>
+                    </div>
                   )}
-                </button>
 
-                <div className="text-center">
                   <button
-                    onClick={(e) => {
-                      e.preventDefault();
-                      if (window.electronAPI) {
-                        window.electronAPI.openExternal(
-                          "https://localpasswordvault.com"
-                        );
-                      } else {
-                        window.open("https://localpasswordvault.com", "_blank");
-                      }
-                    }}
-                    className="text-blue-400 hover:text-blue-300 text-sm transition-colors inline-flex items-center space-x-1"
+                    onClick={handleActivateLicense}
+                    disabled={isActivating || !licenseKey.trim()}
+                    className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:from-slate-600 disabled:to-slate-600 text-white py-3 px-4 rounded-lg font-medium transition-all disabled:cursor-not-allowed flex items-center justify-center space-x-2"
                   >
-                    <span>Don't have a license? Purchase one</span>
-                    <ExternalLink className="w-3 h-3" />
+                    {isActivating ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        <span>Activating...</span>
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle className="w-4 h-4" />
+                        <span>Activate License</span>
+                      </>
+                    )}
+                  </button>
+
+                  <div className="text-center">
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        if (window.electronAPI) {
+                          window.electronAPI.openExternal(
+                            "https://localpasswordvault.com"
+                          );
+                        } else {
+                          window.open(
+                            "https://localpasswordvault.com",
+                            "_blank"
+                          );
+                        }
+                      }}
+                      className="text-blue-400 hover:text-blue-300 text-sm transition-colors inline-flex items-center space-x-1"
+                    >
+                      <span>Don't have a license? Purchase one</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-6 mb-8">
+              <div className="text-center">
+                <h2 className="text-2xl font-bold text-white mb-2">
+                  Choose Your Plan
+                </h2>
+                <p className="text-slate-400 mb-4">
+                  Local password management for every need
+                </p>
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-4 max-w-4xl mx-auto">
+                {/* Single User */}
+                <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-6 hover:border-blue-500/50 transition-all">
+                  <div className="text-center mb-6">
+                    <Shield className="w-12 h-12 text-blue-400 mx-auto mb-4" />
+                    <h3 className="text-xl font-semibold text-white mb-2">
+                      Personal License
+                    </h3>
+                    <div className="text-3xl font-bold text-white mb-1">
+                      $29.99
+                    </div>
+                    <p className="text-slate-400 text-sm">One-time purchase</p>
+                  </div>
+
+                  <ul className="space-y-3 mb-6">
+                    <li className="flex items-center space-x-2 text-slate-300">
+                      <CheckCircle className="w-4 h-4 text-green-400" />
+                      <span>Unlimited passwords</span>
+                    </li>
+                    <li className="flex items-center space-x-2 text-slate-300">
+                      <CheckCircle className="w-4 h-4 text-green-400" />
+                      <span>Advanced encryption</span>
+                    </li>
+                    <li className="flex items-center space-x-2 text-slate-300">
+                      <CheckCircle className="w-4 h-4 text-green-400" />
+                      <span>Export data</span>
+                    </li>
+                    <li className="flex items-center space-x-2 text-slate-300">
+                      <CheckCircle className="w-4 h-4 text-green-400" />
+                      <span>Floating panel</span>
+                    </li>
+                    <li className="flex items-center space-x-2 text-slate-300">
+                      <CheckCircle className="w-4 h-4 text-green-400" />
+                      <span>1 device</span>
+                    </li>
+                  </ul>
+
+                  <button
+                    onClick={() => handlePurchase("single")}
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-medium transition-all text-center flex items-center justify-center space-x-2"
+                  >
+                    <CreditCard className="w-4 h-4" />
+                    <span>Purchase Personal</span>
+                  </button>
+                </div>
+
+                {/* Family Plan */}
+                <div className="bg-slate-800/50 backdrop-blur-sm border-2 border-purple-500 rounded-xl p-6 relative">
+                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                    <span className="bg-purple-600 text-white px-3 py-1 rounded-full text-xs font-medium">
+                      Most Popular
+                    </span>
+                  </div>
+
+                  <div className="text-center mb-6">
+                    <Users className="w-12 h-12 text-purple-400 mx-auto mb-4" />
+                    <h3 className="text-xl font-semibold text-white mb-2">
+                      Family Plan
+                    </h3>
+                    <div className="text-3xl font-bold text-white mb-1">
+                      $49.99
+                    </div>
+                    <p className="text-slate-400 text-sm">One-time purchase</p>
+                  </div>
+
+                  <ul className="space-y-3 mb-6">
+                    <li className="flex items-center space-x-2 text-slate-300">
+                      <CheckCircle className="w-4 h-4 text-green-400" />
+                      <span>Everything in Single User</span>
+                    </li>
+                    <li className="flex items-center space-x-2 text-slate-300">
+                      <CheckCircle className="w-4 h-4 text-green-400" />
+                      <span>5 separate license keys</span>
+                    </li>
+                    <li className="flex items-center space-x-2 text-slate-300">
+                      <CheckCircle className="w-4 h-4 text-green-400" />
+                      <span>Floating panel</span>
+                    </li>
+                    <li className="hidden items-center space-x-2 text-slate-300">
+                      <CheckCircle className="w-4 h-4 text-green-400" />
+                      <span>Priority support</span>
+                    </li>
+                    <li className="flex items-center space-x-2 text-slate-300">
+                      <CheckCircle className="w-4 h-4 text-green-400" />
+                      <span>Family sharing</span>
+                    </li>
+                  </ul>
+
+                  <button
+                    onClick={() => handlePurchase("family")}
+                    className="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 px-4 rounded-lg font-medium transition-all text-center flex items-center justify-center space-x-2"
+                  >
+                    <CreditCard className="w-4 h-4" />
+                    <span>Purchase Family Plan</span>
                   </button>
                 </div>
               </div>
-            </div>
-          </div>
-        ) : (
-          /* Pricing Plans */
-          <div className="space-y-6 mb-8">
-            <div className="text-center">
-              <h2 className="text-2xl font-bold text-white mb-2">
-                Choose Your Plan
-              </h2>
-              <p className="text-slate-400 mb-4">
-                Local password management for every need
-              </p>
-            </div>
 
-            <div className="grid md:grid-cols-2 gap-4 max-w-4xl mx-auto">
-              {/* Single User */}
-              <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-6 hover:border-blue-500/50 transition-all">
-                <div className="text-center mb-6">
-                  <Shield className="w-12 h-12 text-blue-400 mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold text-white mb-2">
-                    Personal License
-                  </h3>
-                  <div className="text-3xl font-bold text-white mb-1">
-                    $29.99
-                  </div>
-                  <p className="text-slate-400 text-sm">One-time purchase</p>
-                </div>
-
-                <ul className="space-y-3 mb-6">
-                  <li className="flex items-center space-x-2 text-slate-300">
-                    <CheckCircle className="w-4 h-4 text-green-400" />
-                    <span>Unlimited passwords</span>
-                  </li>
-                  <li className="flex items-center space-x-2 text-slate-300">
-                    <CheckCircle className="w-4 h-4 text-green-400" />
-                    <span>Advanced encryption</span>
-                  </li>
-                  <li className="flex items-center space-x-2 text-slate-300">
-                    <CheckCircle className="w-4 h-4 text-green-400" />
-                    <span>Export data</span>
-                  </li>
-                  <li className="flex items-center space-x-2 text-slate-300">
-                    <CheckCircle className="w-4 h-4 text-green-400" />
-                    <span>Floating panel</span>
-                  </li>
-                  <li className="flex items-center space-x-2 text-slate-300">
-                    <CheckCircle className="w-4 h-4 text-green-400" />
-                    <span>1 device</span>
-                  </li>
-                </ul>
-
+              <div className="text-center mt-6">
                 <button
-                  onClick={() => handlePurchase("personal")}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-medium transition-all text-center flex items-center justify-center space-x-2"
+                  onClick={onHidePricingPlans}
+                  className="text-slate-400 hover:text-white transition-colors flex items-center justify-center mx-auto space-x-2 mb-4"
                 >
-                  <CreditCard className="w-4 h-4" />
-                  <span>Purchase Personal</span>
+                  <ArrowLeft className="w-4 h-4" />
+                  <span>Back to License Activation</span>
                 </button>
-              </div>
-
-              {/* Family Plan */}
-              <div className="bg-slate-800/50 backdrop-blur-sm border-2 border-purple-500 rounded-xl p-6 relative">
-                <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                  <span className="bg-purple-600 text-white px-3 py-1 rounded-full text-xs font-medium">
-                    Most Popular
-                  </span>
-                </div>
-
-                <div className="text-center mb-6">
-                  <Users className="w-12 h-12 text-purple-400 mx-auto mb-4" />
-                  <h3 className="text-xl font-semibold text-white mb-2">
-                    Family Plan
-                  </h3>
-                  <div className="text-3xl font-bold text-white mb-1">
-                    $49.99
-                  </div>
-                  <p className="text-slate-400 text-sm">One-time purchase</p>
-                </div>
-
-                <ul className="space-y-3 mb-6">
-                  <li className="flex items-center space-x-2 text-slate-300">
-                    <CheckCircle className="w-4 h-4 text-green-400" />
-                    <span>Everything in Single User</span>
-                  </li>
-                  <li className="flex items-center space-x-2 text-slate-300">
-                    <CheckCircle className="w-4 h-4 text-green-400" />
-                    <span>5 separate license keys</span>
-                  </li>
-                  <li className="flex items-center space-x-2 text-slate-300">
-                    <CheckCircle className="w-4 h-4 text-green-400" />
-                    <span>Floating panel</span>
-                  </li>
-                  <li className="hidden items-center space-x-2 text-slate-300">
-                    <CheckCircle className="w-4 h-4 text-green-400" />
-                    <span>Priority support</span>
-                  </li>
-                  <li className="flex items-center space-x-2 text-slate-300">
-                    <CheckCircle className="w-4 h-4 text-green-400" />
-                    <span>Family sharing</span>
-                  </li>
-                </ul>
 
                 <button
-                  onClick={() => handlePurchase("family")}
-                  className="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 px-4 rounded-lg font-medium transition-all text-center flex items-center justify-center space-x-2"
+                  onClick={handleViewDownloads}
+                  className="text-blue-400 hover:text-blue-300 transition-colors flex items-center justify-center mx-auto space-x-2"
                 >
-                  <CreditCard className="w-4 h-4" />
-                  <span>Purchase Family Plan</span>
+                  <Download className="w-4 h-4" />
+                  <span>View Downloads</span>
                 </button>
               </div>
             </div>
-
-            <div className="text-center mt-6">
-              <button
-                onClick={onHidePricingPlans}
-                className="text-slate-400 hover:text-white transition-colors flex items-center justify-center mx-auto space-x-2 mb-4"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                <span>Back to License Activation</span>
-              </button>
-
-              <button
-                onClick={handleViewDownloads}
-                className="text-blue-400 hover:text-blue-300 transition-colors flex items-center justify-center mx-auto space-x-2"
-              >
-                <Download className="w-4 h-4" />
-                <span>View Downloads</span>
-              </button>
-            </div>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Footer */}
-        <div className="text-center mt-8 pt-8 border-t border-slate-700">
-          <p className="text-xs text-slate-500">
-            Secure • Private • Offline • Local Password Management
-          </p>
-          <p className="text-xs text-slate-600 mt-2">
-            Need help? Visit{" "}
-            <a
-              href="mailto:support@LocalPasswordVault.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-400 hover:text-blue-300"
-            >
-              support@LocalPasswordVault.com
-            </a>
-          </p>
+        <div className="flex-shrink-0 bg-slate-800/30 backdrop-blur-sm border-t border-slate-700/50 py-8 mt-auto">
+          <div className="max-w-4xl w-full mx-auto text-center">
+            <p className="text-xs text-slate-500 mb-3 leading-relaxed">
+              Secure • Private • Offline • Local Password Management
+            </p>
+            <p className="text-xs text-slate-600">
+              Need help? Visit{" "}
+              <a
+                href="mailto:support@LocalPasswordVault.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-400 hover:text-blue-300 transition-colors duration-200"
+              >
+                support@LocalPasswordVault.com
+              </a>
+            </p>
+          </div>
         </div>
       </div>
-    </>
+    </div>
   );
 };

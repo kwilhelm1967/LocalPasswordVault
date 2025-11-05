@@ -101,10 +101,27 @@ export class LicenseService {
     const licenseInfo = this.getLicenseInfo();
     const trialInfo = trialService.getTrialInfo();
 
-    // For license key-based trials, trial licenses are handled through licenseInfo.isValid
-    // Backend validates trial expiration during activation
-    const canUseApp = licenseInfo.isValid;
-    const requiresPurchase = !licenseInfo.isValid;
+    // Check if user can use the app based on license or trial status
+    let canUseApp = false;
+    let requiresPurchase = false;
+
+    if (licenseInfo.isValid) {
+      // Valid license (non-trial or trial that hasn't expired)
+      canUseApp = true;
+      requiresPurchase = false;
+    } else if (trialInfo.hasTrialBeenUsed && !trialInfo.isExpired && trialInfo.isTrialActive) {
+      // Active trial (not expired)
+      canUseApp = true;
+      requiresPurchase = false;
+    } else if (trialInfo.hasTrialBeenUsed && trialInfo.isExpired) {
+      // Expired trial - user must purchase
+      canUseApp = false;
+      requiresPurchase = true;
+    } else {
+      // No license and no trial used - user can start trial or purchase
+      canUseApp = false;
+      requiresPurchase = true;
+    }
 
     return {
       isLicensed: licenseInfo.isValid,

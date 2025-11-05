@@ -8,6 +8,7 @@ import { PasswordEntry, Category } from "./types";
 import { storageService } from "./utils/storage";
 import { importService } from "./utils/importService";
 import { licenseService } from "./utils/licenseService";
+import { trialService } from "./utils/trialService";
 import { features } from "./config/environment";
 import { useElectron } from "./hooks/useElectron";
 import { LicenseKeyDisplay } from "./components/LicenseKeyDisplay";
@@ -29,6 +30,7 @@ const FIXED_CATEGORIES: Category[] = [
 // Custom hook for app status management
 const useAppStatus = () => {
   const [appStatus, setAppStatus] = useState(() => licenseService.getAppStatus());
+  const [checkingEnabled, setCheckingEnabled] = useState(true);
 
   const updateAppStatus = useCallback(() => {
     const newStatus = licenseService.getAppStatus();
@@ -36,12 +38,73 @@ const useAppStatus = () => {
     return newStatus;
   }, []);
 
-  useEffect(() => {
-    const interval = setInterval(updateAppStatus, 60000);
-    return () => clearInterval(interval);
+  // Handle trial expiration with immediate redirect
+  const handleTrialExpiration = useCallback(() => {
+    console.log("🚨 TRIAL EXPIRED - Redirecting to license page");
+
+    // Force multiple immediate updates to ensure redirect happens
+    setTimeout(() => updateAppStatus(), 0);
+    setTimeout(() => updateAppStatus(), 10);
+    setTimeout(() => updateAppStatus(), 50);
+
+    // Clear any vault data to prevent access
+    if (storageService.isVaultUnlocked()) {
+      storageService.lockVault();
+    }
+
+    // Disable further checking after a few confirmations
+    setTimeout(() => {
+      console.log("🛑 Disabling further trial checks - expiration confirmed");
+      setCheckingEnabled(false);
+    }, 10000); // Stop checking after 10 seconds
   }, [updateAppStatus]);
 
-  return { appStatus, updateAppStatus };
+  // Immediate status check function
+  const checkStatusImmediately = useCallback(() => {
+    const currentStatus = licenseService.getAppStatus();
+
+    // If trial has expired and we're not on license screen, force redirect
+    if (currentStatus.trialInfo.isExpired && currentStatus.canUseApp) {
+      console.log("🔄 FORCING STATUS UPDATE FOR EXPIRED TRIAL");
+      // Force the license service to re-evaluate status
+      setAppStatus({
+        ...currentStatus,
+        canUseApp: false,
+        requiresPurchase: true
+      });
+    } else {
+      setAppStatus(currentStatus);
+    }
+  }, []);
+
+  useEffect(() => {
+    // Set up trial expiration callback
+    trialService.addExpirationCallback(handleTrialExpiration);
+
+    // Check trial status every 2 seconds in test mode, every 30 seconds in production
+    // But only if checking is enabled
+    const checkInterval = trialService.isTestMode() ? 2000 : 30000;
+    const interval = checkingEnabled ? setInterval(() => {
+      const expirationDetected = trialService.checkAndHandleExpiration();
+      checkStatusImmediately();
+
+      // If expiration detected 3+ times, stop checking
+      if (expirationDetected && trialService.isExpirationConfirmed()) {
+        console.log("✅ Expiration confirmed multiple times - stopping checks");
+        setCheckingEnabled(false);
+      }
+    }, checkInterval) : null;
+
+    // Initial check
+    checkStatusImmediately();
+
+    return () => {
+      trialService.removeExpirationCallback(handleTrialExpiration);
+      if (interval) clearInterval(interval);
+    };
+  }, [updateAppStatus, handleTrialExpiration, checkStatusImmediately, checkingEnabled]);
+
+  return { appStatus, updateAppStatus, checkStatusImmediately };
 };
 
 // Custom hook for dark theme enforcement
@@ -366,7 +429,7 @@ const useEntryManagement = (
 
 function App() {
   const { isElectron, isVaultUnlocked, saveSharedEntries, loadSharedEntries, broadcastEntriesChanged } = useElectron();
-  const { appStatus, updateAppStatus } = useAppStatus();
+  const { appStatus, updateAppStatus, checkStatusImmediately } = useAppStatus();
   const [isLocked, setIsLocked] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -549,6 +612,14 @@ function App() {
     },
   }), [floatingPanelProps, handleLock, toggleVaultView, appStatus, updateAppStatus]);
 
+  // SAFETY CHECK: Force redirect if trial has expired but we're not on license screen
+  useEffect(() => {
+    if (appStatus.trialInfo.isExpired && appStatus.canUseApp) {
+      console.log("🚨 SAFETY CHECK: Forcing redirect due to expired trial");
+      checkStatusImmediately();
+    }
+  }, [appStatus.trialInfo.isExpired, appStatus.canUseApp, checkStatusImmediately]);
+
   // Electron floating mode
   if (isElectron && isFloatingMode) {
     if (!isVaultUnlocked) return null;
@@ -568,13 +639,13 @@ function App() {
     );
   }
 
-  // License screen
-  if (!appStatus.canUseApp) {
+  // License screen - Check both canUseApp and trial expiration
+  if (!appStatus.canUseApp || appStatus.trialInfo.isExpired) {
+    console.log("📱 Showing license screen - canUseApp:", appStatus.canUseApp, "trialExpired:", appStatus.trialInfo.isExpired);
     return (
       <LicenseScreen
         onLicenseValid={updateAppStatus}
         showPricingPlans={showPricingPlans}
-        onShowPricingPlans={() => setShowPricingPlans(true)}
         onHidePricingPlans={() => setShowPricingPlans(false)}
       />
     );
@@ -595,8 +666,19 @@ function App() {
     );
   }
 
-  // Login screen
+  // SAFETY CHECK: Don't allow login screen if trial is expired
   if (isLocked) {
+    // Double-check trial status before showing login screen
+    if (appStatus.trialInfo.isExpired) {
+      console.log("🚫 BLOCKING LOGIN SCREEN - Trial expired, redirecting to license");
+      return (
+        <LicenseScreen
+          onLicenseValid={updateAppStatus}
+          showPricingPlans={showPricingPlans}
+          onHidePricingPlans={() => setShowPricingPlans(false)}
+        />
+      );
+    }
     return <LoginScreen onLogin={handleLogin} />;
   }
 
