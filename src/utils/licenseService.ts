@@ -163,6 +163,7 @@ export class LicenseService {
         const storedData = localStorage.getItem('license_token');
         if (storedData) {
           const tokenData = JSON.parse(atob(storedData.split('.')[1])); // Decode JWT payload
+          console.log('🔍 License Service JWT Token Data:', tokenData);
           if (tokenData.trialExpiryDate) {
             const trialExpiryDate = new Date(tokenData.trialExpiryDate);
             if (new Date() > trialExpiryDate) {
@@ -274,6 +275,16 @@ export class LicenseService {
         // Store the license token for offline validation and trial expiration checking
         if (result.token) {
           localStorage.setItem('license_token', result.token);
+
+          // If this is a trial license, initialize the local trial service with backend data
+          if (licenseType === 'trial' && result.data) {
+            console.log('🎯 Initializing trial with backend data:', result.data);
+            console.log('🎯 About to start trial service...');
+            // For trial licenses, we need to start the local trial to match backend validation
+            // The trial service will use the backend token data for expiration checking
+            const trialInfo = trialService.startTrial();
+            console.log('🎯 Trial service started, returned info:', trialInfo);
+          }
         }
       } else {
         // Already activated earlier and lifetime mode is ON; trust stored type
@@ -299,8 +310,10 @@ export class LicenseService {
       // Store hardware ID for future validations
       localStorage.setItem(LicenseService.HARDWARE_ID_STORAGE, hardwareId);
 
-      // End trial since user has a valid license
-      trialService.endTrial();
+      // Only end trial for non-trial licenses
+      if (licenseType !== 'trial') {
+        trialService.endTrial();
+      }
 
       return { success: true, licenseType };
     } catch (error) {

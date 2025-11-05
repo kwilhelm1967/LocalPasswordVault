@@ -44,6 +44,7 @@ export class TrialService {
    */
   startTrial(): TrialInfo {
     const now = new Date();
+    console.log('🎯 Starting trial at:', now.toISOString());
 
     localStorage.setItem(TrialService.TRIAL_START_KEY, now.toISOString());
     localStorage.setItem(TrialService.TRIAL_USED_KEY, "true");
@@ -53,7 +54,9 @@ export class TrialService {
       this.startCountdownLogging();
     }
 
-    return this.getTrialInfo();
+    const trialInfo = this.getTrialInfo();
+    console.log('🎯 Trial info after start:', trialInfo);
+    return trialInfo;
   }
 
   /**
@@ -76,11 +79,70 @@ export class TrialService {
       };
     }
 
+    // Check if we have backend trial data from license token
+    try {
+      const licenseToken = localStorage.getItem('license_token');
+      if (licenseToken) {
+        const tokenData = JSON.parse(atob(licenseToken.split('.')[1])); // Decode JWT payload
+        console.log('🔍 JWT Token Data:', tokenData);
+
+        // Use backend trial expiry date if available
+        if (tokenData.trialExpiryDate && tokenData.isTrial) {
+          const backendExpiryDate = new Date(tokenData.trialExpiryDate);
+          const now = new Date();
+          const isExpired = now > backendExpiryDate;
+
+          console.log('🔍 Trial Expiry Check:', {
+            backendExpiryDate: backendExpiryDate.toISOString(),
+            now: now.toISOString(),
+            isExpired,
+            timeDiff: backendExpiryDate.getTime() - now.getTime()
+          });
+
+          let daysRemaining = 0;
+          if (TrialService.USE_TEST_MODE) {
+            // For testing mode, show minutes remaining
+            daysRemaining = Math.max(
+              0,
+              Math.ceil((backendExpiryDate.getTime() - now.getTime()) / (60 * 1000))
+            );
+          } else {
+            // For production mode, show days remaining
+            daysRemaining = Math.max(
+              0,
+              Math.ceil((backendExpiryDate.getTime() - now.getTime()) / (24 * 60 * 60 * 1000))
+            );
+          }
+
+          return {
+            isTrialActive: !isExpired,
+            daysRemaining,
+            isExpired,
+            startDate: new Date(startDateStr),
+            endDate: backendExpiryDate,
+            hasTrialBeenUsed: true,
+          };
+        }
+      }
+    } catch (error) {
+      console.error('Error reading backend trial data:', error);
+      // Fall back to local calculation if token parsing fails
+    }
+
+    // Fallback to local calculation if no backend data
     const startDate = new Date(startDateStr);
     const endDate = new Date(
       startDate.getTime() + TrialService.TRIAL_DURATION_MS
     );
     const now = new Date();
+
+    console.log('🔍 Local Trial Calculation:', {
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString(),
+      now: now.toISOString(),
+      durationMs: TrialService.TRIAL_DURATION_MS,
+      timeDiff: endDate.getTime() - now.getTime()
+    });
 
     const isExpired = now > endDate;
     let daysRemaining = 0;
@@ -122,8 +184,19 @@ export class TrialService {
   checkAndHandleExpiration(): boolean {
     const trialInfo = this.getTrialInfo();
 
+    console.log('🔍 Expiration Check:', {
+      trialInfo,
+      expirationConfirmed: this.expirationConfirmed
+    });
+
     // If trial is not used or not expired, no need to check further
     if (!trialInfo.hasTrialBeenUsed || !trialInfo.isExpired) {
+      // Reset expiration confirmation if trial is somehow valid again
+      if (this.expirationConfirmed && !trialInfo.isExpired) {
+        console.log('🔄 Trial is valid again, resetting expiration confirmation');
+        this.expirationConfirmed = false;
+        this.expirationConfirmationCount = 0;
+      }
       return false;
     }
 
