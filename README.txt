@@ -34,8 +34,7 @@ A professional-grade, offline-first password management application built with R
 - **Privacy-Conscious Users** - Keep passwords truly private
 - **Security Professionals** - Offline-first security model
 - **Small Businesses** - Team password management
-- **Developers** - Complete source code included
-- **Entrepreneurs** - Ready-to-launch business
+
 
 ## 📊 Business Model
 
@@ -71,7 +70,7 @@ A professional-grade, offline-first password management application built with R
 - **Zero telemetry** - No data collection
 - **Offline operation** - No internet required
 - **Local encryption** - Data never leaves your device
-- **Open source** - Full transparency
+
 
 ## 🛠️ Development
 
@@ -98,7 +97,7 @@ npm run dist
 ```
 
 ### Build Outputs
-- **Windows**: `LocalPasswordVault Setup.exe` + portable version
+- **Windows**: `LocalPasswordVault Setup.exe` 
 - **macOS**: `LocalPasswordVault.dmg`
 - **Linux**: `LocalPasswordVault.AppImage`
 
@@ -112,6 +111,6 @@ npm run dist
 
 ---
 
-**Live Demo**: [https://localpasswordvault.com](https://localpasswordvault.com)  
+
 **Official Website**: [LocalPasswordVault.com](https://LocalPasswordVault.com)  
 **Contact**: support@LocalPasswordVault.com
