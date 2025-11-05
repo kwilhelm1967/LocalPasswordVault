@@ -11,7 +11,22 @@ export class TrialService {
   private static instance: TrialService;
   private static readonly TRIAL_START_KEY = "trial_start_date";
   private static readonly TRIAL_USED_KEY = "trial_used";
-  private static readonly TRIAL_DURATION_DAYS = 7;
+
+  // Configurable trial duration - set to 5 minutes for testing, 7 days for production
+  // Set this to true for 5-minute testing mode, false for normal 7-day trial
+  private static readonly USE_TEST_MODE = true;
+
+  private static get TRIAL_DURATION_MS(): number {
+    return TrialService.USE_TEST_MODE ? 5 * 60 * 1000 : 7 * 24 * 60 * 60 * 1000;
+  }
+
+  private static get TRIAL_DURATION_DAYS(): number {
+    return TrialService.USE_TEST_MODE ? 0 : 7;
+  }
+
+  private static get TRIAL_DURATION_MINUTES(): number {
+    return TrialService.USE_TEST_MODE ? 5 : 0;
+  }
 
   static getInstance(): TrialService {
     if (!TrialService.instance) {
@@ -54,16 +69,25 @@ export class TrialService {
 
     const startDate = new Date(startDateStr);
     const endDate = new Date(
-      startDate.getTime() +
-        TrialService.TRIAL_DURATION_DAYS * 24 * 60 * 60 * 1000
+      startDate.getTime() + TrialService.TRIAL_DURATION_MS
     );
     const now = new Date();
 
     const isExpired = now > endDate;
-    const daysRemaining = Math.max(
-      0,
-      Math.ceil((endDate.getTime() - now.getTime()) / (24 * 60 * 60 * 1000))
-    );
+    let daysRemaining = 0;
+    if (TrialService.USE_TEST_MODE) {
+      // For testing mode, show minutes remaining
+      daysRemaining = Math.max(
+        0,
+        Math.ceil((endDate.getTime() - now.getTime()) / (60 * 1000))
+      );
+    } else {
+      // For production mode, show days remaining
+      daysRemaining = Math.max(
+        0,
+        Math.ceil((endDate.getTime() - now.getTime()) / (24 * 60 * 60 * 1000))
+      );
+    }
 
     return {
       isTrialActive: !isExpired,
@@ -106,32 +130,49 @@ export class TrialService {
     const trialInfo = this.getTrialInfo();
 
     if (!trialInfo.hasTrialBeenUsed) {
-      return `${TrialService.TRIAL_DURATION_DAYS} days available`;
+      if (TrialService.USE_TEST_MODE) {
+        return `${TrialService.TRIAL_DURATION_MINUTES} minutes available`;
+      } else {
+        return `${TrialService.TRIAL_DURATION_DAYS} days available`;
+      }
     }
 
     if (trialInfo.isExpired) {
       return "Trial expired";
     }
 
-    const days = trialInfo.daysRemaining;
-    if (days === 1) {
-      return "1 day remaining";
-    } else if (days === 0) {
-      // Check hours remaining for last day
-      const now = new Date();
-      const endDate = trialInfo.endDate!;
-      const hoursRemaining = Math.max(
-        0,
-        Math.ceil((endDate.getTime() - now.getTime()) / (60 * 60 * 1000))
-      );
-
-      if (hoursRemaining <= 1) {
-        return "Less than 1 hour remaining";
+    if (TrialService.USE_TEST_MODE) {
+      // Show minutes for testing mode
+      const minutes = trialInfo.daysRemaining;
+      if (minutes === 1) {
+        return "1 minute remaining";
+      } else if (minutes === 0) {
+        return "Less than 1 minute remaining";
       } else {
-        return `${hoursRemaining} hours remaining`;
+        return `${minutes} minutes remaining`;
       }
     } else {
-      return `${days} days remaining`;
+      // Show days for production mode
+      const days = trialInfo.daysRemaining;
+      if (days === 1) {
+        return "1 day remaining";
+      } else if (days === 0) {
+        // Check hours remaining for last day
+        const now = new Date();
+        const endDate = trialInfo.endDate!;
+        const hoursRemaining = Math.max(
+          0,
+          Math.ceil((endDate.getTime() - now.getTime()) / (60 * 60 * 1000))
+        );
+
+        if (hoursRemaining <= 1) {
+          return "Less than 1 hour remaining";
+        } else {
+          return `${hoursRemaining} hours remaining`;
+        }
+      } else {
+        return `${days} days remaining`;
+      }
     }
   }
 
@@ -151,9 +192,7 @@ export class TrialService {
     // This prevents starting another trial
     const now = new Date();
     const pastDate = new Date(
-      now.getTime() -
-        TrialService.TRIAL_DURATION_DAYS * 24 * 60 * 60 * 1000 -
-        1000
+      now.getTime() - TrialService.TRIAL_DURATION_MS - 1000
     );
     localStorage.setItem(TrialService.TRIAL_START_KEY, pastDate.toISOString());
     localStorage.setItem(TrialService.TRIAL_USED_KEY, "true");
@@ -173,9 +212,23 @@ export class TrialService {
       return 100;
     }
 
-    const totalDays = TrialService.TRIAL_DURATION_DAYS;
-    const daysUsed = totalDays - trialInfo.daysRemaining;
-    return Math.round((daysUsed / totalDays) * 100);
+    const totalTime = TrialService.TRIAL_DURATION_MS;
+    const elapsed = totalTime - (trialInfo.endDate!.getTime() - new Date().getTime());
+    return Math.round((elapsed / totalTime) * 100);
+  }
+
+  /**
+   * Get test mode status
+   */
+  isTestMode(): boolean {
+    return TrialService.USE_TEST_MODE;
+  }
+
+  /**
+   * Toggle test mode (for development only)
+   */
+  static setTestMode(enabled: boolean): void {
+    (TrialService as any).USE_TEST_MODE = enabled;
   }
 }
 
