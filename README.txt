@@ -24,20 +24,13 @@ A professional-grade, offline-first password management application built with R
 - **Search & Filter** - Find passwords instantly
 - **Categories** - Organize by Banking, Shopping, Work, etc.
 
-### 🚀 **Business Ready**
-- **Freemium Model** - Free version (25 passwords) 
-- **License Management** - Complete licensing system included
-- **Customer Support** - Comprehensive support workflows
+
 
 ## 🎯 Perfect For
 
 - **Privacy-Conscious Users** - Keep passwords truly private
 - **Security Professionals** - Offline-first security model
 - **Small Businesses** - Team password management
-
-
-## 📊 Business Model
-
 
 ## 🏗️ Technical Architecture
 
