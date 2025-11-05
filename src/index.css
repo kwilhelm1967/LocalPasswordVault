@@ -2,11 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Prevent white flash on load - CRITICAL */
-* {
-  /* background-color: inherit; */
-}
-
 html {
   background-color: #0f172a !important;
   color: white;
@@ -17,7 +12,7 @@ body {
   margin: 0;
   padding: 0;
   color: white;
-  overflow: hidden; /* Prevent flash during load */
+  /* overflow-x: hidden; Prevent flash during load */
 }
 
 #root {
@@ -97,18 +92,15 @@ body {
 /* Electron drag region styles */
 .drag-region {
   -webkit-app-region: drag;
-  app-region: drag;
 }
 
 .no-drag {
   -webkit-app-region: no-drag;
-  app-region: no-drag;
 }
 
 /* Floating button specific styles */
 .floating-button-container {
   -webkit-app-region: no-drag;
-  app-region: no-drag;
 }
 
 /* Floating button animations */

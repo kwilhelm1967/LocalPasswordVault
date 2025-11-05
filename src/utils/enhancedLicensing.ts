@@ -33,7 +33,7 @@ class EnhancedLicensingService {
     // WebGL fingerprinting
     try {
       const canvas = document.createElement('canvas');
-      const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+      const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl') as WebGLRenderingContext | null;
       if (gl) {
         const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
         if (debugInfo) {
@@ -114,6 +114,8 @@ class EnhancedLicensingService {
   // Server-side license validation
   async validateLicenseServer(licenseKey: string, hardwareId: string): Promise<{ valid: boolean; licenseData?: any; error?: string }> {
     try {
+      console.debug(`Validating license ${licenseKey} for hardware ${hardwareId}`);
+
       const response = await fetch(`${environment.licenseServerUrl}/api/validate-license`, {
         method: 'POST',
         headers: {
@@ -129,12 +131,12 @@ class EnhancedLicensingService {
       });
 
       const result = await response.json();
-      
+
       // In test mode, always return valid for our test keys
       if (environment.isTest) {
         return { valid: true, licenseData: { type: 'pro', status: 'active' } };
       }
-      
+
       return result;
     } catch (error) {
       console.debug('Server validation failed, using offline validation');
@@ -181,7 +183,7 @@ class EnhancedLicensingService {
   async isLicensed(): Promise<boolean> {
     const storedLicense = localStorage.getItem('app_license_key');
     const storedHardwareId = localStorage.getItem('app_hardware_id');
-    
+
     if (!storedLicense) {
       return false;
     }
@@ -192,7 +194,8 @@ class EnhancedLicensingService {
     }
 
     const currentHardwareId = await this.generateAdvancedFingerprint();
-    
+    let hardwareId = currentHardwareId;
+
     // Allow some flexibility in hardware changes (80% similarity)
     if (storedHardwareId && this.calculateSimilarity(storedHardwareId, currentHardwareId) < 0.8) {
       this.revokeLicense();
@@ -203,12 +206,12 @@ class EnhancedLicensingService {
     const lastValidation = localStorage.getItem('last_server_validation');
     const now = Date.now();
     // In test mode, validate less frequently
-    const validationInterval = environment.isTest ? 
+    const validationInterval = environment.isTest ?
       30 * 24 * 60 * 60 * 1000 : // 30 days in test mode
       7 * 24 * 60 * 60 * 1000;   // 7 days in production
-    
+
     if (!lastValidation || (now - parseInt(lastValidation)) > validationInterval) {
-      const validation = await this.validateLicenseServer(storedLicense, currentHardwareId);
+      const validation = await this.validateLicenseServer(storedLicense, hardwareId);
       if (!validation.valid) {
         this.revokeLicense();
         return false;
@@ -217,7 +220,7 @@ class EnhancedLicensingService {
     }
 
     this.licenseKey = storedLicense;
-    this.hardwareId = currentHardwareId;
+    this.hardwareId = hardwareId;
     
     // Load license data
     const storedData = localStorage.getItem('license_data');
