@@ -297,69 +297,69 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
                       Activate License
                     </h2>
                   </div>
-                </div>
 
-                <div className="space-y-4 bg-transparent">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-300 mb-2">
-                      License Key
-                    </label>
-                    <input
-                      type="text"
-                      value={licenseKey}
-                      onChange={handleLicenseKeyChange}
-                      onKeyPress={handleKeyPress}
-                      placeholder="XXXX-XXXX-XXXX-XXXX"
-                      className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all  text-center tracking-wider"
-                      maxLength={19}
-                    />
-                  </div>
-
-                  {error && (
-                    <div className="flex items-center space-x-2 text-red-400 text-sm">
-                      <XCircle className="w-4 h-4" />
-                      <span>{error}</span>
+                  <div className="space-y-4 bg-transparent">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-300 mb-2">
+                        License Key
+                      </label>
+                      <input
+                        type="text"
+                        value={licenseKey}
+                        onChange={handleLicenseKeyChange}
+                        onKeyPress={handleKeyPress}
+                        placeholder="XXXX-XXXX-XXXX-XXXX"
+                        className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all  text-center tracking-wider"
+                        maxLength={19}
+                      />
                     </div>
-                  )}
 
-                  <button
-                    onClick={handleActivateLicense}
-                    disabled={isActivating || !licenseKey.trim()}
-                    className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:from-slate-600 disabled:to-slate-600 text-white py-3 px-4 rounded-lg font-medium transition-all disabled:cursor-not-allowed flex items-center justify-center space-x-2"
-                  >
-                    {isActivating ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        <span>Activating...</span>
-                      </>
-                    ) : (
-                      <>
-                        <CheckCircle className="w-4 h-4" />
-                        <span>Activate License</span>
-                      </>
+                    {error && (
+                      <div className="flex items-center space-x-2 text-red-400 text-sm">
+                        <XCircle className="w-4 h-4" />
+                        <span>{error}</span>
+                      </div>
                     )}
-                  </button>
 
-                  <div className="text-center">
                     <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        if (window.electronAPI) {
-                          window.electronAPI.openExternal(
-                            "https://localpasswordvault.com"
-                          );
-                        } else {
-                          window.open(
-                            "https://localpasswordvault.com",
-                            "_blank"
-                          );
-                        }
-                      }}
-                      className="text-blue-400 hover:text-blue-300 text-sm transition-colors inline-flex items-center space-x-1"
+                      onClick={handleActivateLicense}
+                      disabled={isActivating || !licenseKey.trim()}
+                      className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:from-slate-600 disabled:to-slate-600 text-white py-3 px-4 rounded-lg font-medium transition-all disabled:cursor-not-allowed flex items-center justify-center space-x-2"
                     >
-                      <span>Don't have a license? Purchase one</span>
-                      <ExternalLink className="w-3 h-3" />
+                      {isActivating ? (
+                        <>
+                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          <span>Activating...</span>
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle className="w-4 h-4" />
+                          <span>Activate License</span>
+                        </>
+                      )}
                     </button>
+
+                    <div className="text-center">
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          if (window.electronAPI) {
+                            window.electronAPI.openExternal(
+                              "https://localpasswordvault.com"
+                            );
+                          } else {
+                            window.open(
+                              "https://localpasswordvault.com",
+                              "_blank"
+                            );
+                          }
+                        }}
+                        className="text-blue-400 hover:text-blue-300 text-sm transition-colors inline-flex items-center space-x-1"
+                      >
+                        <span>Don't have a license? Purchase one</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
