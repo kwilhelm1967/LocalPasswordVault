@@ -36,11 +36,9 @@ export class TrialService {
   private static readonly TRIAL_USED_KEY = "trial_used";
   private static readonly TRIAL_LICENSE_KEY = "trial_license_key";
   private static readonly LICENSE_TOKEN_KEY = "license_token";
-  private countdownInterval: NodeJS.Timeout | null = null;
   private expirationCallbacks: (() => void)[] = [];
   private expirationConfirmed: boolean = false;
   private expirationConfirmationCount: number = 0;
-  private developmentLoggingInterval: NodeJS.Timeout | null = null;
 
   static getInstance(): TrialService {
     if (!TrialService.instance) {
@@ -93,16 +91,7 @@ export class TrialService {
     const licenseToken = localStorage.getItem(TrialService.LICENSE_TOKEN_KEY);
     const storedHardwareHash = localStorage.getItem('trial_hardware_hash');
 
-    // Debug: show the actual token data
-    if (licenseToken) {
-      try {
-        const tokenData = JSON.parse(atob(licenseToken.split('.')[1]));
-        console.log('🔍 Full token data:', tokenData);
-      } catch (error) {
-        console.error('Error parsing token for debug:', error);
-      }
-    }
-
+    
     if (!hasTrialBeenUsed || !licenseKey) {
       // No trial started yet
       return {
@@ -155,7 +144,7 @@ export class TrialService {
         if (tokenData.isTrial && tokenData.trialExpiryDate) {
           const now = new Date();
           const expiryDate = new Date(tokenData.trialExpiryDate);
-          const isExpired = now > expiryDate;
+          const isExpired = now >= expiryDate; // Use >= to include exact expiry time
           const isActive = !isExpired;
 
           // Calculate remaining time with seconds precision
@@ -376,8 +365,7 @@ export class TrialService {
     localStorage.removeItem(TrialService.TRIAL_LICENSE_KEY);
     localStorage.removeItem(TrialService.LICENSE_TOKEN_KEY);
 
-    // Stop development logging if running
-    this.stopDevelopmentLogging();
+    // Development logging removed - no longer needed
 
     // Reset expiration tracking
     this.expirationConfirmed = false;
@@ -394,8 +382,7 @@ export class TrialService {
     // This prevents starting another trial
     localStorage.setItem(TrialService.TRIAL_USED_KEY, "true");
 
-    // Stop development logging if running
-    this.stopDevelopmentLogging();
+    // Development logging removed - no longer needed
 
     // Trigger expiration callbacks since trial ended
     this.triggerExpirationCallbacks();

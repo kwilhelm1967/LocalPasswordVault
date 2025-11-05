@@ -54,7 +54,6 @@ export const MainVault: React.FC<MainVaultProps> = ({
   selectedCategory,
   onCategoryChange,
   onMinimize,
-  onShowPricingPlans,
 }) => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingEntry, setEditingEntry] = useState<PasswordEntry | null>(null);
@@ -71,8 +70,6 @@ export const MainVault: React.FC<MainVaultProps> = ({
   );
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-
-  console.log(entries, "entries");
 
   // Handle cross-window synchronization
   useEffect(() => {

@@ -454,7 +454,6 @@ function App() {
   const [showPricingPlans, setShowPricingPlans] = useState(false);
   const [showDownloadPage, setShowDownloadPage] = useState(false);
   const [showLicenseKeys, setShowLicenseKeys] = useState(features.showTestingTools);
-  const [showTrialTestingTools, setShowTrialTestingTools] = useState(false);
 
   useDarkTheme();
   const { entries, setEntries } = useVaultData(isLocked, isElectron, loadSharedEntries, saveSharedEntries);
@@ -620,7 +619,7 @@ function App() {
     onLock: handleLock,
     onMinimize: toggleVaultView,
     onShowPricingPlans: () => {
-      if (!appStatus.canUseApp || appStatus.requiresPurchase) {
+      if (!appStatus?.canUseApp || appStatus?.requiresPurchase) {
         updateAppStatus();
       } else {
         setShowPricingPlans(true);
@@ -748,17 +747,9 @@ function App() {
 
       {/* Environment indicators */}
       {features.showTestingTools && (
-        <>
-          <div className="fixed bottom-4 right-4 z-40 bg-amber-600 text-white px-3 py-1 rounded-full text-xs font-medium">
-            Test Environment
-          </div>
-          <button
-            onClick={() => setShowTrialTestingTools(true)}
-            className="fixed bottom-4 left-4 z-40 bg-slate-700 hover:bg-slate-600 text-white px-3 py-1 rounded-full text-xs font-medium"
-          >
-            Trial Tools
-          </button>
-        </>
+        <div className="fixed bottom-4 right-4 z-40 bg-amber-600 text-white px-3 py-1 rounded-full text-xs font-medium">
+          Test Environment
+        </div>
       )}
     </div>
   );

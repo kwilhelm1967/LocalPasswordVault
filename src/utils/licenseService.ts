@@ -101,13 +101,7 @@ export class LicenseService {
     const licenseInfo = this.getLicenseInfo();
     const trialInfo = await trialService.getTrialInfo();
 
-    console.log('🔍 getAppStatus trial info:', {
-      hasTrialBeenUsed: trialInfo.hasTrialBeenUsed,
-      isExpired: trialInfo.isExpired,
-      isTrialActive: trialInfo.isTrialActive,
-      licenseInfo: licenseInfo
-    });
-
+    
     // Check if user can use the app based on license or trial status
     let canUseApp = false;
     let requiresPurchase = false;
@@ -130,12 +124,7 @@ export class LicenseService {
       requiresPurchase = true;
     }
 
-    console.log('🔍 getAppStatus result:', {
-      canUseApp,
-      requiresPurchase,
-      isLicensed: licenseInfo.isValid
-    });
-
+    
     return {
       isLicensed: licenseInfo.isValid,
       licenseInfo,

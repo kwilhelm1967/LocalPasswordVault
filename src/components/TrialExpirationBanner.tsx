@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { Lock, Clock, AlertTriangle, CreditCard, Shield, ChevronRight, Key } from "lucide-react";
 
 interface TrialExpirationBannerProps {
@@ -14,42 +14,8 @@ interface TrialExpirationBannerProps {
 }
 
 export const TrialExpirationBanner: React.FC<TrialExpirationBannerProps> = ({ trialInfo, onApplyLicenseKey }) => {
-  const [showLicenseInput, setShowLicenseInput] = useState(false);
-  const [currentTime, setCurrentTime] = useState(new Date());
-  const [isEnforcing, setIsEnforcing] = useState(false);
   const isDevelopmentMode = import.meta.env.DEV;
   const timeUnit = isDevelopmentMode ? "minutes" : "days";
-
-  // Update time every second for precise countdown
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, []);
-
-  // Enforce trial expiration - lock user out
-  useEffect(() => {
-    if (trialInfo.isExpired && !isEnforcing) {
-      setIsEnforcing(true);
-      console.log('🚨 TRIAL EXPIRED - Enforcing app lockdown');
-
-      // Clear any sensitive data
-      try {
-        localStorage.removeItem('license_token');
-        localStorage.removeItem('trial_session');
-        sessionStorage.removeItem('secure_trial_data');
-      } catch (error) {
-        console.error('Error clearing trial data:', error);
-      }
-
-      // Force redirect to license page
-      setTimeout(() => {
-        window.location.reload();
-      }, 5000);
-    }
-  }, [trialInfo.isExpired, isEnforcing]);
 
   const handlePurchaseNow = () => {
     const url = "https://localpasswordvault.com/#plans";
@@ -61,7 +27,6 @@ export const TrialExpirationBanner: React.FC<TrialExpirationBannerProps> = ({ tr
   };
 
   const handleApplyKey = () => {
-    setShowLicenseInput(true);
     if (onApplyLicenseKey) {
       onApplyLicenseKey();
     }
@@ -72,10 +37,8 @@ export const TrialExpirationBanner: React.FC<TrialExpirationBannerProps> = ({ tr
   }
 
   if (trialInfo.isExpired) {
-    // If license input is being shown, hide the expiration banner
-    if (showLicenseInput) {
-      return null;
-    }
+    // Always show expiration banner when trial is expired
+    // The banner itself includes the license activation option
 
     return (
       <div className="w-full max-w-4xl mx-auto mb-8">
@@ -90,13 +53,7 @@ export const TrialExpirationBanner: React.FC<TrialExpirationBannerProps> = ({ tr
               <div className="text-xl text-red-400">
                 Trial Access Terminated
               </div>
-              {isEnforcing && (
-                <div className="mt-4 text-red-300 animate-pulse">
-                  <div className="text-sm">Locking down application...</div>
-                  <div className="text-xs mt-1">Redirecting in 5 seconds</div>
-                </div>
-              )}
-            </div>
+              </div>
           </div>
 
           {/* Header Section */}

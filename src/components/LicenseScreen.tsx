@@ -329,6 +329,7 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
             onApplyLicenseKey={handleApplyLicenseKey}
           />
 
+          {/* License Activation - Hide when trial is expired */}
           {!showPricingPlans ? (
             <div className="max-w-md mx-auto mb-8">
               {/* License Activation */}
