@@ -98,6 +98,39 @@ export class TrialService {
       storedHardwareHash,
     });
 
+    // Check if user has a valid non-trial license - if so, return no trial state
+    if (licenseToken) {
+      try {
+        const tokenData = JSON.parse(atob(licenseToken.split('.')[1]));
+        if (tokenData.planType && tokenData.planType !== 'trial') {
+          console.log('💎 User has valid paid license - returning no trial state');
+          // Clear any remaining trial data
+          localStorage.removeItem(TrialService.TRIAL_USED_KEY);
+          localStorage.removeItem(TrialService.TRIAL_LICENSE_KEY);
+          localStorage.removeItem(TrialService.TRIAL_START_KEY);
+          return {
+            isTrialActive: false,
+            daysRemaining: 0,
+            hoursRemaining: 0,
+            minutesRemaining: 0,
+            secondsRemaining: 0,
+            isExpired: false,
+            startDate: null,
+            endDate: null,
+            hasTrialBeenUsed: false,
+            timeRemaining: 'No trial needed',
+            trialDurationDisplay: 'None',
+            licenseKey: null,
+            securityHash: null,
+            activationTime: null,
+            lastChecked: new Date(),
+          };
+        }
+      } catch (error) {
+        console.error('Error parsing license token in trial service:', error);
+      }
+    }
+
     if (!hasTrialBeenUsed || !licenseKey) {
       // No trial started yet
       console.log('📋 No trial started - returning default state');

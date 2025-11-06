@@ -627,13 +627,13 @@ function App() {
     },
   }), [floatingPanelProps, handleLock, toggleVaultView, appStatus, updateAppStatus]);
 
-  // SAFETY CHECK: Force redirect if trial has expired but we're not on license screen
+  // SAFETY CHECK: Force redirect if trial has expired but user doesn't have a valid license
   useEffect(() => {
-    if (appStatus && appStatus.trialInfo.isExpired && appStatus.canUseApp) {
-      console.log("🚨 SAFETY CHECK: Forcing redirect due to expired trial");
+    if (appStatus && appStatus.trialInfo.isExpired && appStatus.canUseApp && !appStatus.isLicensed) {
+      console.log("🚨 SAFETY CHECK: Forcing redirect due to expired trial without valid license");
       checkStatusImmediately();
     }
-  }, [appStatus?.trialInfo.isExpired, appStatus?.canUseApp, checkStatusImmediately]);
+  }, [appStatus?.trialInfo.isExpired, appStatus?.canUseApp, appStatus?.isLicensed, checkStatusImmediately]);
 
   // Show loading state while app status is being determined
   if (!appStatus) {

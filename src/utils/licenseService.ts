@@ -392,7 +392,15 @@ export class LicenseService {
 
       // Only end trial for non-trial licenses
       if (licenseType !== 'trial') {
+        console.log('🧹 Clearing trial data for paid license activation');
         trialService.endTrial();
+
+        // Also clear any remaining trial-related localStorage items
+        localStorage.removeItem('trial_hardware_hash');
+        localStorage.removeItem('trial_activation_time');
+        localStorage.removeItem('trial_expiry_time');
+        sessionStorage.removeItem('trial_session');
+        sessionStorage.removeItem('secure_trial_data');
       }
 
       return { success: true, licenseType };
