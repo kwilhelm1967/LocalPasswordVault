@@ -547,6 +547,22 @@ function App() {
         await storageService.saveEntries(merged);
         setEntries(merged);
 
+        // Update shared storage so ElectronFloatingPanel can access the imported entries
+        if (isElectron && saveSharedEntries) {
+          try {
+            await saveSharedEntries(merged);
+            console.log("Updated shared storage with imported entries:", merged.length);
+
+            // Now trigger the cross-window synchronization to notify ElectronFloatingPanel
+            if (window.electronAPI?.broadcastEntriesChanged) {
+              await window.electronAPI.broadcastEntriesChanged();
+              console.log("Broadcasted entries changed event after import");
+            }
+          } catch (error) {
+            console.error("Failed to update shared storage after import:", error);
+          }
+        }
+
         if (result.warnings.length) {
           console.warn('Import warnings:', result.warnings);
         }
@@ -558,7 +574,7 @@ function App() {
       console.error('Import failed:', error);
       alert('Failed to import data');
     }
-  }, [isLocked, entries, setEntries]);
+  }, [isLocked, entries, setEntries, isElectron, saveSharedEntries]);
 
   const toggleVaultView = useCallback(() => {
     if (isElectron) {
