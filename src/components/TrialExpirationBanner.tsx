@@ -14,11 +14,11 @@ interface TrialExpirationBannerProps {
 }
 
 export const TrialExpirationBanner: React.FC<TrialExpirationBannerProps> = ({ trialInfo, onApplyLicenseKey }) => {
-  const isDevelopmentMode = import.meta.env.DEV;
-  const timeUnit = isDevelopmentMode ? "minutes" : "days";
 
   const handlePurchaseNow = () => {
     const url = "https://localpasswordvault.com/#plans";
+
+
     if (window.electronAPI) {
       window.electronAPI.openExternal(url);
     } else {
@@ -27,6 +27,7 @@ export const TrialExpirationBanner: React.FC<TrialExpirationBannerProps> = ({ tr
   };
 
   const handleApplyKey = () => {
+
     if (onApplyLicenseKey) {
       onApplyLicenseKey();
     }
@@ -168,7 +169,7 @@ export const TrialExpirationBanner: React.FC<TrialExpirationBannerProps> = ({ tr
                 Trial Ending Soon
               </h2>
               <p className="text-amber-200">
-                You have <strong>{trialInfo.daysRemaining} {timeUnit}</strong> remaining in your trial.
+                You have <strong>{trialInfo.daysRemaining}</strong> remaining in your trial.
               </p>
             </div>
           </div>

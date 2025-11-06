@@ -77,6 +77,7 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
   const [showLicenseInput, setShowLicenseInput] = useState(false);
 
   const handleApplyLicenseKey = () => {
+
     setShowLicenseInput(true);
     // Reset any previous errors when showing license input
     setError(null);
@@ -102,15 +103,12 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
   }, [appStatus?.trialInfo?.isExpired, showLicenseInput]);
 
   const handleActivateLicense = async () => {
-    if (!licenseKey.trim()) {
-      setError("Please enter a license key");
-      return;
-    }
 
     setShowEula(true);
   };
 
   const handleEulaAccept = async () => {
+
     setIsActivating(true);
     setError(null);
 
@@ -157,6 +155,7 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
             "Network error occurred. Please check your connection and try again.";
         }
 
+
         setError(enhancedError);
         analyticsService.trackLicenseEvent(
           "license_activation_failed",
@@ -176,6 +175,7 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
       } else if (error instanceof Error) {
         enhancedError = `License activation failed: ${error.message}`;
       }
+
 
       setError(enhancedError);
       analyticsService.trackLicenseEvent(
@@ -227,6 +227,7 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
 
   const handleLicenseKeyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formatted = formatLicenseKey(e.target.value.toUpperCase());
+
     setLicenseKey(formatted);
     setError(null);
   };
@@ -330,6 +331,7 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
           {/* Trial Expiration Banner - Always show when trial is expired */}
           {(() => {
             const shouldShowBanner = appStatus?.trialInfo?.isExpired;
+
             return shouldShowBanner;
           })() && (
             <TrialExpirationBanner
@@ -347,15 +349,6 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
                 className={`${
                   // Debug logging
                   (() => {
-                    console.log('🔧 License Screen Visibility Check:', {
-                      trialExpired: appStatus?.trialInfo?.isExpired,
-                      showLicenseInput,
-                      showPricingPlans,
-                      canUseApp: appStatus?.canUseApp,
-                      condition1: appStatus?.trialInfo?.isExpired && showLicenseInput,
-                      condition2: !appStatus?.trialInfo?.isExpired,
-                      shouldShow: (appStatus?.trialInfo?.isExpired && showLicenseInput) || !appStatus?.trialInfo?.isExpired
-                    });
                     return '';
                   })()
                 } ${

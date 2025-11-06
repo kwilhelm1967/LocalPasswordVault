@@ -33,9 +33,11 @@ const useAppStatus = () => {
 
   const updateAppStatus = useCallback(async () => {
     const newStatus = await licenseService.getAppStatus();
+
+
     setAppStatus(newStatus);
     return newStatus;
-  }, []);
+  }, [appStatus, checkingEnabled]);
 
   // Initialize app status on mount
   useEffect(() => {
@@ -44,6 +46,7 @@ const useAppStatus = () => {
 
   // Handle trial expiration with immediate redirect
   const handleTrialExpiration = useCallback(() => {
+
     // Force multiple immediate updates to ensure redirect happens
     setTimeout(() => updateAppStatus(), 0);
     setTimeout(() => updateAppStatus(), 10);
@@ -58,7 +61,7 @@ const useAppStatus = () => {
     setTimeout(() => {
       setCheckingEnabled(false);
     }, 10000); // Stop checking after 10 seconds
-  }, [updateAppStatus]);
+  }, [updateAppStatus, checkingEnabled]);
 
   // Immediate status check function
   const checkStatusImmediately = useCallback(async () => {
@@ -66,6 +69,7 @@ const useAppStatus = () => {
 
     // If trial has expired and we're not on license screen, force redirect
     if (currentStatus.trialInfo.isExpired && currentStatus.canUseApp) {
+
       // Force the license service to re-evaluate status
       setAppStatus({
         ...currentStatus,
@@ -85,6 +89,7 @@ const useAppStatus = () => {
     // But only if checking is enabled
     const checkInterval = import.meta.env.DEV ? 5000 : 30000;
     const interval = checkingEnabled ? setInterval(async () => {
+
       const expirationDetected = await trialService.checkAndHandleExpiration();
       await checkStatusImmediately();
 
@@ -111,6 +116,7 @@ const useAppStatus = () => {
     return () => {
       trialService.removeExpirationCallback(handleTrialExpiration);
       if (interval) clearInterval(interval);
+      
     };
   }, [updateAppStatus, handleTrialExpiration, checkStatusImmediately, checkingEnabled]);
 
@@ -716,6 +722,7 @@ function App() {
         />
       );
     }
+
     return <LoginScreen onLogin={handleLogin} />;
   }
 

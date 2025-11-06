@@ -90,6 +90,7 @@ export class TrialService {
     const licenseToken = localStorage.getItem(TrialService.LICENSE_TOKEN_KEY);
     const storedHardwareHash = localStorage.getItem('trial_hardware_hash');
 
+
     // Check if user has a valid non-trial license - if so, return no trial state
     if (licenseToken) {
       try {
@@ -253,7 +254,7 @@ export class TrialService {
     }
 
     // Final fallback with no start date
-    return {
+    const fallbackResult = {
       isTrialActive: false,
       daysRemaining: 0,
       hoursRemaining: 0,
@@ -270,6 +271,9 @@ export class TrialService {
       activationTime: null,
       lastChecked: new Date(),
     };
+
+
+    return fallbackResult;
   }
 
   /**
@@ -341,6 +345,8 @@ export class TrialService {
   async checkAndHandleExpiration(): Promise<boolean> {
     const trialInfo = await this.getTrialInfo();
 
+
+
     // If trial is not used or not expired, no need to check further
     if (!trialInfo.hasTrialBeenUsed || !trialInfo.isExpired) {
       // Reset expiration confirmation if trial is somehow valid again
@@ -354,6 +360,7 @@ export class TrialService {
     // If expiration is confirmed, limit further checking
     if (this.expirationConfirmed) {
       this.expirationConfirmationCount++;
+
 
       // Only verify 2-3 times after initial confirmation
       if (this.expirationConfirmationCount >= 3) {

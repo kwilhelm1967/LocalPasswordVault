@@ -99,7 +99,7 @@ export class LicenseService {
    */
   async getAppStatus(): Promise<AppLicenseStatus> {
     const licenseInfo = this.getLicenseInfo();
-    const trialInfo = await trialService.getTrialInfo();
+    const trialInfo = await trialService.getTrialInfo(); 
 
     // Check if user can use the app based on license or trial status
     let canUseApp = false;
@@ -123,7 +123,6 @@ export class LicenseService {
       requiresPurchase = true;
     }
 
-    
     const status = {
       isLicensed: licenseInfo.isValid,
       licenseInfo,
@@ -131,6 +130,7 @@ export class LicenseService {
       canUseApp,
       requiresPurchase,
     };
+
 
     return status;
   }
@@ -168,8 +168,16 @@ export class LicenseService {
           const tokenData = JSON.parse(atob(storedData.split('.')[1])); // Decode JWT payload
           if (tokenData.trialExpiryDate) {
             const trialExpiryDate = new Date(tokenData.trialExpiryDate);
-            if (new Date() > trialExpiryDate) {
+            const now = new Date();
+            if (now > trialExpiryDate) {
               // Trial has expired, remove license and mark trial as expired
+              if (import.meta.env.DEV) {
+                console.log('⏰ Trial expired locally in getLicenseInfo:', {
+                  trialExpiryDate,
+                  now,
+                  expiredDuration: now.getTime() - trialExpiryDate.getTime()
+                });
+              }
               this.removeLicense();
               // Ensure trial service knows the trial has expired
               trialService.endTrial();
@@ -212,10 +220,22 @@ export class LicenseService {
   async activateLicense(
     licenseKey: string
   ): Promise<{ success: boolean; error?: string; licenseType?: LicenseType }> {
+    const isDevelopmentMode = import.meta.env.DEV;
+
+    if (isDevelopmentMode) {
+      console.log('🚀 LicenseService.activateLicense called:', {
+        licenseKey: `${licenseKey.substring(0, 8)}-****-****-****`,
+        lifetimeMode: LicenseService.LIFETIME_ONE_TIME_ACTIVATION
+      });
+    }
+
     try {
       // Validate license key format
       const cleanKey = licenseKey.replace(/[^A-Z0-9-]/g, "");
       if (!/^[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(cleanKey)) {
+        if (isDevelopmentMode) {
+          console.log('❌ Invalid license key format:', { cleanKey });
+        }
         return { success: false, error: "Invalid license key format" };
       }
 
