@@ -9,9 +9,7 @@ import {
   Copy,
   Edit3,
   ChevronDown,
-  ChevronRight,
-  AlertCircle,
-  ExternalLink,
+  ChevronRight
 } from "lucide-react";
 import { PasswordEntry, Category } from "../types";
 import { CategoryIcon } from "./CategoryIcon";

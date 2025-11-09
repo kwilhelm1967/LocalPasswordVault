@@ -381,6 +381,7 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
             <TrialExpirationBanner
               trialInfo={localStorageTrialInfo}
               onApplyLicenseKey={handleApplyLicenseKey}
+              showLicenseInput={showLicenseInput}
             />
           )}
 
