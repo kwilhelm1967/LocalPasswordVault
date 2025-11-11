@@ -17,6 +17,9 @@ import { EulaAgreement } from "./EulaAgreement";
 import { DownloadInstructions } from "./DownloadInstructions";
 import { DownloadPage } from "./DownloadPage";
 import { TrialExpirationBanner } from "./TrialExpirationBanner";
+import { ExpiredTrialScreen } from "./ExpiredTrialScreen";
+import { KeyActivationScreen } from "./KeyActivationScreen";
+import { RecoveryOptionsScreen } from "./RecoveryOptionsScreen";
 
 interface LicenseScreenProps {
   onLicenseValid: () => void;
@@ -36,6 +39,11 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
   const [error, setError] = useState<string | null>(null);
   // const [appStatus, setAppStatus] = useState<AppLicenseStatus | null>(null); // Removed
   // const [isLoading, setIsLoading] = useState(true); // Removed
+
+  // New flow state variables
+  const [showExpiredTrialScreen, setShowExpiredTrialScreen] = useState(false);
+  const [showKeyActivationScreen, setShowKeyActivationScreen] = useState(false);
+  const [showRecoveryOptions, setShowRecoveryOptions] = useState(false);
 
   // Initialize app status on mount - Removed
   // useEffect(() => {
@@ -125,21 +133,54 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
   const localStorageTrialInfo = getTrialInfoFromLocalStorage();
 
   const handleApplyLicenseKey = () => {
-
-    setShowLicenseInput(true);
-    // Reset any previous errors when showing license input
+    setShowKeyActivationScreen(true);
+    setShowExpiredTrialScreen(false);
     setError(null);
     setLicenseKey("");
-    // Scroll to the license activation section
-    setTimeout(() => {
-      const licenseSection = document.getElementById(
-        "license-activation-section"
-      );
-      if (licenseSection) {
-        licenseSection.scrollIntoView({ behavior: "smooth" });
-      }
-    }, 100);
   };
+
+  // New flow handlers
+  const handleBuyLifetimeAccess = () => {
+    const url = "https://localpasswordvault.com/#plans";
+    if (window.electronAPI) {
+      window.electronAPI.openExternal(url);
+    } else {
+      window.open(url, "_blank");
+    }
+    analyticsService.trackConversion("purchase_started", { source: "expired_trial" });
+  };
+
+  const handleAlreadyPurchased = () => {
+    setShowKeyActivationScreen(true);
+    setShowExpiredTrialScreen(false);
+    analyticsService.trackUserAction("already_purchased_clicked");
+  };
+
+  const handleBackToActivation = () => {
+    setShowKeyActivationScreen(false);
+    setShowRecoveryOptions(false);
+    if (localStorageTrialInfo.isExpired) {
+      setShowExpiredTrialScreen(true);
+    }
+  };
+
+  const handleNeedHelp = () => {
+    setShowRecoveryOptions(true);
+    setShowKeyActivationScreen(false);
+    analyticsService.trackUserAction("recovery_options_viewed");
+  };
+
+  const handleKeyActivation = async (key: string) => {
+    setLicenseKey(key);
+    await handleActivateLicense();
+  };
+
+  // Show expired trial screen when trial is expired
+  useEffect(() => {
+    if (localStorageTrialInfo.isExpired && !showExpiredTrialScreen && !showKeyActivationScreen && !showRecoveryOptions) {
+      setShowExpiredTrialScreen(true);
+    }
+  }, [localStorageTrialInfo.isExpired, showExpiredTrialScreen, showKeyActivationScreen, showRecoveryOptions]);
 
   // Reset license input when trial expires
   useEffect(() => {
@@ -177,32 +218,31 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
         }
         setShowEula(false);
       } else {
-        // Enhanced error messages based on specific errors
+        // Enhanced error messages based on the new flow specifications
         let enhancedError = result.error || "License activation failed";
 
         if (result.error?.includes("fetch")) {
           enhancedError =
-            "Unable to connect to license server. Please check your internet connection and ensure the backend server is running.";
+            "Unable to connect to license server. Please check your internet connection and try again.";
         } else if (result.error?.includes("409")) {
           enhancedError =
-            "This license key is already activated on another device. Each license can only be used on one device at a time.";
+            "This key is already activated on another device. You need to purchase an additional key.";
         } else if (result.error?.includes("404")) {
           enhancedError =
-            "License key not found. Please double-check your license key and try again.";
+            "This is not a valid lifetime key.";
         } else if (result.error?.includes("trial") && result.error?.includes("expir")) {
           enhancedError =
-            "Your trial period has expired. Trial licenses can only be used once. Please purchase a license to continue using the app.";
+            "This key was for your trial. To continue, purchase a lifetime key.";
         } else if (result.error?.includes("trial") && result.error?.includes("once")) {
           enhancedError =
-            "This trial license has already been used. Trial licenses can only be activated once. Please purchase a license to continue using the app.";
+            "This key was for your trial. To continue, purchase a lifetime key.";
         } else if (result.error?.includes("validation")) {
           enhancedError =
-            "Invalid license key format. Please ensure your key is in the format: XXXX-XXXX-XXXX-XXXX";
+            "This is not a valid lifetime key.";
         } else if (result.error?.includes("network")) {
           enhancedError =
             "Network error occurred. Please check your connection and try again.";
         }
-
 
         setError(enhancedError);
         analyticsService.trackLicenseEvent(
@@ -223,7 +263,6 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
       } else if (error instanceof Error) {
         enhancedError = `License activation failed: ${error.message}`;
       }
-
 
       setError(enhancedError);
       analyticsService.trackLicenseEvent(
@@ -290,6 +329,54 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
         </div>
       </div>
     );
+  }
+
+  // Handle new flow screens first
+  if (showExpiredTrialScreen) {
+    return (
+      <>
+        <ExpiredTrialScreen
+          onBuyLifetimeAccess={handleBuyLifetimeAccess}
+          onAlreadyPurchased={handleAlreadyPurchased}
+        />
+        {/* EULA Modal */}
+        {showEula && (
+          <EulaAgreement
+            onAccept={handleEulaAccept}
+            error={error}
+            isLoading={isActivating}
+            onDecline={handleEulaDecline}
+          />
+        )}
+      </>
+    );
+  }
+
+  if (showKeyActivationScreen) {
+    return (
+      <>
+        <KeyActivationScreen
+          onBack={handleBackToActivation}
+          onKeyEntered={handleKeyActivation}
+          isActivating={isActivating}
+          error={error}
+          onNeedHelp={handleNeedHelp}
+        />
+        {/* EULA Modal */}
+        {showEula && (
+          <EulaAgreement
+            onAccept={handleEulaAccept}
+            error={error}
+            isLoading={isActivating}
+            onDecline={handleEulaDecline}
+          />
+        )}
+      </>
+    );
+  }
+
+  if (showRecoveryOptions) {
+    return <RecoveryOptionsScreen onBack={handleBackToActivation} />;
   }
 
   return (
@@ -455,18 +542,18 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
                           e.preventDefault();
                           if (window.electronAPI) {
                             window.electronAPI.openExternal(
-                              "https://localpasswordvault.com"
+                              "https://localpasswordvault.com/#plans"
                             );
                           } else {
                             window.open(
-                              "https://localpasswordvault.com",
+                              "https://localpasswordvault.com/#plans",
                               "_blank"
                             );
                           }
                         }}
                         className="text-blue-400 hover:text-blue-300 text-sm transition-colors inline-flex items-center space-x-1"
                       >
-                        <span>Don't have a license? Purchase one</span>
+                        <span>Buy Lifetime Access</span>
                         <ExternalLink className="w-3 h-3" />
                       </button>
                     </div>

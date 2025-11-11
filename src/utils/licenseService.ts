@@ -236,7 +236,7 @@ export class LicenseService {
         if (isDevelopmentMode) {
           console.log('❌ Invalid license key format:', { cleanKey });
         }
-        return { success: false, error: "Invalid license key format" };
+        return { success: false, error: "This is not a valid lifetime key." };
       }
 
       // Check if this is the same trial key being reactivated
@@ -247,7 +247,7 @@ export class LicenseService {
         if (trialInfo.isExpired) {
           return {
             success: false,
-            error: "Your trial period has expired. This trial license key can only be used once. Please purchase a license to continue using the app."
+            error: "This key was for your trial. To continue, purchase a lifetime key."
           };
         }
       }
@@ -278,24 +278,24 @@ export class LicenseService {
 
         if (!response.ok) {
           if (response.status === 404) {
-            return { success: false, error: "License key not found" };
+            return { success: false, error: "This is not a valid lifetime key." };
           }
           if (response.status === 409) {
             return {
               success: false,
-              error: "License key is already activated on another device",
+              error: "This key is already activated on another device. You need to purchase an additional key.",
             };
           }
           // Handle trial expiration from backend
           if (result.error?.includes("trial") && result.error?.includes("expir")) {
             return {
               success: false,
-              error: "Your trial period has expired. This trial license key can only be used once. Please purchase a license to continue using the app."
+              error: "This key was for your trial. To continue, purchase a lifetime key."
             };
           }
           return {
             success: false,
-            error: result.error || "License activation failed",
+            error: result.error || "This is not a valid lifetime key.",
           };
         }
 
@@ -304,12 +304,12 @@ export class LicenseService {
           if (result.error?.includes("trial") && result.error?.includes("expir")) {
             return {
               success: false,
-              error: "Your trial period has expired. This trial license key can only be used once. Please purchase a license to continue using the app."
+              error: "This key was for your trial. To continue, purchase a lifetime key."
             };
           }
           return {
             success: false,
-            error: result.error || "License activation failed",
+            error: result.error || "This is not a valid lifetime key.",
           };
         }
 
