@@ -148,6 +148,12 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
       window.open(url, "_blank");
     }
     analyticsService.trackConversion("purchase_started", { source: "expired_trial" });
+
+    // Hide floating button when user goes to purchase
+    if (window.electronAPI?.hideFloatingButton) {
+      console.log("User going to purchase website - hiding floating toggle button");
+      window.electronAPI.hideFloatingButton();
+    }
   };
 
   const handleAlreadyPurchased = () => {
@@ -181,6 +187,15 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
       setShowExpiredTrialScreen(true);
     }
   }, [localStorageTrialInfo.isExpired, showExpiredTrialScreen, showKeyActivationScreen, showRecoveryOptions]);
+
+  // Hide floating button when expired trial screen is shown
+  useEffect(() => {
+    if (showExpiredTrialScreen && window.electronAPI?.hideFloatingButton) {
+      // Immediately hide the floating button when trial expires
+      console.log("Trial expired - hiding floating toggle button");
+      window.electronAPI.hideFloatingButton();
+    }
+  }, [showExpiredTrialScreen]);
 
   // Reset license input when trial expires
   useEffect(() => {
@@ -217,6 +232,12 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
           onLicenseValid();
         }
         setShowEula(false);
+
+        // Show floating button again when license is successfully activated
+        if (window.electronAPI?.showFloatingButton) {
+          console.log("License activated - showing floating toggle button");
+          window.electronAPI.showFloatingButton();
+        }
       } else {
         // Enhanced error messages based on the new flow specifications
         let enhancedError = result.error || "License activation failed";
@@ -294,6 +315,12 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
   const handlePurchase = (plan: "single" | "family") => {
     setSelectedPlan(plan);
     analyticsService.trackConversion("purchase_started", { plan });
+
+    // Hide floating button during purchase flow
+    if (window.electronAPI?.hideFloatingButton) {
+      console.log("Purchase flow started - hiding floating toggle button");
+      window.electronAPI.hideFloatingButton();
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -549,6 +576,11 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
                               "https://localpasswordvault.com/#plans",
                               "_blank"
                             );
+                          }
+                          // Hide floating button when user goes to purchase
+                          if (window.electronAPI?.hideFloatingButton) {
+                            console.log("User going to purchase website - hiding floating toggle button");
+                            window.electronAPI.hideFloatingButton();
                           }
                         }}
                         className="text-blue-400 hover:text-blue-300 text-sm transition-colors inline-flex items-center space-x-1"
