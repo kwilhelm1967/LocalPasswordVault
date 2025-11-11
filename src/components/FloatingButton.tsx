@@ -64,8 +64,21 @@ export const FloatingButton: React.FC = () => {
         ? await window.electronAPI.isVaultUnlocked()
         : false;
 
-      if (isUnlocked && window.electronAPI?.toggleFloatingPanelFromButton) {
-        await window.electronAPI.toggleFloatingPanelFromButton();
+      if (isUnlocked && window.electronAPI) {
+        // Check if floating panel is currently open
+        const isFloatingPanelOpen = window.electronAPI.isFloatingPanelOpen
+          ? await window.electronAPI.isFloatingPanelOpen()
+          : false;
+
+        if (isFloatingPanelOpen) {
+          // If floating panel is open, close it and restore main window
+          window.electronAPI.restoreMainWindow();
+          window.electronAPI.hideFloatingPanel();
+        } else {
+          // If floating panel is closed, open it and minimize/hide main window
+          window.electronAPI.showFloatingPanel();
+          window.electronAPI.hideMainWindow?.() ?? window.electronAPI.minimizeMainWindow?.();
+        }
       } else if (!isUnlocked && window.electronAPI?.showMainWindow) {
         // If vault is locked, show main window to unlock
         window.electronAPI.showMainWindow();
