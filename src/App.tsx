@@ -822,7 +822,6 @@ function App() {
       {showWarningPopup && (
         <TrialWarningPopup
           warningType={currentWarningType}
-          timeRemaining={warningPopupState.timeRemaining}
           onClose={handleWarningPopupClose}
           onPurchaseNow={handlePurchaseNow}
           onDownloadContent={handleDownloadContent}
