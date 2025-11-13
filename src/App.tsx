@@ -4,15 +4,17 @@ import { LicenseScreen } from "./components/LicenseScreen";
 import { MainVault } from "./components/MainVault";
 import { FloatingPanel } from "./components/FloatingPanel";
 import { ElectronFloatingPanel } from "./components/ElectronFloatingPanel";
+import { TrialWarningPopup } from "./components/TrialWarningPopup";
 import { PasswordEntry, Category } from "./types";
 import { storageService } from "./utils/storage";
 import { importService } from "./utils/importService";
 import { licenseService, AppLicenseStatus } from "./utils/licenseService";
-import { trialService } from "./utils/trialService";
+import { trialService, WarningPopupState } from "./utils/trialService";
 import { features } from "./config/environment";
 import { useElectron } from "./hooks/useElectron";
 import { LicenseKeyDisplay } from "./components/LicenseKeyDisplay";
 import { DownloadPage } from "./components/DownloadPage";
+import { TrialTestingTools } from "./components/TrialTestingTools";
 
 // Fixed categories with proper typing
 const FIXED_CATEGORIES: Category[] = [
@@ -455,11 +457,75 @@ function App() {
   const [showDownloadPage, setShowDownloadPage] = useState(false);
   const [showLicenseKeys, setShowLicenseKeys] = useState(features.showTestingTools);
 
+  // Trial warning popup state
+  const [warningPopupState, setWarningPopupState] = useState<WarningPopupState>({
+    shouldShowExpiringWarning: false,
+    shouldShowFinalWarning: false,
+    timeRemaining: '',
+  });
+  const [showWarningPopup, setShowWarningPopup] = useState(false);
+  const [currentWarningType, setCurrentWarningType] = useState<'expiring' | 'final'>('expiring');
+
   useDarkTheme();
   const { entries, setEntries } = useVaultData(isLocked, isElectron, loadSharedEntries, saveSharedEntries);
   const isFloatingMode = useFloatingMode(isElectron);
   useVaultStatusSync(isElectron, setIsLocked);
 
+  // Warning popup callback
+  const handleWarningPopup = useCallback((state: WarningPopupState) => {
+    console.log('🎯 WARNING POPUP CALLBACK TRIGGERED:', state);
+    setWarningPopupState(state);
+
+    if (state.shouldShowExpiringWarning) {
+      console.log('🚨 SHOWING EXPIRING WARNING POPUP');
+      setCurrentWarningType('expiring');
+      setShowWarningPopup(true);
+    } else if (state.shouldShowFinalWarning) {
+      console.log('🚨 SHOWING FINAL WARNING POPUP');
+      setCurrentWarningType('final');
+      setShowWarningPopup(true);
+    }
+  }, []);
+
+  // Setup warning popup monitoring
+  useEffect(() => {
+    // Add warning popup callback
+    trialService.addWarningPopupCallback(handleWarningPopup);
+
+    // Check warning popups every 1 second in development (for precise timing), every 10 seconds in production
+    const checkInterval = import.meta.env.DEV ? 1000 : 10000;
+    console.log(`⏰ SETTING UP WARNING POPUP MONITORING (interval: ${checkInterval}ms)`);
+
+    const warningInterval = setInterval(async () => {
+      // Only log every 10 seconds to reduce spam
+      if (Date.now() % 10000 < 1000) {
+        console.log('⏰ RUNNING SCHEDULED WARNING POPUP CHECK');
+      }
+      await trialService.checkWarningPopups();
+    }, checkInterval);
+
+    // Initial check immediately
+    console.log('🚀 RUNNING INITIAL WARNING POPUP CHECK');
+    trialService.checkWarningPopups();
+
+    return () => {
+      trialService.removeWarningPopupCallback(handleWarningPopup);
+      if (warningInterval) clearInterval(warningInterval);
+    };
+  }, [handleWarningPopup]);
+
+  // Popup event handlers
+  const handleWarningPopupClose = useCallback(() => {
+    setShowWarningPopup(false);
+  }, []);
+
+  const handlePurchaseNow = useCallback(() => {
+    setShowWarningPopup(false);
+    setShowPricingPlans(true);
+    updateAppStatus();
+  }, [updateAppStatus]);
+
+  
   const { handleAddEntry, handleUpdateEntry, handleDeleteEntry } = useEntryManagement(
     entries,
     setEntries,
@@ -522,6 +588,20 @@ function App() {
       console.error("Export failed:", error);
       alert("Failed to export data");
     }
+  }, []);
+
+  const handleDownloadContent = useCallback(() => {
+    setShowWarningPopup(false);
+    // Trigger the export functionality
+    setTimeout(() => {
+      handleExport();
+    }, 100);
+  }, [handleExport]);
+
+  // Testing tools handler
+  const handleTestWarning = useCallback((type: 'expiring' | 'final') => {
+    setCurrentWarningType(type);
+    setShowWarningPopup(true);
   }, []);
 
   const handleImport = useCallback(async () => {
@@ -746,6 +826,17 @@ function App() {
         </div>
       )}
 
+      {/* Trial Warning Popup */}
+      {showWarningPopup && (
+        <TrialWarningPopup
+          warningType={currentWarningType}
+          timeRemaining={warningPopupState.timeRemaining}
+          onClose={handleWarningPopupClose}
+          onPurchaseNow={handlePurchaseNow}
+          onDownloadContent={handleDownloadContent}
+        />
+      )}
+
       {/* Main Vault */}
       {showMainVault && (
         <MainVault
@@ -764,9 +855,12 @@ function App() {
 
       {/* Environment indicators */}
       {features.showTestingTools && (
-        <div className="fixed bottom-4 right-4 z-40 bg-amber-600 text-white px-3 py-1 rounded-full text-xs font-medium">
-          Test Environment
-        </div>
+        <>
+          <div className="fixed bottom-4 right-4 z-40 bg-amber-600 text-white px-3 py-1 rounded-full text-xs font-medium">
+            Test Environment
+          </div>
+          <TrialTestingTools onShowWarning={handleTestWarning} />
+        </>
       )}
     </div>
   );

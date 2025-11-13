@@ -14,6 +14,14 @@ export interface TrialInfo {
   securityHash: string | null;
   activationTime: Date | null;
   lastChecked: Date | null;
+  warningPopup1Timestamp?: string | null;
+  warningPopup2Timestamp?: string | null;
+}
+
+export interface WarningPopupState {
+  shouldShowExpiringWarning: boolean;
+  shouldShowFinalWarning: boolean;
+  timeRemaining: string;
 }
 
 export interface BackendTrialStatus {
@@ -36,7 +44,10 @@ export class TrialService {
   private static readonly TRIAL_USED_KEY = "trial_used";
   private static readonly TRIAL_LICENSE_KEY = "trial_license_key";
   private static readonly LICENSE_TOKEN_KEY = "license_token";
+  private static readonly WARNING_POPUP_1_SHOWN_KEY = "warning_popup_1_shown";
+  private static readonly WARNING_POPUP_2_SHOWN_KEY = "warning_popup_2_shown";
   private expirationCallbacks: (() => void)[] = [];
+  private warningPopupCallbacks: ((state: WarningPopupState) => void)[] = [];
   private expirationConfirmed: boolean = false;
   private expirationConfirmationCount: number = 0;
 
@@ -90,9 +101,17 @@ export class TrialService {
     const licenseToken = localStorage.getItem(TrialService.LICENSE_TOKEN_KEY);
     const storedHardwareHash = localStorage.getItem('trial_hardware_hash');
 
-
-    // Check if user has a valid non-trial license - if so, return no trial state
+    // If we have a license token, try Quick JWT parse first (more reliable)
     if (licenseToken) {
+      console.log('🔑 LICENSE TOKEN FOUND - trying Quick JWT parse first...');
+      const quickResult = this.quickJWTParse();
+      if (quickResult) {
+        console.log('✅ QUICK JWT PARSE SUCCEEDED - using as primary result');
+        return quickResult;
+      } else {
+        console.log('❌ QUICK JWT PARSE FAILED - falling back to normal parsing...');
+      }
+
       try {
         const tokenData = JSON.parse(atob(licenseToken.split('.')[1]));
         if (tokenData.planType && tokenData.planType !== 'trial') {
@@ -170,9 +189,26 @@ export class TrialService {
     // If we have a license token, use it for trial status (offline capable)
     if (licenseToken) {
       try {
-        const tokenData = JSON.parse(atob(licenseToken.split('.')[1])); // Decode JWT payload
+        console.log('🔑 LICENSE TOKEN FOUND, attempting to parse...');
+        const tokenParts = licenseToken.split('.');
+        if (tokenParts.length !== 3) {
+          throw new Error('Invalid JWT format - expected 3 parts');
+        }
+
+        const tokenData = JSON.parse(atob(tokenParts[1])); // Decode JWT payload
+
+        // 🔍 DEBUG: Log JWT token data for warning timestamps
+        console.log('🔍 JWT Token Data Analysis:', {
+          isTrial: tokenData.isTrial,
+          trialExpiryDate: tokenData.trialExpiryDate,
+          warningPopup1Timestamp: tokenData.warningPopup1Timestamp,
+          warningPopup2Timestamp: tokenData.warningPopup2Timestamp,
+          hasWarningTimestamps: !!(tokenData.warningPopup1Timestamp && tokenData.warningPopup2Timestamp),
+          allTokenData: tokenData
+        });
 
         if (tokenData.isTrial && tokenData.trialExpiryDate) {
+          console.log('✅ JWT TOKEN IS VALID TRIAL - proceeding with calculation');
           const now = new Date();
           const expiryDate = new Date(tokenData.trialExpiryDate);
           const isExpired = now >= expiryDate; // Use >= to include exact expiry time
@@ -215,10 +251,26 @@ export class TrialService {
             securityHash: tokenData.securityHash || null,
             activationTime: tokenData.activationTime ? new Date(tokenData.activationTime) : null,
             lastChecked: new Date(),
+            warningPopup1Timestamp: tokenData.warningPopup1Timestamp || null,
+            warningPopup2Timestamp: tokenData.warningPopup2Timestamp || null,
           };
+        } else {
+          console.log('❌ JWT TOKEN DOES NOT MEET TRIAL CONDITIONS:', {
+            isTrial: tokenData.isTrial,
+            hasExpiryDate: !!tokenData.trialExpiryDate,
+            expiryDate: tokenData.trialExpiryDate,
+            planType: tokenData.planType
+          });
         }
       } catch (error) {
-        console.error('Error parsing license token:', error);
+        console.error('❌ ERROR parsing license token:', error);
+        console.error('🔑 TOKEN DETAILS:', {
+          hasToken: !!licenseToken,
+          tokenLength: licenseToken?.length,
+          tokenStart: licenseToken?.substring(0, 50) + '...',
+          tokenParts: licenseToken?.split('.').length
+        });
+        console.error('🔄 FALLING BACK to localStorage-based trial calculation');
       }
     }
 
@@ -253,6 +305,14 @@ export class TrialService {
       };
     }
 
+    // Try quick JWT parse as a fallback before final fallback
+    console.log('🔄 TRYING QUICK JWT PARSE AS FALLBACK...');
+    const quickResult = this.quickJWTParse();
+    if (quickResult) {
+      console.log('✅ QUICK JWT PARSE SUCCEEDED - using result');
+      return quickResult;
+    }
+
     // Final fallback with no start date
     const fallbackResult = {
       isTrialActive: false,
@@ -274,6 +334,67 @@ export class TrialService {
 
 
     return fallbackResult;
+  }
+
+  /**
+   * Quick JWT parse for debugging - bypass all logic
+   */
+  quickJWTParse(): TrialInfo | null {
+    try {
+      const licenseToken = localStorage.getItem(TrialService.LICENSE_TOKEN_KEY);
+      if (!licenseToken) {
+        console.log('❌ QUICK JWT: No token found');
+        return null;
+      }
+
+      const tokenData = JSON.parse(atob(licenseToken.split('.')[1]));
+      console.log('🚀 QUICK JWT PARSE RESULT:', {
+        isTrial: tokenData.isTrial,
+        trialExpiryDate: tokenData.trialExpiryDate,
+        warningPopup1Timestamp: tokenData.warningPopup1Timestamp,
+        warningPopup2Timestamp: tokenData.warningPopup2Timestamp,
+        planType: tokenData.planType
+      });
+
+      if (!tokenData.isTrial || !tokenData.trialExpiryDate) {
+        console.log('❌ QUICK JWT: Not a trial or no expiry date');
+        return null;
+      }
+
+      const now = new Date();
+      const expiryDate = new Date(tokenData.trialExpiryDate);
+      const isExpired = now >= expiryDate;
+      const isActive = !isExpired;
+
+      const remainingMs = Math.max(0, expiryDate.getTime() - now.getTime());
+      const minutesRemaining = Math.floor(remainingMs / (60 * 1000));
+      const secondsRemaining = Math.floor((remainingMs % (60 * 1000)) / 1000);
+
+      const timeRemaining = isExpired ? 'Trial expired' : `${minutesRemaining}m ${secondsRemaining}s`;
+
+      return {
+        isTrialActive: isActive,
+        daysRemaining: 0,
+        hoursRemaining: 0,
+        minutesRemaining,
+        secondsRemaining,
+        isExpired,
+        startDate: tokenData.activationTime ? new Date(tokenData.activationTime) : new Date(),
+        endDate: expiryDate,
+        hasTrialBeenUsed: true,
+        timeRemaining,
+        trialDurationDisplay: tokenData.trialDurationDisplay || 'minutes',
+        licenseKey: tokenData.licenseKey || null,
+        securityHash: tokenData.securityHash || null,
+        activationTime: tokenData.activationTime ? new Date(tokenData.activationTime) : null,
+        lastChecked: new Date(),
+        warningPopup1Timestamp: tokenData.warningPopup1Timestamp || null,
+        warningPopup2Timestamp: tokenData.warningPopup2Timestamp || null,
+      };
+    } catch (error) {
+      console.error('❌ QUICK JWT PARSE ERROR:', error);
+      return null;
+    }
   }
 
   /**
@@ -493,6 +614,179 @@ export class TrialService {
         console.error("Error in expiration callback:", error);
       }
     });
+  }
+
+  /**
+   * Add callback for warning popup changes
+   */
+  addWarningPopupCallback(callback: (state: WarningPopupState) => void): void {
+    this.warningPopupCallbacks.push(callback);
+  }
+
+  /**
+   * Remove warning popup callback
+   */
+  removeWarningPopupCallback(callback: (state: WarningPopupState) => void): void {
+    const index = this.warningPopupCallbacks.indexOf(callback);
+    if (index > -1) {
+      this.warningPopupCallbacks.splice(index, 1);
+    }
+  }
+
+  /**
+   * Trigger all warning popup callbacks
+   */
+  private triggerWarningPopupCallbacks(state: WarningPopupState): void {
+    this.warningPopupCallbacks.forEach(callback => {
+      try {
+        callback(state);
+      } catch (error) {
+        console.error("Error in warning popup callback:", error);
+      }
+    });
+  }
+
+  /**
+   * Check if warning popup should be shown
+   */
+  async checkWarningPopups(): Promise<void> {
+    try {
+      const trialInfo = await this.getTrialInfo();
+
+      // 🔍 DEBUG: Log warning popup check details
+      console.log('🚨 WARNING POPUP CHECK:', {
+        now: new Date().toISOString(),
+        trialActive: trialInfo.isTrialActive,
+        isExpired: trialInfo.isExpired,
+        endDate: trialInfo.endDate?.toISOString(),
+        warningPopup1Timestamp: trialInfo.warningPopup1Timestamp,
+        warningPopup2Timestamp: trialInfo.warningPopup2Timestamp,
+        timeRemaining: trialInfo.timeRemaining
+      });
+
+      // Don't show warnings if trial is not active or already expired
+      if (!trialInfo.isTrialActive || trialInfo.isExpired || !trialInfo.endDate) {
+        console.log('❌ SKIPPED: Trial not active or already expired');
+        return;
+      }
+
+      const now = new Date();
+      const popup1Shown = localStorage.getItem(TrialService.WARNING_POPUP_1_SHOWN_KEY) === 'true';
+      const popup2Shown = localStorage.getItem(TrialService.WARNING_POPUP_2_SHOWN_KEY) === 'true';
+
+      console.log('📊 POPUP STATE CHECK:', {
+        popup1Shown,
+        popup2Shown,
+        hasWarningTimestamp1: !!trialInfo.warningPopup1Timestamp,
+        hasWarningTimestamp2: !!trialInfo.warningPopup2Timestamp
+      });
+
+      // Check first warning popup (2 minutes before)
+      if (!popup1Shown && trialInfo.warningPopup1Timestamp) {
+        const popup1Time = new Date(trialInfo.warningPopup1Timestamp);
+        const timeUntilPopup1 = popup1Time.getTime() - now.getTime();
+
+        console.log('⏰ POPUP 1 ANALYSIS:', {
+          popupTime: popup1Time.toISOString(),
+          timeUntilPopup: timeUntilPopup1,
+          timeUntilPopupMinutes: Math.floor(timeUntilPopup1 / (60 * 1000)),
+          shouldShow: now >= popup1Time
+        });
+
+        if (now >= popup1Time) {
+          console.log('🚨 TRIGGERING POPUP 1 (Expiring Soon)');
+          localStorage.setItem(TrialService.WARNING_POPUP_1_SHOWN_KEY, 'true');
+          this.triggerWarningPopupCallbacks({
+            shouldShowExpiringWarning: true,
+            shouldShowFinalWarning: false,
+            timeRemaining: trialInfo.timeRemaining,
+          });
+          return;
+        }
+      }
+
+      // Check second warning popup (1 minute before)
+      if (!popup2Shown && trialInfo.warningPopup2Timestamp) {
+        const popup2Time = new Date(trialInfo.warningPopup2Timestamp);
+        const timeUntilPopup2 = popup2Time.getTime() - now.getTime();
+
+        console.log('⏰ POPUP 2 ANALYSIS:', {
+          popupTime: popup2Time.toISOString(),
+          timeUntilPopup: timeUntilPopup2,
+          timeUntilPopupMinutes: Math.floor(timeUntilPopup2 / (60 * 1000)),
+          shouldShow: now >= popup2Time
+        });
+
+        if (now >= popup2Time) {
+          console.log('🚨 TRIGGERING POPUP 2 (Final Notice)');
+          localStorage.setItem(TrialService.WARNING_POPUP_2_SHOWN_KEY, 'true');
+          this.triggerWarningPopupCallbacks({
+            shouldShowExpiringWarning: false,
+            shouldShowFinalWarning: true,
+            timeRemaining: trialInfo.timeRemaining,
+          });
+        }
+      }
+
+      console.log('✅ WARNING CHECK COMPLETE - No popups triggered');
+    } catch (error) {
+      console.error('❌ ERROR checking warning popups:', error);
+    }
+  }
+
+  /**
+   * Reset warning popup state (for testing)
+   */
+  resetWarningPopups(): void {
+    localStorage.removeItem(TrialService.WARNING_POPUP_1_SHOWN_KEY);
+    localStorage.removeItem(TrialService.WARNING_POPUP_2_SHOWN_KEY);
+  }
+
+  /**
+   * Check if specific warning popup has been shown
+   */
+  hasWarningPopupBeenShown(popupNumber: 1 | 2): boolean {
+    const key = popupNumber === 1
+      ? TrialService.WARNING_POPUP_1_SHOWN_KEY
+      : TrialService.WARNING_POPUP_2_SHOWN_KEY;
+    return localStorage.getItem(key) === 'true';
+  }
+
+  /**
+   * Debug method to log current trial status and warning times
+   */
+  async logTrialStatus(): Promise<void> {
+    try {
+      const trialInfo = await this.getTrialInfo();
+      const now = new Date();
+
+      console.log('📋 TRIAL STATUS DEBUG REPORT:', {
+        currentTime: now.toISOString(),
+        trialActive: trialInfo.isTrialActive,
+        isExpired: trialInfo.isExpired,
+        trialEndDate: trialInfo.endDate?.toISOString(),
+        timeRemaining: trialInfo.timeRemaining,
+        warning1Timestamp: trialInfo.warningPopup1Timestamp,
+        warning2Timestamp: trialInfo.warningPopup2Timestamp,
+        warning1Shown: this.hasWarningPopupBeenShown(1),
+        warning2Shown: this.hasWarningPopupBeenShown(2),
+        licenseTokenPresent: !!localStorage.getItem(TrialService.LICENSE_TOKEN_KEY)
+      });
+
+      if (trialInfo.warningPopup1Timestamp) {
+        const warning1Time = new Date(trialInfo.warningPopup1Timestamp);
+        const timeToWarning1 = warning1Time.getTime() - now.getTime();
+        console.log(`⏰ WARNING 1: ${timeToWarning1 > 0 ? Math.floor(timeToWarning1 / 1000) + 's' : 'PAST'} (${warning1Time.toISOString()})`);
+      }
+
+      if (trialInfo.warningPopup2Timestamp) {
+        const warning2Time = new Date(trialInfo.warningPopup2Timestamp);
+        const timeToWarning2 = warning2Time.getTime() - now.getTime();
+        console.log(`⏰ WARNING 2: ${timeToWarning2 > 0 ? Math.floor(timeToWarning2 / 1000) + 's' : 'PAST'} (${warning2Time.toISOString()})`);
+      }
+    } catch (error) {
+      console.error('❌ ERROR in logTrialStatus:', error);
+    }
   }
 }
 
