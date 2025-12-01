@@ -164,17 +164,17 @@ export const Dashboard: React.FC<DashboardProps> = ({
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Total Accounts */}
-        <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl p-5">
+        <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl py-3.5 px-4">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-slate-400 text-xs font-medium uppercase tracking-wider">Total Accounts</p>
-              <p className="text-3xl font-bold mt-2" style={{ color: colors.warmIvory }}>{stats.totalAccounts}</p>
+              <p className="text-[1.625rem] font-bold mt-1" style={{ color: colors.warmIvory }}>{stats.totalAccounts}</p>
             </div>
             <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${colors.steelBlue600}15` }}>
               <Key className="w-6 h-6" strokeWidth={1.5} style={{ color: colors.steelBlue400 }} />
             </div>
           </div>
-          <div className="mt-3 flex items-center gap-1.5 text-xs">
+          <div className="mt-2 flex items-center gap-1.5 text-xs">
             <TrendingUp className="w-3.5 h-3.5 text-emerald-400" strokeWidth={1.5} />
             <span className="text-emerald-400">{stats.recentlyAdded}</span>
             <span className="text-slate-500">added this week</span>
@@ -182,34 +182,34 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
 
         {/* Security Score */}
-        <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl p-5">
+        <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl py-3.5 px-4">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-slate-400 text-xs font-medium uppercase tracking-wider">Security Score</p>
-              <p className={`text-3xl font-bold mt-2 ${getScoreColor(securityScore)}`}>{securityScore}%</p>
+              <p className={`text-[1.625rem] font-bold mt-1 ${getScoreColor(securityScore)}`}>{securityScore}%</p>
             </div>
             <div className="w-12 h-12 bg-emerald-500/10 rounded-xl flex items-center justify-center">
               <Shield className="w-6 h-6 text-emerald-400" strokeWidth={1.5} />
             </div>
           </div>
-          <div className="mt-3 flex items-center gap-1.5 text-xs">
+          <div className="mt-2 flex items-center gap-1.5 text-xs">
             <Lock className="w-3.5 h-3.5 text-slate-400" strokeWidth={1.5} />
             <span className={getScoreColor(securityScore)}>{getScoreLabel(securityScore)}</span>
           </div>
         </div>
 
         {/* Strong Passwords */}
-        <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl p-5">
+        <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl py-3.5 px-4">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-slate-400 text-xs font-medium uppercase tracking-wider">Strong Passwords</p>
-              <p className="text-3xl font-bold mt-2" style={{ color: colors.warmIvory }}>{stats.strongPasswords}</p>
+              <p className="text-[1.625rem] font-bold mt-1" style={{ color: colors.warmIvory }}>{stats.strongPasswords}</p>
             </div>
             <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${colors.mutedSky}15` }}>
               <Lock className="w-6 h-6" strokeWidth={1.5} style={{ color: colors.mutedSky }} />
             </div>
           </div>
-          <div className="mt-3 flex items-center gap-1.5 text-xs">
+          <div className="mt-2 flex items-center gap-1.5 text-xs">
             <span className="text-slate-500">
               {entries.length > 0 
                 ? `${Math.round((stats.strongPasswords / entries.length) * 100)}% of total`
@@ -220,7 +220,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
         {/* Weak Passwords */}
         <div 
-          className={`bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl p-5 transition-all duration-200 ${
+          className={`bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl py-3.5 px-4 transition-all duration-200 ${
             stats.weakPasswords > 0 ? "cursor-pointer hover:border-amber-500/50 hover:bg-slate-800/70" : ""
           }`}
           onClick={stats.weakPasswords > 0 ? onViewWeakPasswords : undefined}
@@ -228,7 +228,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           <div className="flex items-center justify-between">
             <div>
               <p className="text-slate-400 text-xs font-medium uppercase tracking-wider">Weak Passwords</p>
-              <p className={`text-3xl font-bold mt-2 ${stats.weakPasswords > 0 ? "text-amber-400" : ""}`} style={stats.weakPasswords === 0 ? { color: colors.warmIvory } : {}}>
+              <p className={`text-[1.625rem] font-bold mt-1 ${stats.weakPasswords > 0 ? "text-amber-400" : ""}`} style={stats.weakPasswords === 0 ? { color: colors.warmIvory } : {}}>
                 {stats.weakPasswords}
               </p>
             </div>
@@ -238,7 +238,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               <AlertTriangle className={`w-6 h-6 ${stats.weakPasswords > 0 ? "text-amber-400" : "text-slate-500"}`} strokeWidth={1.5} />
             </div>
           </div>
-          <div className="mt-3 flex items-center gap-1.5 text-xs">
+          <div className="mt-2 flex items-center gap-1.5 text-xs">
             {stats.weakPasswords > 0 ? (
               <span className="text-amber-400 flex items-center gap-1">
                 Click to view & update
@@ -252,7 +252,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
         {/* Reused Passwords */}
         <div 
-          className={`bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl p-5 transition-all duration-200 ${
+          className={`bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl py-3.5 px-4 transition-all duration-200 ${
             stats.reusedPasswords > 0 ? "cursor-pointer hover:bg-slate-800/70" : ""
           }`}
           style={stats.reusedPasswords > 0 ? { borderColor: 'rgba(201, 174, 102, 0.3)' } : {}}
@@ -264,7 +264,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <div>
               <p className="text-slate-400 text-xs font-medium uppercase tracking-wider">Reused Passwords</p>
               <p 
-                className="text-3xl font-bold mt-2"
+                className="text-[1.625rem] font-bold mt-1"
                 style={stats.reusedPasswords > 0 ? { color: '#C9AE66' } : { color: colors.warmIvory }}
               >
                 {stats.reusedPasswords}
@@ -281,7 +281,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               />
             </div>
           </div>
-          <div className="mt-3 flex items-center gap-1.5 text-xs">
+          <div className="mt-2 flex items-center gap-1.5 text-xs">
             {stats.reusedPasswords > 0 ? (
               <span style={{ color: '#C9AE66' }} className="flex items-center gap-1">
                 Click to view & update
