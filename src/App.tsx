@@ -35,11 +35,9 @@ const useAppStatus = () => {
 
   const updateAppStatus = useCallback(async () => {
     const newStatus = await licenseService.getAppStatus();
-
-
     setAppStatus(newStatus);
     return newStatus;
-  }, [appStatus, checkingEnabled]);
+  }, []); // No dependencies needed - this function doesn't depend on any state
 
   // Initialize app status on mount
   useEffect(() => {
@@ -538,6 +536,87 @@ function App() {
     setShowFloatingPanel(false);
   }, [isElectron]);
 
+  // Auto-lock timeout enforcement
+  useEffect(() => {
+    if (isLocked) return; // Don't set timer if already locked
+    
+    const SETTINGS_KEY = "vault_auto_lock";
+    const getAutoLockTimeout = () => {
+      const stored = localStorage.getItem(SETTINGS_KEY);
+      return stored ? parseInt(stored) : 300000; // Default 5 minutes
+    };
+    
+    let timeoutId: NodeJS.Timeout | null = null;
+    let lastActivity = Date.now();
+    
+    const resetTimer = () => {
+      lastActivity = Date.now();
+      
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+      
+      const timeout = getAutoLockTimeout();
+      if (timeout > 0) {
+        timeoutId = setTimeout(() => {
+          console.log("Auto-lock triggered due to inactivity");
+          handleLock();
+        }, timeout);
+      }
+    };
+    
+    // Activity events to track
+    const activityEvents = [
+      'mousedown', 'mousemove', 'keydown', 'scroll', 
+      'touchstart', 'click', 'wheel'
+    ];
+    
+    // Throttle activity tracking to avoid performance issues
+    let throttleTimer: NodeJS.Timeout | null = null;
+    const handleActivity = () => {
+      if (throttleTimer) return;
+      throttleTimer = setTimeout(() => {
+        throttleTimer = null;
+        resetTimer();
+      }, 1000); // Throttle to once per second
+    };
+    
+    // Add event listeners
+    activityEvents.forEach(event => {
+      window.addEventListener(event, handleActivity, { passive: true });
+    });
+    
+    // Also check on visibility change (tab switch back)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        const timeout = getAutoLockTimeout();
+        const elapsed = Date.now() - lastActivity;
+        
+        // If been away longer than timeout, lock immediately
+        if (timeout > 0 && elapsed > timeout) {
+          console.log("Auto-lock triggered: inactive while tab was hidden");
+          handleLock();
+        } else {
+          resetTimer();
+        }
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    // Start the timer
+    resetTimer();
+    
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      if (throttleTimer) clearTimeout(throttleTimer);
+      activityEvents.forEach(event => {
+        window.removeEventListener(event, handleActivity);
+      });
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [isLocked, handleLock]);
+
   const handleLogin = useCallback(async (password: string) => {
     try {
       if (!storageService.vaultExists()) {
@@ -654,6 +733,51 @@ function App() {
     }
   }, [isLocked, entries, setEntries, isElectron, saveSharedEntries]);
 
+  const handleExportEncrypted = useCallback(async (password: string) => {
+    try {
+      const data = await storageService.exportEncrypted(password);
+      const blob = new Blob([data], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `password-vault-encrypted-${new Date().toISOString().split("T")[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Encrypted export failed:", error);
+      throw error;
+    }
+  }, []);
+
+  const handleImportEncrypted = useCallback(async (data: string, password: string) => {
+    try {
+      if (isLocked || !storageService.isVaultUnlocked()) {
+        throw new Error("Unlock the vault first.");
+      }
+
+      await storageService.importEncrypted(data, password);
+      
+      // Reload entries after import
+      const newEntries = await storageService.loadEntries();
+      setEntries(newEntries);
+
+      // Update shared storage for Electron
+      if (isElectron && saveSharedEntries) {
+        await saveSharedEntries(newEntries);
+        if (window.electronAPI?.broadcastEntriesChanged) {
+          await window.electronAPI.broadcastEntriesChanged();
+        }
+      }
+
+      alert(`Successfully imported encrypted backup.`);
+    } catch (error) {
+      console.error('Encrypted import failed:', error);
+      throw error;
+    }
+  }, [isLocked, setEntries, isElectron, saveSharedEntries]);
+
   const toggleVaultView = useCallback(() => {
     if (isElectron) {
       if (window.electronAPI) {
@@ -698,9 +822,11 @@ function App() {
     onCategoryChange: setSelectedCategory,
     onLock: handleLock,
     onExport: handleExport,
+    onExportEncrypted: handleExportEncrypted,
     onImport: handleImport,
+    onImportEncrypted: handleImportEncrypted,
     onEntriesReload: handleEntriesReload,
-  }), [entries, handleAddEntry, handleUpdateEntry, handleDeleteEntry, searchTerm, selectedCategory, handleLock, handleExport, handleImport, handleEntriesReload]);
+  }), [entries, handleAddEntry, handleUpdateEntry, handleDeleteEntry, searchTerm, selectedCategory, handleLock, handleExport, handleExportEncrypted, handleImport, handleImportEncrypted, handleEntriesReload]);
 
   const mainVaultProps = useMemo(() => ({
     ...floatingPanelProps,
@@ -754,8 +880,17 @@ function App() {
     );
   }
 
-  // License screen - Check both canUseApp and trial expiration
-  if (!appStatus.canUseApp || appStatus.trialInfo.isExpired) {
+  /**
+   * License Gate: Redirect to license screen if:
+   * - User cannot use app (no valid license/trial)
+   * - Trial has expired
+   * 
+   * Dev Mode: Add ?dev=1 to URL to bypass license check for testing
+   */
+  const devBypass = import.meta.env.DEV && window.location.search.includes('dev=1');
+  const requiresLicense = !appStatus.canUseApp || appStatus.trialInfo.isExpired;
+  
+  if (requiresLicense && !devBypass) {
     return (
       <LicenseScreen
         onLicenseValid={updateAppStatus}

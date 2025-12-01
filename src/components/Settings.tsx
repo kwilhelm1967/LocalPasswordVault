@@ -1,0 +1,923 @@
+/**
+ * Settings Component
+ * 
+ * Legacy Vault style settings with bouncing cards and blue accents.
+ */
+
+import React, { useState, useEffect } from "react";
+import {
+  Shield,
+  Clock,
+  Clipboard,
+  Eye,
+  EyeOff,
+  Key,
+  Download,
+  Upload,
+  Trash2,
+  AlertTriangle,
+  Check,
+  Info,
+  Lock,
+  ChevronDown,
+  Database,
+  Sparkles,
+} from "lucide-react";
+
+// Color palette
+const colors = {
+  steelBlue600: "#4A6FA5",
+  steelBlue500: "#5B82B8",
+  steelBlue400: "#7A9DC7",
+  mutedSky: "#93B4D1",
+  warmIvory: "#F3F4F6",
+  brandGold: "#C9AE66",
+  goldLight: "#D4BC7D",
+  goldDark: "#B89B4D",
+};
+
+// Settings storage keys
+const SETTINGS_KEYS = {
+  AUTO_LOCK_TIMEOUT: "vault_auto_lock_timeout",
+  CLIPBOARD_CLEAR_TIMEOUT: "vault_clipboard_clear_timeout",
+  SHOW_PASSWORDS_DEFAULT: "vault_show_passwords_default",
+};
+
+export interface VaultSettings {
+  autoLockTimeout: number;
+  clipboardClearTimeout: number;
+  showPasswordsDefault: boolean;
+}
+
+const DEFAULT_SETTINGS: VaultSettings = {
+  autoLockTimeout: 5,
+  clipboardClearTimeout: 30,
+  showPasswordsDefault: false,
+};
+
+interface SettingsProps {
+  onExport: () => void;
+  onExportEncrypted: (password: string) => Promise<void>;
+  onImport: () => void;
+  onImportEncrypted: (data: string, password: string) => Promise<void>;
+  onChangePassword: () => void;
+  onClearAllData: () => void;
+  totalEntries: number;
+}
+
+// Bouncy Card Component
+const BouncyCard: React.FC<{
+  children: React.ReactNode;
+  onClick?: () => void;
+  variant?: "default" | "danger" | "accent";
+  className?: string;
+}> = ({ children, onClick, variant = "default", className = "" }) => {
+  const getBorderColor = () => {
+    switch (variant) {
+      case "danger": return "rgba(239, 68, 68, 0.3)";
+      case "accent": return `${colors.steelBlue500}60`;
+      default: return `${colors.steelBlue500}25`;
+    }
+  };
+
+  const getHoverBorderColor = () => {
+    switch (variant) {
+      case "danger": return "rgba(239, 68, 68, 0.5)";
+      case "accent": return colors.steelBlue400;
+      default: return `${colors.steelBlue500}60`;
+    }
+  };
+
+  return (
+    <div
+      onClick={onClick}
+      className={`
+        relative rounded-xl p-5 cursor-pointer
+        transition-all duration-300 ease-out
+        hover:scale-[1.02] hover:-translate-y-1
+        active:scale-[0.98] active:translate-y-0
+        ${className}
+      `}
+      style={{
+        backgroundColor: "rgba(30, 41, 59, 0.6)",
+        border: `1px solid ${getBorderColor()}`,
+        boxShadow: `0 4px 20px rgba(0,0,0,0.2)`,
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.borderColor = getHoverBorderColor();
+        e.currentTarget.style.boxShadow = `0 8px 30px rgba(0,0,0,0.3), 0 0 20px ${variant === "danger" ? "rgba(239, 68, 68, 0.1)" : `${colors.steelBlue500}15`}`;
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.borderColor = getBorderColor();
+        e.currentTarget.style.boxShadow = `0 4px 20px rgba(0,0,0,0.2)`;
+      }}
+    >
+      {/* Corner accent */}
+      <div 
+        className="absolute top-0 left-0 w-8 h-8 rounded-tl-xl overflow-hidden pointer-events-none"
+        style={{
+          background: variant === "danger" 
+            ? "linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, transparent 50%)"
+            : `linear-gradient(135deg, ${colors.steelBlue500}20 0%, transparent 50%)`,
+        }}
+      />
+      <div 
+        className="absolute bottom-0 right-0 w-8 h-8 rounded-br-xl overflow-hidden pointer-events-none"
+        style={{
+          background: variant === "danger"
+            ? "linear-gradient(-45deg, rgba(239, 68, 68, 0.2) 0%, transparent 50%)"
+            : `linear-gradient(-45deg, ${colors.steelBlue500}20 0%, transparent 50%)`,
+        }}
+      />
+      {children}
+    </div>
+  );
+};
+
+// Custom Select Component
+const BlueSelect: React.FC<{
+  value: number;
+  options: { value: number; label: string }[];
+  onChange: (value: number) => void;
+  saved?: boolean;
+}> = ({ value, options, onChange, saved }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const selectedLabel = options.find(o => o.value === value)?.label || "";
+
+  return (
+    <div className="relative">
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          setIsOpen(!isOpen);
+        }}
+        className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200"
+        style={{
+          backgroundColor: `${colors.steelBlue500}15`,
+          color: colors.steelBlue400,
+          border: `1px solid ${colors.steelBlue500}30`,
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.backgroundColor = `${colors.steelBlue500}25`;
+          e.currentTarget.style.borderColor = `${colors.steelBlue500}50`;
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.backgroundColor = `${colors.steelBlue500}15`;
+          e.currentTarget.style.borderColor = `${colors.steelBlue500}30`;
+        }}
+      >
+        <span>{selectedLabel}</span>
+        <ChevronDown 
+          className={`w-4 h-4 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} 
+          strokeWidth={1.5} 
+        />
+      </button>
+      
+      {isOpen && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
+          <div 
+            className="absolute right-0 top-full mt-2 py-2 rounded-xl shadow-2xl z-50 min-w-[160px] overflow-hidden"
+            style={{
+              backgroundColor: "#1e293b",
+              border: `1px solid ${colors.steelBlue500}30`,
+            }}
+          >
+            {options.map((opt) => (
+              <button
+                key={opt.value}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onChange(opt.value);
+                  setIsOpen(false);
+                }}
+                className={`w-full px-4 py-2.5 text-left text-sm transition-colors flex items-center justify-between ${
+                  opt.value === value ? "" : "hover:bg-slate-700/50"
+                }`}
+                style={{ 
+                  color: opt.value === value ? colors.steelBlue400 : colors.warmIvory,
+                  backgroundColor: opt.value === value ? `${colors.steelBlue500}15` : "transparent",
+                }}
+              >
+                <span>{opt.label}</span>
+                {opt.value === value && (
+                  <Check className="w-4 h-4" strokeWidth={2} style={{ color: colors.steelBlue400 }} />
+                )}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+      
+      {saved && (
+        <span 
+          className="absolute -top-2 -right-2 flex items-center justify-center w-6 h-6 rounded-full text-white text-xs font-bold animate-bounce"
+          style={{ backgroundColor: "#10b981" }}
+        >
+          <Check className="w-3.5 h-3.5" strokeWidth={3} />
+        </span>
+      )}
+    </div>
+  );
+};
+
+// Blue Toggle Component
+const BlueToggle: React.FC<{
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  saved?: boolean;
+}> = ({ checked, onChange, saved }) => {
+  return (
+    <div className="relative">
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onChange(!checked);
+        }}
+        className="relative w-11 h-6 rounded-full transition-all duration-300 flex items-center"
+        style={{
+          backgroundColor: checked ? colors.steelBlue500 : "#334155",
+          boxShadow: checked ? `0 0 12px ${colors.steelBlue500}30` : "inset 0 1px 2px rgba(0,0,0,0.2)",
+          border: `1px solid ${checked ? colors.steelBlue500 : "#475569"}`,
+        }}
+      >
+        <div 
+          className={`w-4 h-4 rounded-full transition-all duration-300 flex items-center justify-center ${
+            checked ? "ml-[22px]" : "ml-[3px]"
+          }`}
+          style={{
+            backgroundColor: checked ? "#1e293b" : "#64748b",
+            boxShadow: "0 1px 2px rgba(0,0,0,0.3)",
+          }}
+        >
+          {checked && (
+            <Check className="w-2.5 h-2.5" strokeWidth={3} style={{ color: colors.steelBlue400 }} />
+          )}
+        </div>
+      </button>
+      
+      {saved && (
+        <span 
+          className="absolute -top-1.5 -right-1.5 flex items-center justify-center w-5 h-5 rounded-full text-white text-xs font-bold animate-bounce"
+          style={{ backgroundColor: "#10b981" }}
+        >
+          <Check className="w-3 h-3" strokeWidth={3} />
+        </span>
+      )}
+    </div>
+  );
+};
+
+// Section Title Component
+const SectionTitle: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <div className="flex items-center gap-3 mb-4">
+    <div 
+      className="h-px flex-1"
+      style={{ background: `linear-gradient(90deg, ${colors.steelBlue500}40, transparent)` }}
+    />
+    <span 
+      className="text-xs font-semibold tracking-widest uppercase"
+      style={{ color: colors.steelBlue400 }}
+    >
+      {children}
+    </span>
+    <div 
+      className="h-px flex-1"
+      style={{ background: `linear-gradient(-90deg, ${colors.steelBlue500}40, transparent)` }}
+    />
+  </div>
+);
+
+export const Settings: React.FC<SettingsProps> = ({
+  onExport,
+  onExportEncrypted,
+  onImport,
+  onImportEncrypted,
+  onChangePassword,
+  onClearAllData,
+  totalEntries,
+}) => {
+  const [settings, setSettings] = useState<VaultSettings>(DEFAULT_SETTINGS);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [savedIndicator, setSavedIndicator] = useState<string | null>(null);
+  
+  // Encrypted export/import states
+  const [showEncryptedExportModal, setShowEncryptedExportModal] = useState(false);
+  const [showEncryptedImportModal, setShowEncryptedImportModal] = useState(false);
+  const [encryptPassword, setEncryptPassword] = useState("");
+  const [encryptPasswordConfirm, setEncryptPasswordConfirm] = useState("");
+  const [importPassword, setImportPassword] = useState("");
+  const [importData, setImportData] = useState("");
+  const [encryptError, setEncryptError] = useState("");
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  useEffect(() => {
+    const loadedSettings: VaultSettings = {
+      autoLockTimeout: parseInt(localStorage.getItem(SETTINGS_KEYS.AUTO_LOCK_TIMEOUT) || String(DEFAULT_SETTINGS.autoLockTimeout)),
+      clipboardClearTimeout: parseInt(localStorage.getItem(SETTINGS_KEYS.CLIPBOARD_CLEAR_TIMEOUT) || String(DEFAULT_SETTINGS.clipboardClearTimeout)),
+      showPasswordsDefault: localStorage.getItem(SETTINGS_KEYS.SHOW_PASSWORDS_DEFAULT) === "true",
+    };
+    setSettings(loadedSettings);
+  }, []);
+
+  const saveSetting = (key: string, value: string | number | boolean, settingName: string) => {
+    localStorage.setItem(key, String(value));
+    setSavedIndicator(settingName);
+    setTimeout(() => setSavedIndicator(null), 1500);
+  };
+
+  const handleAutoLockChange = (value: number) => {
+    setSettings(prev => ({ ...prev, autoLockTimeout: value }));
+    saveSetting(SETTINGS_KEYS.AUTO_LOCK_TIMEOUT, value, "autoLock");
+  };
+
+  const handleClipboardClearChange = (value: number) => {
+    setSettings(prev => ({ ...prev, clipboardClearTimeout: value }));
+    saveSetting(SETTINGS_KEYS.CLIPBOARD_CLEAR_TIMEOUT, value, "clipboard");
+  };
+
+  const handleEncryptedExport = async () => {
+    if (encryptPassword.length < 8) {
+      setEncryptError("Password must be at least 8 characters");
+      return;
+    }
+    if (encryptPassword !== encryptPasswordConfirm) {
+      setEncryptError("Passwords do not match");
+      return;
+    }
+    
+    setIsProcessing(true);
+    setEncryptError("");
+    try {
+      await onExportEncrypted(encryptPassword);
+      setShowEncryptedExportModal(false);
+      setEncryptPassword("");
+      setEncryptPasswordConfirm("");
+    } catch (err) {
+      setEncryptError(err instanceof Error ? err.message : "Export failed");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleEncryptedImport = async () => {
+    if (!importData.trim()) {
+      setEncryptError("Please paste the encrypted backup data");
+      return;
+    }
+    if (!importPassword) {
+      setEncryptError("Please enter the backup password");
+      return;
+    }
+    
+    setIsProcessing(true);
+    setEncryptError("");
+    try {
+      await onImportEncrypted(importData, importPassword);
+      setShowEncryptedImportModal(false);
+      setImportData("");
+      setImportPassword("");
+    } catch (err) {
+      setEncryptError(err instanceof Error ? err.message : "Import failed");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleShowPasswordsChange = (value: boolean) => {
+    setSettings(prev => ({ ...prev, showPasswordsDefault: value }));
+    saveSetting(SETTINGS_KEYS.SHOW_PASSWORDS_DEFAULT, value, "showPasswords");
+  };
+
+  const autoLockOptions = [
+    { value: 0, label: "Never" },
+    { value: 1, label: "1 minute" },
+    { value: 5, label: "5 minutes" },
+    { value: 15, label: "15 minutes" },
+    { value: 30, label: "30 minutes" },
+    { value: 60, label: "1 hour" },
+  ];
+
+  const clipboardOptions = [
+    { value: 0, label: "Never" },
+    { value: 15, label: "15 seconds" },
+    { value: 30, label: "30 seconds" },
+    { value: 60, label: "1 minute" },
+    { value: 120, label: "2 minutes" },
+  ];
+
+  return (
+    <div className="p-8 overflow-y-auto h-full">
+      {/* Header */}
+      <div className="text-center mb-6">
+        <div 
+          className="inline-flex items-center justify-center w-14 h-14 rounded-2xl mb-3"
+          style={{ 
+            background: `linear-gradient(135deg, ${colors.steelBlue500}, ${colors.steelBlue600})`,
+            boxShadow: `0 8px 32px ${colors.steelBlue500}30`,
+          }}
+        >
+          <Sparkles className="w-7 h-7 text-white" strokeWidth={1.5} />
+        </div>
+        <h1 className="text-xl font-bold mb-1" style={{ color: colors.warmIvory }}>Settings</h1>
+        <p className="text-slate-500 text-xs flex items-center justify-center gap-1.5">
+          <Lock className="w-3 h-3" strokeWidth={1.5} style={{ color: colors.steelBlue400 }} />
+          <span>AES-256 encrypted • Data never leaves your device</span>
+        </p>
+      </div>
+
+      {/* Security Settings */}
+      <SectionTitle>Security</SectionTitle>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+        <BouncyCard variant="accent">
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-4">
+              <div 
+                className="w-12 h-12 rounded-xl flex items-center justify-center"
+                style={{ backgroundColor: `${colors.steelBlue500}15` }}
+              >
+                <Clock className="w-6 h-6" strokeWidth={1.5} style={{ color: colors.steelBlue400 }} />
+              </div>
+              <div>
+                <h3 style={{ color: colors.warmIvory }} className="font-semibold mb-1">Auto-Lock</h3>
+                <p className="text-slate-500 text-xs">Lock after inactivity</p>
+              </div>
+            </div>
+            <BlueSelect
+              value={settings.autoLockTimeout}
+              options={autoLockOptions}
+              onChange={handleAutoLockChange}
+              saved={savedIndicator === "autoLock"}
+            />
+          </div>
+        </BouncyCard>
+
+        <BouncyCard variant="accent">
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-4">
+              <div 
+                className="w-12 h-12 rounded-xl flex items-center justify-center"
+                style={{ backgroundColor: `${colors.steelBlue500}15` }}
+              >
+                <Clipboard className="w-6 h-6" strokeWidth={1.5} style={{ color: colors.steelBlue400 }} />
+              </div>
+              <div>
+                <h3 style={{ color: colors.warmIvory }} className="font-semibold mb-1">Clipboard</h3>
+                <p className="text-slate-500 text-xs">Auto-clear copied data</p>
+              </div>
+            </div>
+            <BlueSelect
+              value={settings.clipboardClearTimeout}
+              options={clipboardOptions}
+              onChange={handleClipboardClearChange}
+              saved={savedIndicator === "clipboard"}
+            />
+          </div>
+        </BouncyCard>
+
+        <BouncyCard variant="accent">
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-4">
+              <div 
+                className="w-12 h-12 rounded-xl flex items-center justify-center"
+                style={{ backgroundColor: `${colors.steelBlue500}15` }}
+              >
+                {settings.showPasswordsDefault 
+                  ? <Eye className="w-6 h-6" strokeWidth={1.5} style={{ color: colors.steelBlue400 }} />
+                  : <EyeOff className="w-6 h-6" strokeWidth={1.5} style={{ color: colors.steelBlue400 }} />
+                }
+              </div>
+              <div>
+                <h3 style={{ color: colors.warmIvory }} className="font-semibold mb-1">Show Passwords</h3>
+                <p className="text-slate-500 text-xs">Visible by default</p>
+              </div>
+            </div>
+            <BlueToggle
+              checked={settings.showPasswordsDefault}
+              onChange={handleShowPasswordsChange}
+              saved={savedIndicator === "showPasswords"}
+            />
+          </div>
+        </BouncyCard>
+
+        <BouncyCard variant="accent" onClick={onChangePassword}>
+          <div className="flex items-center gap-4">
+            <div 
+              className="w-12 h-12 rounded-xl flex items-center justify-center"
+              style={{ backgroundColor: `${colors.steelBlue500}15` }}
+            >
+              <Key className="w-6 h-6" strokeWidth={1.5} style={{ color: colors.steelBlue400 }} />
+            </div>
+            <div className="flex-1">
+              <h3 style={{ color: colors.warmIvory }} className="font-semibold mb-1">Master Password</h3>
+              <p className="text-slate-500 text-xs">Change encryption key</p>
+            </div>
+            <div 
+              className="w-8 h-8 rounded-lg flex items-center justify-center"
+              style={{ backgroundColor: `${colors.steelBlue500}10` }}
+            >
+              <span style={{ color: colors.steelBlue400 }}>→</span>
+            </div>
+          </div>
+        </BouncyCard>
+      </div>
+
+      {/* Quick Actions */}
+      <SectionTitle>Quick Actions</SectionTitle>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+        <BouncyCard onClick={onExport} variant="accent">
+          <div className="flex items-center gap-4">
+            <div 
+              className="w-12 h-12 rounded-xl flex items-center justify-center"
+              style={{ backgroundColor: `${colors.steelBlue500}15` }}
+            >
+              <Download className="w-6 h-6" strokeWidth={1.5} style={{ color: colors.steelBlue400 }} />
+            </div>
+            <div className="flex-1">
+              <h3 style={{ color: colors.warmIvory }} className="font-semibold mb-1">Export (CSV)</h3>
+              <p className="text-slate-500 text-xs">Unencrypted spreadsheet</p>
+            </div>
+            <span 
+              className="px-3 py-1.5 rounded-full text-xs font-bold"
+              style={{ backgroundColor: `${colors.steelBlue500}20`, color: colors.steelBlue400 }}
+            >
+              {totalEntries}
+            </span>
+          </div>
+        </BouncyCard>
+
+        <BouncyCard onClick={() => setShowEncryptedExportModal(true)} variant="accent">
+          <div className="flex items-center gap-4">
+            <div 
+              className="w-12 h-12 rounded-xl flex items-center justify-center"
+              style={{ backgroundColor: `${colors.steelBlue500}15` }}
+            >
+              <Shield className="w-6 h-6" strokeWidth={1.5} style={{ color: colors.steelBlue400 }} />
+            </div>
+            <div className="flex-1">
+              <h3 style={{ color: colors.warmIvory }} className="font-semibold mb-1">Export (Encrypted)</h3>
+              <p className="text-slate-500 text-xs">Password-protected backup</p>
+            </div>
+            <span 
+              className="px-2 py-1 rounded text-xs font-bold"
+              style={{ backgroundColor: "rgba(34, 197, 94, 0.2)", color: "rgb(34, 197, 94)" }}
+            >
+              SECURE
+            </span>
+          </div>
+        </BouncyCard>
+
+        <BouncyCard onClick={onImport} variant="accent">
+          <div className="flex items-center gap-4">
+            <div 
+              className="w-12 h-12 rounded-xl flex items-center justify-center"
+              style={{ backgroundColor: `${colors.steelBlue500}15` }}
+            >
+              <Upload className="w-6 h-6" strokeWidth={1.5} style={{ color: colors.steelBlue400 }} />
+            </div>
+            <div className="flex-1">
+              <h3 style={{ color: colors.warmIvory }} className="font-semibold mb-1">Import (JSON)</h3>
+              <p className="text-slate-500 text-xs">Standard backup file</p>
+            </div>
+            <div 
+              className="w-8 h-8 rounded-lg flex items-center justify-center"
+              style={{ backgroundColor: `${colors.steelBlue500}10` }}
+            >
+              <span style={{ color: colors.steelBlue400 }}>→</span>
+            </div>
+          </div>
+        </BouncyCard>
+
+        <BouncyCard onClick={() => setShowEncryptedImportModal(true)} variant="accent">
+          <div className="flex items-center gap-4">
+            <div 
+              className="w-12 h-12 rounded-xl flex items-center justify-center"
+              style={{ backgroundColor: `${colors.steelBlue500}15` }}
+            >
+              <Lock className="w-6 h-6" strokeWidth={1.5} style={{ color: colors.steelBlue400 }} />
+            </div>
+            <div className="flex-1">
+              <h3 style={{ color: colors.warmIvory }} className="font-semibold mb-1">Import (Encrypted)</h3>
+              <p className="text-slate-500 text-xs">Restore secure backup</p>
+            </div>
+            <span 
+              className="px-2 py-1 rounded text-xs font-bold"
+              style={{ backgroundColor: "rgba(34, 197, 94, 0.2)", color: "rgb(34, 197, 94)" }}
+            >
+              SECURE
+            </span>
+          </div>
+        </BouncyCard>
+      </div>
+
+      {/* About */}
+      <SectionTitle>About</SectionTitle>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
+        {[
+          { label: "Version", value: "1.0.0", icon: Info },
+          { label: "Encryption", value: "AES-256", icon: Shield },
+          { label: "Key", value: "PBKDF2", icon: Key },
+          { label: "Storage", value: "Local", icon: Database },
+        ].map((item, i) => (
+          <BouncyCard key={i} variant="accent" className="!p-3">
+            <div className="flex items-center gap-2.5">
+              <div 
+                className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+                style={{ backgroundColor: `${colors.steelBlue500}10` }}
+              >
+                <item.icon className="w-3.5 h-3.5" strokeWidth={1.5} style={{ color: colors.steelBlue400 }} />
+              </div>
+              <p className="text-slate-400 text-xs">{item.label}</p>
+              <p style={{ color: colors.warmIvory }} className="font-medium text-xs">{item.value}</p>
+            </div>
+          </BouncyCard>
+        ))}
+      </div>
+
+      {/* Danger Zone */}
+      <SectionTitle>Danger Zone</SectionTitle>
+      <BouncyCard onClick={() => setShowClearConfirm(true)} variant="danger">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-red-500/10">
+            <Trash2 className="w-6 h-6 text-red-400" strokeWidth={1.5} />
+          </div>
+          <div className="flex-1">
+            <h3 className="text-red-400 font-semibold mb-1">Clear All Data</h3>
+            <p className="text-slate-500 text-xs">Permanently delete everything</p>
+          </div>
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-red-500/10">
+            <span className="text-red-400">→</span>
+          </div>
+        </div>
+      </BouncyCard>
+
+      {/* Clear Data Confirmation Modal */}
+      {showClearConfirm && (
+        <div className="fixed inset-0 bg-slate-900/90 backdrop-blur-md flex items-start justify-center pt-[30vh] p-4 z-50">
+          <div 
+            className="rounded-2xl p-8 w-full max-w-sm animate-bounce-in"
+            style={{
+              backgroundColor: "rgba(30, 41, 59, 0.98)",
+              border: "1px solid rgba(239, 68, 68, 0.3)",
+              boxShadow: "0 25px 50px rgba(0,0,0,0.5), 0 0 100px rgba(239, 68, 68, 0.1)",
+            }}
+          >
+            <div className="text-center">
+              <div 
+                className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6"
+                style={{ 
+                  backgroundColor: "rgba(239, 68, 68, 0.1)",
+                  border: "2px solid rgba(239, 68, 68, 0.3)",
+                }}
+              >
+                <AlertTriangle className="w-10 h-10 text-red-400" strokeWidth={1.5} />
+              </div>
+              <h3 style={{ color: colors.warmIvory }} className="text-xl font-bold mb-3">Clear All Data?</h3>
+              <p className="text-slate-400 text-sm mb-6">
+                This will permanently delete all <span className="text-red-400 font-semibold">{totalEntries} accounts</span>, 
+                your master password, and all settings.
+              </p>
+              <p className="text-red-400 text-xs mb-8 font-medium bg-red-500/10 py-2 px-4 rounded-lg inline-block">
+                ⚠️ This action cannot be undone
+              </p>
+              <div className="flex gap-4">
+                <button
+                  onClick={() => setShowClearConfirm(false)}
+                  className="flex-1 px-6 py-3.5 bg-slate-700/50 hover:bg-slate-600/50 text-white rounded-xl text-sm font-semibold transition-all duration-200 hover:scale-[1.02]"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    onClearAllData();
+                    setShowClearConfirm(false);
+                  }}
+                  className="flex-1 px-6 py-3.5 bg-red-600 hover:bg-red-500 text-white rounded-xl text-sm font-semibold transition-all duration-200 hover:scale-[1.02] hover:shadow-lg hover:shadow-red-500/30"
+                >
+                  Delete All
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Encrypted Export Modal */}
+      {showEncryptedExportModal && (
+        <div className="fixed inset-0 bg-slate-900/90 backdrop-blur-md flex items-start justify-center pt-[15vh] p-4 z-50">
+          <div 
+            className="rounded-2xl p-6 w-full max-w-md animate-bounce-in"
+            style={{
+              backgroundColor: "rgba(30, 41, 59, 0.98)",
+              border: `1px solid ${colors.steelBlue500}40`,
+              boxShadow: "0 25px 50px rgba(0,0,0,0.5)",
+            }}
+          >
+            <div className="flex items-center gap-3 mb-6">
+              <div 
+                className="w-12 h-12 rounded-xl flex items-center justify-center"
+                style={{ backgroundColor: `${colors.steelBlue500}15` }}
+              >
+                <Shield className="w-6 h-6" strokeWidth={1.5} style={{ color: colors.steelBlue400 }} />
+              </div>
+              <div>
+                <h3 style={{ color: colors.warmIvory }} className="text-lg font-bold">Encrypted Export</h3>
+                <p className="text-slate-400 text-xs">Create password-protected backup</p>
+              </div>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs text-slate-400 mb-1.5 block">Export Password (min 8 chars)</label>
+                <input
+                  type="password"
+                  value={encryptPassword}
+                  onChange={(e) => setEncryptPassword(e.target.value)}
+                  className="w-full px-3 py-2.5 bg-slate-700/50 border border-slate-600/50 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
+                  placeholder="Enter encryption password"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-slate-400 mb-1.5 block">Confirm Password</label>
+                <input
+                  type="password"
+                  value={encryptPasswordConfirm}
+                  onChange={(e) => setEncryptPasswordConfirm(e.target.value)}
+                  className="w-full px-3 py-2.5 bg-slate-700/50 border border-slate-600/50 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
+                  placeholder="Confirm password"
+                />
+              </div>
+              
+              {encryptError && (
+                <p className="text-red-400 text-xs bg-red-500/10 p-2 rounded">{encryptError}</p>
+              )}
+              
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => {
+                    setShowEncryptedExportModal(false);
+                    setEncryptPassword("");
+                    setEncryptPasswordConfirm("");
+                    setEncryptError("");
+                  }}
+                  className="flex-1 px-4 py-2.5 bg-slate-700/50 hover:bg-slate-600/50 text-white rounded-lg text-sm font-medium transition-all"
+                  disabled={isProcessing}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleEncryptedExport}
+                  disabled={isProcessing || encryptPassword.length < 8}
+                  className="flex-1 px-4 py-2.5 text-white rounded-lg text-sm font-medium transition-all disabled:opacity-50"
+                  style={{ backgroundColor: colors.steelBlue500 }}
+                >
+                  {isProcessing ? "Exporting..." : "Export Secure"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Encrypted Import Modal */}
+      {showEncryptedImportModal && (
+        <div className="fixed inset-0 bg-slate-900/90 backdrop-blur-md flex items-start justify-center pt-[15vh] p-4 z-50">
+          <div 
+            className="rounded-2xl p-6 w-full max-w-md animate-bounce-in"
+            style={{
+              backgroundColor: "rgba(30, 41, 59, 0.98)",
+              border: `1px solid ${colors.steelBlue500}40`,
+              boxShadow: "0 25px 50px rgba(0,0,0,0.5)",
+            }}
+          >
+            <div className="flex items-center gap-3 mb-6">
+              <div 
+                className="w-12 h-12 rounded-xl flex items-center justify-center"
+                style={{ backgroundColor: `${colors.steelBlue500}15` }}
+              >
+                <Lock className="w-6 h-6" strokeWidth={1.5} style={{ color: colors.steelBlue400 }} />
+              </div>
+              <div>
+                <h3 style={{ color: colors.warmIvory }} className="text-lg font-bold">Encrypted Import</h3>
+                <p className="text-slate-400 text-xs">Restore from secure backup</p>
+              </div>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs text-slate-400 mb-1.5 block">Encrypted Backup Data</label>
+                <textarea
+                  value={importData}
+                  onChange={(e) => setImportData(e.target.value)}
+                  className="w-full px-3 py-2.5 bg-slate-700/50 border border-slate-600/50 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500 h-24 resize-none"
+                  placeholder="Paste encrypted backup content here..."
+                />
+              </div>
+              <div>
+                <label className="text-xs text-slate-400 mb-1.5 block">Backup Password</label>
+                <input
+                  type="password"
+                  value={importPassword}
+                  onChange={(e) => setImportPassword(e.target.value)}
+                  className="w-full px-3 py-2.5 bg-slate-700/50 border border-slate-600/50 rounded-lg text-white text-sm focus:outline-none focus:border-blue-500"
+                  placeholder="Enter the backup password"
+                />
+              </div>
+              
+              {encryptError && (
+                <p className="text-red-400 text-xs bg-red-500/10 p-2 rounded">{encryptError}</p>
+              )}
+              
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => {
+                    setShowEncryptedImportModal(false);
+                    setImportData("");
+                    setImportPassword("");
+                    setEncryptError("");
+                  }}
+                  className="flex-1 px-4 py-2.5 bg-slate-700/50 hover:bg-slate-600/50 text-white rounded-lg text-sm font-medium transition-all"
+                  disabled={isProcessing}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleEncryptedImport}
+                  disabled={isProcessing || !importData.trim() || !importPassword}
+                  className="flex-1 px-4 py-2.5 text-white rounded-lg text-sm font-medium transition-all disabled:opacity-50"
+                  style={{ backgroundColor: colors.steelBlue500 }}
+                >
+                  {isProcessing ? "Importing..." : "Import Secure"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <style>{`
+        @keyframes bounce-in {
+          0% { transform: scale(0.9); opacity: 0; }
+          50% { transform: scale(1.02); }
+          100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-bounce-in {
+          animation: bounce-in 0.3s ease-out;
+        }
+      `}</style>
+    </div>
+  );
+};
+
+// Export settings utilities
+export const getVaultSettings = (): VaultSettings => {
+  return {
+    autoLockTimeout: parseInt(localStorage.getItem(SETTINGS_KEYS.AUTO_LOCK_TIMEOUT) || String(DEFAULT_SETTINGS.autoLockTimeout)),
+    clipboardClearTimeout: parseInt(localStorage.getItem(SETTINGS_KEYS.CLIPBOARD_CLEAR_TIMEOUT) || String(DEFAULT_SETTINGS.clipboardClearTimeout)),
+    showPasswordsDefault: localStorage.getItem(SETTINGS_KEYS.SHOW_PASSWORDS_DEFAULT) === "true",
+  };
+};
+
+// Track the last copied text to verify before clearing
+let lastCopiedText: string | null = null;
+let clearTimeoutId: NodeJS.Timeout | null = null;
+
+export const clearClipboardAfterTimeout = (timeout: number, copiedText?: string) => {
+  // Store the copied text for verification
+  if (copiedText) {
+    lastCopiedText = copiedText;
+  }
+  
+  // Clear any existing timeout
+  if (clearTimeoutId) {
+    clearTimeout(clearTimeoutId);
+    clearTimeoutId = null;
+  }
+  
+  if (timeout > 0) {
+    clearTimeoutId = setTimeout(async () => {
+      try {
+        // Try to read clipboard to verify it still has our content
+        // Note: This may fail due to permissions, in which case we clear anyway
+        try {
+          const currentClipboard = await navigator.clipboard.readText();
+          
+          // Only clear if clipboard still contains our copied text
+          if (currentClipboard === lastCopiedText) {
+            await navigator.clipboard.writeText("");
+            console.log("Clipboard auto-cleared for security");
+          }
+        } catch {
+          // If we can't read clipboard (permission denied), clear it anyway for safety
+          await navigator.clipboard.writeText("");
+          console.log("Clipboard cleared (could not verify content)");
+        }
+      } catch (error) {
+        console.warn("Failed to clear clipboard:", error);
+      } finally {
+        lastCopiedText = null;
+        clearTimeoutId = null;
+      }
+    }, timeout * 1000);
+  }
+};

@@ -46,6 +46,25 @@ export class LicenseService {
   }
 
   /**
+   * Development-only: Activate license locally without server validation
+   */
+  private async activateLocalLicense(
+    licenseKey: string
+  ): Promise<{ success: boolean; error?: string; licenseType?: LicenseType }> {
+    const hardwareId = await this.generateHardwareFingerprint();
+    
+    localStorage.setItem(LicenseService.LICENSE_KEY_STORAGE, licenseKey);
+    localStorage.setItem(LicenseService.LICENSE_TYPE_STORAGE, 'personal');
+    localStorage.setItem(LicenseService.LICENSE_ACTIVATED_STORAGE, new Date().toISOString());
+    localStorage.setItem(LicenseService.LAST_VALIDATION_STORAGE, Date.now().toString());
+    localStorage.setItem(LicenseService.HARDWARE_ID_STORAGE, hardwareId);
+    
+    trialService.endTrial();
+    
+    return { success: true, licenseType: 'personal' };
+  }
+
+  /**
    * Generate a hardware fingerprint for license activation
    */
   private async generateHardwareFingerprint(): Promise<string> {
@@ -220,23 +239,24 @@ export class LicenseService {
   async activateLicense(
     licenseKey: string
   ): Promise<{ success: boolean; error?: string; licenseType?: LicenseType }> {
-    const isDevelopmentMode = import.meta.env.DEV;
-
-    if (isDevelopmentMode) {
-      console.log('🚀 LicenseService.activateLicense called:', {
-        licenseKey: `${licenseKey.substring(0, 8)}-****-****-****`,
-        lifetimeMode: LicenseService.LIFETIME_ONE_TIME_ACTIVATION
-      });
-    }
+    const isDevMode = import.meta.env.DEV;
 
     try {
-      // Validate license key format
+      // Sanitize and validate license key format (XXXX-XXXX-XXXX-XXXX or XXXX-XXXX-XXXX-XXXXX)
       const cleanKey = licenseKey.replace(/[^A-Z0-9-]/g, "");
-      if (!/^[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(cleanKey)) {
-        if (isDevelopmentMode) {
-          console.log('❌ Invalid license key format:', { cleanKey });
-        }
+      const isValidFormat = /^[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4,5}$/.test(cleanKey);
+      
+      if (!isValidFormat) {
         return { success: false, error: "This is not a valid lifetime key." };
+      }
+
+      /**
+       * Development Mode: Bypass server validation for local testing.
+       * Any properly formatted key activates immediately.
+       * Production builds require server-side validation.
+       */
+      if (isDevMode) {
+        return this.activateLocalLicense(cleanKey);
       }
 
       // Check if this is the same trial key being reactivated

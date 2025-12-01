@@ -4,6 +4,18 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vault-icon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Content Security Policy - Mitigates XSS attacks -->
+    <meta http-equiv="Content-Security-Policy" content="
+      default-src 'self';
+      script-src 'self' 'unsafe-inline' 'unsafe-eval';
+      style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+      font-src 'self' https://fonts.gstatic.com;
+      img-src 'self' data: blob:;
+      connect-src 'self' ws://localhost:* http://localhost:* https://api.keygen.sh https://localpasswordvault.com;
+      frame-ancestors 'none';
+      form-action 'self';
+      base-uri 'self';
+    ">
     <title>Local Password Vault</title>
     <style>
       /* Prevent white flash by setting dark background immediately */

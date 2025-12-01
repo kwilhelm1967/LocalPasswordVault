@@ -251,7 +251,7 @@ export const FloatingButton: React.FC = () => {
           className={`flex-1 h-full flex items-center justify-center cursor-pointer
             hover:bg-black/10 transition-colors duration-200
             ${isProcessing ? "cursor-wait" : "cursor-pointer"}`}
-          title={isProcessing ? "Processing..." : "Toggle Password Vault"}
+          title={isProcessing ? "Processing..." : "Toggle Local Password Vault"}
         >
           {isProcessing ? (
             <div className="w-4 h-4 border-2 border-white/30 border-t-white  animate-spin" />

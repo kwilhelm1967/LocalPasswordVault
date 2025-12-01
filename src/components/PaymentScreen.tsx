@@ -331,7 +331,7 @@ const CheckoutForm: React.FC<PaymentScreenProps> = ({
             className="w-full px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-all flex items-center justify-center space-x-2"
           >
             <CheckCircle className="w-4 h-4" />
-            <span>Continue to Password Vault</span>
+            <span>Continue to Local Password Vault</span>
           </button>
         </div>
       )}

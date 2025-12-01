@@ -15,31 +15,35 @@ interface CategoryIconProps {
   name: string;
   size?: number;
   className?: string;
+  strokeWidth?: number;
 }
 
 export const CategoryIcon: React.FC<CategoryIconProps> = ({
   name,
   size = 16,
   className = "",
+  strokeWidth = 1.5,
 }) => {
+  const props = { size, className, strokeWidth };
+  
   switch (name) {
     case "Grid3X3":
-      return <Grid3X3 size={size} className={className} />;
+      return <Grid3X3 {...props} />;
     case "CircleDollarSign":
-      return <CircleDollarSign size={size} className={className} />;
+      return <CircleDollarSign {...props} />;
     case "ShoppingCart":
-      return <ShoppingCart size={size} className={className} />;
+      return <ShoppingCart {...props} />;
     case "Ticket":
-      return <Ticket size={size} className={className} />;
+      return <Ticket {...props} />;
     case "Mail":
-      return <Mail size={size} className={className} />;
+      return <Mail {...props} />;
     case "Briefcase":
-      return <Briefcase size={size} className={className} />;
+      return <Briefcase {...props} />;
     case "TrendingUp":
-      return <ChartNoAxesCombined size={size} className={className} />;
+      return <ChartNoAxesCombined {...props} />;
     case "FileText":
-      return <FileChartColumn size={size} className={className} />;
+      return <FileChartColumn {...props} />;
     default:
-      return <Folder size={size} className={className} />;
+      return <Folder {...props} />;
   }
 };

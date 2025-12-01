@@ -14,8 +14,14 @@ export const EulaAgreement: React.FC<EulaAgreementProps> = ({
   error,
   isLoading = false,
 }) => {
-  const [hasScrolledToBottom, setHasScrolledToBottom] = useState(false);
-  const [isAgreed, setIsAgreed] = useState(false);
+  /**
+   * Development Mode Optimization:
+   * In DEV, pre-accept EULA to streamline testing workflow.
+   * Production builds require explicit user consent.
+   */
+  const isDevMode = import.meta.env.DEV;
+  const [hasScrolledToBottom, setHasScrolledToBottom] = useState(isDevMode);
+  const [isAgreed, setIsAgreed] = useState(isDevMode);
   const currentDate = new Date().toLocaleDateString("en-US", {
     year: "numeric",
     month: "long",

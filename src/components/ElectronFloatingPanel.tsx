@@ -511,7 +511,7 @@ export const ElectronFloatingPanel: React.FC<ElectronFloatingPanelProps> = ({
           </div>
           <div>
             <span className="text-sm font-semibold text-white">
-              Password Vault
+              Local Password Vault
             </span>
             <p className="text-xs text-slate-400">Secure Access Panel</p>
           </div>
@@ -629,7 +629,7 @@ export const ElectronFloatingPanel: React.FC<ElectronFloatingPanelProps> = ({
 
       {/* Enhanced Add/Edit Form Modal */}
       {(showAddForm || editingEntry) && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-start justify-center pt-[10vh] p-4 z-50">
           <div className="bg-gradient-to-br from-slate-800 via-slate-800 to-slate-900 rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto border border-slate-600/50 shadow-2xl">
             <EntryForm
               entry={editingEntry}
@@ -654,7 +654,7 @@ export const ElectronFloatingPanel: React.FC<ElectronFloatingPanelProps> = ({
 
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && entryToDelete && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 z-[9999]">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-start justify-center pt-[30vh] p-4 z-[9999]">
           <div className="bg-gradient-to-br from-slate-800 via-slate-800 to-slate-900 rounded-2xl p-6 w-full max-w-md border border-slate-600/50 shadow-2xl">
             <div className="text-center">
               <div className="p-3 bg-red-500/20 rounded-full w-fit mx-auto mb-4 border border-red-500/30">

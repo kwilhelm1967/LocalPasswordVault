@@ -1,7 +1,7 @@
 // Load environment variables
 require("dotenv").config();
 
-const { app, BrowserWindow, Menu, shell, ipcMain } = require("electron");
+const { app, BrowserWindow, Menu, shell, ipcMain, session } = require("electron");
 const path = require("path");
 const fs = require("fs");
 const { screen, powerMonitor, globalShortcut } = require("electron");
@@ -866,6 +866,26 @@ const createMenu = () => {
 app.whenReady().then(() => {
   // Initialize secure storage
   secureStorage = new SecureFileStorage(userDataPath);
+
+  // SECURITY: Set Content Security Policy headers
+  session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+    callback({
+      responseHeaders: {
+        ...details.responseHeaders,
+        'Content-Security-Policy': [
+          "default-src 'self'; " +
+          "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
+          "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+          "font-src 'self' https://fonts.gstatic.com; " +
+          "img-src 'self' data: blob:; " +
+          "connect-src 'self' ws://localhost:* http://localhost:* https://api.keygen.sh https://localpasswordvault.com; " +
+          "frame-ancestors 'none'; " +
+          "form-action 'self'; " +
+          "base-uri 'self';"
+        ]
+      }
+    });
+  });
 
   createWindow();
   createMenu();

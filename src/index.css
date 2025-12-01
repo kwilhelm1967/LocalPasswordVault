@@ -1,10 +1,27 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  /* Brand Colors - Password Vault Premium Palette */
+  --color-deep-navy: #0F172A;
+  --color-soft-steel: #334155;
+  --color-muted-sky: #93B4D1;
+  --color-warm-ivory: #F3F4F6;
+  --color-brand-gold: #C9AE66;
+  
+  /* Refined Blues (desaturated steel tones) */
+  --color-steel-blue-600: #4A6FA5;
+  --color-steel-blue-500: #5B82B8;
+  --color-steel-blue-400: #7A9DC7;
+}
+
 html {
-  background-color: #0f172a !important;
-  color: white;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background-color: var(--color-deep-navy) !important;
+  color: var(--color-warm-ivory);
 }
 
 body {
@@ -33,9 +50,7 @@ body {
 
 /* Remove any potential black outlines or shadows */
 .rounded-2xl, .rounded-xl, .rounded-lg {
-  box-shadow: none !important;
   outline: none !important;
-  border: none !important;
 }
 
 /* Custom scrollbar styling */
@@ -117,4 +132,63 @@ body {
 
 .floating-hint {
   animation: fadeIn 0.2s ease-out;
+}
+
+/* Password Vault Navigation Styles - Gold Underline on Hover */
+.nav-item-hover {
+  position: relative;
+}
+
+.nav-item-hover::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 0;
+  height: 2px;
+  background-color: var(--color-brand-gold);
+  transition: width 0.2s ease, left 0.2s ease;
+}
+
+.nav-item-hover:hover::after {
+  width: 80%;
+  left: 10%;
+}
+
+/* Selected category indicator - Gold Underline */
+.nav-item-selected::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 10%;
+  width: 80%;
+  height: 2px;
+  background-color: var(--color-brand-gold);
+}
+
+/* Lock vault gold accent icon */
+.lock-vault-icon {
+  color: var(--color-brand-gold);
+  opacity: 0.8;
+  transition: opacity 0.2s ease;
+}
+
+.lock-vault-icon:hover {
+  opacity: 1;
+}
+
+/* Expand/Collapse animation for cards */
+.animate-fadeIn {
+  animation: cardFadeIn 0.2s ease-out;
+}
+
+@keyframes cardFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

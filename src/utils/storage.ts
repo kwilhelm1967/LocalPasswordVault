@@ -1,5 +1,6 @@
 import { PasswordEntry, Category } from "../types";
 import { memorySecurity } from "./memorySecurity";
+import { sanitizeTextField, sanitizePassword, sanitizeNotes } from "./sanitization";
 
 // FIXED CATEGORIES - SINGLE SOURCE OF TRUTH
 const FIXED_CATEGORIES: Category[] = [
@@ -202,12 +203,70 @@ class MilitaryEncryption {
 export class StorageService {
   private static instance: StorageService;
   private encryption = MilitaryEncryption.getInstance();
+  
+  // Rate limiting properties
+  private loginAttempts = 0;
+  private lockoutUntil: number | null = null;
+  private readonly MAX_ATTEMPTS = 5;
+  private readonly LOCKOUT_DURATION = 30000; // 30 seconds
+  private readonly LOCKOUT_STORAGE_KEY = "vault_lockout";
 
   static getInstance(): StorageService {
     if (!StorageService.instance) {
       StorageService.instance = new StorageService();
     }
     return StorageService.instance;
+  }
+
+  // Check if account is locked out
+  isLockedOut(): { locked: boolean; remainingSeconds: number } {
+    // Check persisted lockout (survives page refresh)
+    const storedLockout = localStorage.getItem(this.LOCKOUT_STORAGE_KEY);
+    if (storedLockout) {
+      const lockoutTime = parseInt(storedLockout);
+      if (Date.now() < lockoutTime) {
+        this.lockoutUntil = lockoutTime;
+        return { 
+          locked: true, 
+          remainingSeconds: Math.ceil((lockoutTime - Date.now()) / 1000) 
+        };
+      } else {
+        localStorage.removeItem(this.LOCKOUT_STORAGE_KEY);
+        this.lockoutUntil = null;
+      }
+    }
+    
+    if (this.lockoutUntil && Date.now() < this.lockoutUntil) {
+      return { 
+        locked: true, 
+        remainingSeconds: Math.ceil((this.lockoutUntil - Date.now()) / 1000) 
+      };
+    }
+    
+    this.lockoutUntil = null;
+    return { locked: false, remainingSeconds: 0 };
+  }
+
+  // Get remaining login attempts
+  getRemainingAttempts(): number {
+    return Math.max(0, this.MAX_ATTEMPTS - this.loginAttempts);
+  }
+
+  // Reset login attempts (call on successful login)
+  private resetLoginAttempts(): void {
+    this.loginAttempts = 0;
+    this.lockoutUntil = null;
+    localStorage.removeItem(this.LOCKOUT_STORAGE_KEY);
+  }
+
+  // Record failed login attempt
+  private recordFailedAttempt(): void {
+    this.loginAttempts++;
+    if (this.loginAttempts >= this.MAX_ATTEMPTS) {
+      this.lockoutUntil = Date.now() + this.LOCKOUT_DURATION;
+      localStorage.setItem(this.LOCKOUT_STORAGE_KEY, this.lockoutUntil.toString());
+      this.loginAttempts = 0;
+    }
   }
 
   // Initialize vault with master password
@@ -228,9 +287,15 @@ export class StorageService {
     localStorage.setItem("vault_test_v2", testEncrypted);
   }
 
-  // Unlock vault with master password
+  // Unlock vault with master password (with rate limiting)
   async unlockVault(masterPassword: string): Promise<boolean> {
     try {
+      // Check rate limiting lockout
+      const lockoutStatus = this.isLockedOut();
+      if (lockoutStatus.locked) {
+        throw new Error(`Too many failed attempts. Try again in ${lockoutStatus.remainingSeconds} seconds.`);
+      }
+
       // Check if this is a new vault (no password hash stored)
       const storedPasswordHash = localStorage.getItem("vault_password_hash");
       const storedSalt = localStorage.getItem("vault_salt_v2");
@@ -255,6 +320,7 @@ export class StorageService {
       );
 
       if (!isPasswordValid) {
+        this.recordFailedAttempt(); // Record failed attempt for rate limiting
         return false; // Password doesn't match stored hash
       }
 
@@ -268,6 +334,7 @@ export class StorageService {
         if (decrypted !== "vault_test_data") {
           // This shouldn't happen if password hash verification passed
           this.encryption.lockVault();
+          this.recordFailedAttempt();
           return false;
         }
       } else {
@@ -276,11 +343,13 @@ export class StorageService {
         return false;
       }
 
+      // Success - reset login attempts
+      this.resetLoginAttempts();
       return true; // Password verified and vault unlocked successfully
     } catch (error) {
       console.error("Failed to unlock vault:", error);
       this.encryption.lockVault(); // Ensure key is cleared on any error
-      return false;
+      throw error; // Re-throw to show error message to user
     }
   }
 
@@ -311,17 +380,29 @@ export class StorageService {
     }
 
     try {
-      // Validate each entry before saving
-      const validEntries = entries.filter((entry) => {
-        return (
-          entry &&
-          typeof entry.id === "string" &&
-          typeof entry.accountName === "string" &&
-          typeof entry.username === "string" &&
-          typeof entry.password === "string" &&
-          typeof entry.category === "string"
-        );
-      });
+      // Validate and sanitize each entry before saving
+      const validEntries = entries
+        .filter((entry) => {
+          return (
+            entry &&
+            typeof entry.id === "string" &&
+            typeof entry.accountName === "string" &&
+            typeof entry.username === "string" &&
+            typeof entry.password === "string" &&
+            typeof entry.category === "string"
+          );
+        })
+        .map((entry) => ({
+          ...entry,
+          // Sanitize text fields to prevent XSS and ensure data integrity
+          accountName: sanitizeTextField(entry.accountName, 200),
+          username: sanitizeTextField(entry.username, 200),
+          password: sanitizePassword(entry.password),
+          website: entry.website ? sanitizeTextField(entry.website, 500) : undefined,
+          category: sanitizeTextField(entry.category, 50),
+          notes: entry.notes ? sanitizeNotes(entry.notes) : undefined,
+          balance: entry.balance ? sanitizeTextField(entry.balance, 100) : undefined,
+        }));
 
       // Encrypt the entries before saving
       const entriesJson = JSON.stringify(validEntries);
@@ -493,6 +574,153 @@ export class StorageService {
       .join("\n");
 
     return csvContent;
+  }
+
+  /**
+   * Export data in encrypted format (AES-256-GCM)
+   * The exported file is encrypted with a user-provided password
+   */
+  async exportEncrypted(exportPassword: string): Promise<string> {
+    if (!this.encryption.isUnlocked()) {
+      throw new Error("Vault is locked. Please unlock vault first.");
+    }
+
+    const entries = await this.loadEntries();
+    
+    // Create export data structure
+    const exportData = {
+      version: 2,
+      exportDate: new Date().toISOString(),
+      entries: entries.map(entry => ({
+        ...entry,
+        createdAt: entry.createdAt.toISOString(),
+        updatedAt: entry.updatedAt.toISOString(),
+      })),
+    };
+
+    // Generate a new salt for the export encryption
+    const salt = crypto.getRandomValues(new Uint8Array(16));
+    
+    // Derive key from export password
+    const encoder = new TextEncoder();
+    const keyMaterial = await crypto.subtle.importKey(
+      "raw",
+      encoder.encode(exportPassword),
+      "PBKDF2",
+      false,
+      ["deriveBits", "deriveKey"]
+    );
+    
+    const exportKey = await crypto.subtle.deriveKey(
+      {
+        name: "PBKDF2",
+        salt: salt,
+        iterations: 100000,
+        hash: "SHA-256",
+      },
+      keyMaterial,
+      { name: "AES-GCM", length: 256 },
+      false,
+      ["encrypt"]
+    );
+
+    // Encrypt the data
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const dataToEncrypt = encoder.encode(JSON.stringify(exportData));
+    
+    const encryptedData = await crypto.subtle.encrypt(
+      { name: "AES-GCM", iv: iv },
+      exportKey,
+      dataToEncrypt
+    );
+
+    // Combine salt + iv + encrypted data and encode as base64
+    const combined = new Uint8Array(salt.length + iv.length + encryptedData.byteLength);
+    combined.set(salt, 0);
+    combined.set(iv, salt.length);
+    combined.set(new Uint8Array(encryptedData), salt.length + iv.length);
+
+    // Return as JSON with metadata
+    return JSON.stringify({
+      format: "LocalPasswordVault-Encrypted",
+      version: 2,
+      data: btoa(String.fromCharCode(...combined)),
+    });
+  }
+
+  /**
+   * Import encrypted data
+   */
+  async importEncrypted(encryptedExport: string, exportPassword: string): Promise<void> {
+    if (!this.encryption.isUnlocked()) {
+      throw new Error("Vault is locked. Please unlock vault first.");
+    }
+
+    try {
+      const parsed = JSON.parse(encryptedExport);
+      
+      if (parsed.format !== "LocalPasswordVault-Encrypted") {
+        throw new Error("Invalid encrypted export format");
+      }
+
+      // Decode the combined data
+      const combined = new Uint8Array(
+        atob(parsed.data).split("").map(c => c.charCodeAt(0))
+      );
+
+      // Extract salt, iv, and encrypted data
+      const salt = combined.slice(0, 16);
+      const iv = combined.slice(16, 28);
+      const encryptedData = combined.slice(28);
+
+      // Derive key from export password
+      const encoder = new TextEncoder();
+      const keyMaterial = await crypto.subtle.importKey(
+        "raw",
+        encoder.encode(exportPassword),
+        "PBKDF2",
+        false,
+        ["deriveBits", "deriveKey"]
+      );
+      
+      const exportKey = await crypto.subtle.deriveKey(
+        {
+          name: "PBKDF2",
+          salt: salt,
+          iterations: 100000,
+          hash: "SHA-256",
+        },
+        keyMaterial,
+        { name: "AES-GCM", length: 256 },
+        false,
+        ["decrypt"]
+      );
+
+      // Decrypt the data
+      const decryptedData = await crypto.subtle.decrypt(
+        { name: "AES-GCM", iv: iv },
+        exportKey,
+        encryptedData
+      );
+
+      const decoder = new TextDecoder();
+      const exportData = JSON.parse(decoder.decode(decryptedData));
+
+      // Import the entries
+      if (exportData.entries && Array.isArray(exportData.entries)) {
+        const entries = exportData.entries.map((entry: { createdAt: string; updatedAt: string }) => ({
+          ...entry,
+          createdAt: new Date(entry.createdAt),
+          updatedAt: new Date(entry.updatedAt),
+        }));
+        await this.saveEntries(entries);
+      }
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("Invalid")) {
+        throw error;
+      }
+      throw new Error("Failed to decrypt export. Check your password.");
+    }
   }
 
   // Helper method to escape CSV fields

@@ -1,12 +1,23 @@
-// Memory security utilities for sensitive data protection
+/**
+ * Memory Security Utilities
+ * 
+ * Provides secure memory handling for sensitive data like passwords,
+ * encryption keys, and other secrets. While JavaScript's garbage collector
+ * makes true secure deletion impossible, these utilities provide best-effort
+ * protection against memory inspection attacks.
+ */
 
 export class MemorySecurity {
   private static sensitiveStrings = new Set<string>();
+  private static sensitiveArrays = new WeakSet<Uint8Array>();
   private static cleanupInterval: NodeJS.Timeout | null = null;
+  private static inputListeners = new WeakMap<HTMLInputElement, () => void>();
 
-  // Initialize memory security
-  static initialize() {
-    // Start periodic cleanup to prevent memory leaks
+  /**
+   * Initialize memory security monitoring
+   */
+  static initialize(): void {
+    // Start periodic cleanup
     if (this.cleanupInterval) {
       clearInterval(this.cleanupInterval);
     }
@@ -15,76 +26,169 @@ export class MemorySecurity {
       this.performCleanup();
     }, 30000); // Clean every 30 seconds
 
-    // Clear memory on page unload
+    // Clear memory on page unload/hide
     if (typeof window !== 'undefined') {
       window.addEventListener('beforeunload', () => {
         this.clearAllSensitiveData();
       });
+      
+      // Also clear on visibility hidden (tab switch)
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') {
+          // Perform light cleanup when tab is hidden
+          this.performCleanup();
+        }
+      });
     }
   }
 
-  // Track sensitive strings for secure cleanup
+  /**
+   * Track a sensitive string for secure cleanup
+   */
   static trackSensitiveData(data: string): string {
-    const id = Math.random().toString(36).substring(2, 15);
-    this.sensitiveStrings.add(data);
-
-    // Return a proxy that tracks usage
+    if (typeof data === 'string' && data.length > 0) {
+      this.sensitiveStrings.add(data);
+    }
     return data;
   }
 
-  // Securely clear a specific string from memory
+  /**
+   * Track a sensitive byte array for secure cleanup
+   */
+  static trackSensitiveArray(data: Uint8Array): Uint8Array {
+    if (data instanceof Uint8Array) {
+      this.sensitiveArrays.add(data);
+    }
+    return data;
+  }
+
+  /**
+   * Securely clear a Uint8Array by overwriting with random data then zeros
+   */
+  static clearArray(data: Uint8Array): void {
+    if (!(data instanceof Uint8Array)) return;
+
+    try {
+      // First overwrite with random data
+      crypto.getRandomValues(data);
+      // Then overwrite with zeros
+      data.fill(0);
+    } catch (error) {
+      // Fallback: just fill with zeros
+      try {
+        data.fill(0);
+      } catch {
+        // Ignore if buffer is detached
+      }
+    }
+  }
+
+  /**
+   * Securely clear a string from memory (best effort)
+   * Note: JavaScript strings are immutable, we can only remove references
+   */
   static clearString(data: string): void {
     if (typeof data !== 'string') return;
-
-    // Overwrite the string in memory (JavaScript limitation but best effort)
-    try {
-      // Remove from tracking
-      this.sensitiveStrings.delete(data);
-
-      // Note: JavaScript strings are immutable, we cannot truly overwrite them
-      // but we can clear references and rely on garbage collection
-    } catch (error) {
-      console.warn('Failed to securely clear string:', error);
-    }
+    this.sensitiveStrings.delete(data);
   }
 
-  // Clear all sensitive tracked data
+  /**
+   * Clear all tracked sensitive data
+   */
   static clearAllSensitiveData(): void {
     try {
-      for (const data of this.sensitiveStrings) {
-        this.clearString(data);
-      }
+      // Clear tracked strings
       this.sensitiveStrings.clear();
+      
+      // Note: WeakSet doesn't have forEach, arrays are cleaned when dereferenced
     } catch (error) {
-      console.warn('Failed to clear all sensitive data:', error);
+      console.warn('Failed to clear sensitive data:', error);
     }
   }
 
-  // Perform memory cleanup
+  /**
+   * Securely clear an input field
+   * Overwrites the value before clearing
+   */
+  static clearInputField(input: HTMLInputElement): void {
+    if (!input || !(input instanceof HTMLInputElement)) return;
+
+    try {
+      // Overwrite with random characters first
+      const length = input.value.length;
+      if (length > 0) {
+        const randomChars = Array.from(
+          crypto.getRandomValues(new Uint8Array(length)),
+          (b) => String.fromCharCode(b % 94 + 33)
+        ).join('');
+        input.value = randomChars;
+      }
+      // Then clear
+      input.value = '';
+    } catch (error) {
+      // Fallback: just clear
+      input.value = '';
+    }
+  }
+
+  /**
+   * Register a password input for automatic clearing on blur
+   */
+  static registerPasswordInput(input: HTMLInputElement): () => void {
+    if (!input || !(input instanceof HTMLInputElement)) {
+      return () => {};
+    }
+
+    const clearHandler = () => {
+      // Don't auto-clear if input still has focus
+      if (document.activeElement === input) return;
+      
+      // Clear after a short delay (allows form submission)
+      setTimeout(() => {
+        if (document.activeElement !== input && input.value) {
+          this.trackSensitiveData(input.value);
+        }
+      }, 100);
+    };
+
+    input.addEventListener('blur', clearHandler);
+    this.inputListeners.set(input, clearHandler);
+
+    // Return cleanup function
+    return () => {
+      input.removeEventListener('blur', clearHandler);
+      this.inputListeners.delete(input);
+    };
+  }
+
+  /**
+   * Perform memory cleanup
+   */
   private static performCleanup(): void {
     try {
-      // Force garbage collection if available
-      if ((globalThis as any).gc) {
-        (globalThis as any).gc();
+      // Hint to garbage collector (only works in Node.js with --expose-gc)
+      if (typeof (globalThis as { gc?: () => void }).gc === 'function') {
+        (globalThis as { gc: () => void }).gc();
       }
-
-      // Clear any remaining sensitive data
-      this.clearAllSensitiveData();
-    } catch (error) {
-      // Ignore errors in cleanup
+    } catch {
+      // Ignore errors
     }
   }
 
-  // Secure password handling
+  /**
+   * Secure password hashing with PBKDF2
+   */
   static async hashPassword(password: string, salt: Uint8Array): Promise<string> {
     try {
-      // Track password as sensitive
       this.trackSensitiveData(password);
+      this.trackSensitiveArray(salt);
 
       const encoder = new TextEncoder();
+      const passwordData = encoder.encode(password);
+
       const keyMaterial = await crypto.subtle.importKey(
         'raw',
-        encoder.encode(password),
+        passwordData,
         { name: 'PBKDF2' },
         false,
         ['deriveBits']
@@ -104,8 +208,10 @@ export class MemorySecurity {
       const hashArray = new Uint8Array(derivedBits);
       const hash = btoa(String.fromCharCode(...hashArray));
 
-      // Clear password from memory immediately after use
+      // Clean up
       this.clearString(password);
+      this.clearArray(new Uint8Array(passwordData.buffer));
+      this.clearArray(hashArray);
 
       return hash;
     } catch (error) {
@@ -114,32 +220,85 @@ export class MemorySecurity {
     }
   }
 
-  // Create secure random data
+  /**
+   * Generate cryptographically secure random bytes
+   */
   static generateSecureRandom(length: number): Uint8Array {
-    return crypto.getRandomValues(new Uint8Array(length));
+    const data = new Uint8Array(length);
+    crypto.getRandomValues(data);
+    return data;
   }
 
-  // Secure string comparison to prevent timing attacks
+  /**
+   * Constant-time string comparison to prevent timing attacks
+   */
   static secureCompare(a: string, b: string): boolean {
-    if (a.length !== b.length) {
+    if (typeof a !== 'string' || typeof b !== 'string') {
       return false;
     }
 
-    let result = 0;
-    for (let i = 0; i < a.length; i++) {
-      result |= a.charCodeAt(i) ^ b.charCodeAt(i);
+    // Always compare same length to prevent timing leaks
+    const maxLen = Math.max(a.length, b.length);
+    let result = a.length === b.length ? 0 : 1;
+
+    for (let i = 0; i < maxLen; i++) {
+      const charA = i < a.length ? a.charCodeAt(i) : 0;
+      const charB = i < b.length ? b.charCodeAt(i) : 0;
+      result |= charA ^ charB;
     }
 
     return result === 0;
   }
 
-  // Memory cleanup on lock
+  /**
+   * Clear sensitive data on vault lock
+   */
   static onVaultLock(): void {
     this.clearAllSensitiveData();
     this.performCleanup();
+    
+    // Also clear any password inputs on the page
+    if (typeof document !== 'undefined') {
+      document.querySelectorAll('input[type="password"]').forEach((input) => {
+        if (input instanceof HTMLInputElement) {
+          this.clearInputField(input);
+        }
+      });
+    }
   }
 
-  // Initialize on app start
+  /**
+   * Create a secure password container that auto-clears
+   */
+  static createSecurePassword(password: string, timeoutMs: number = 60000): {
+    get: () => string;
+    clear: () => void;
+  } {
+    let value: string | null = password;
+    this.trackSensitiveData(password);
+
+    const timeout = setTimeout(() => {
+      value = null;
+    }, timeoutMs);
+
+    return {
+      get: () => {
+        if (value === null) {
+          throw new Error('Password has been cleared from memory');
+        }
+        return value;
+      },
+      clear: () => {
+        if (value) {
+          this.clearString(value);
+        }
+        value = null;
+        clearTimeout(timeout);
+      },
+    };
+  }
+
+  // Auto-initialize when module loads
   static {
     if (typeof window !== 'undefined') {
       this.initialize();

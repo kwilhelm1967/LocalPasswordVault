@@ -336,17 +336,30 @@ export const FloatingPanel: React.FC<FloatingPanelProps> = ({
         x: e.clientX - position.x,
         y: e.clientY - position.y,
       });
+      
+      // Safety timeout: reset isDragging after 10 seconds to prevent stuck state
+      setTimeout(() => {
+        setIsDragging(false);
+      }, 10000);
     }
   };
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-      if (isDragging) {
+      if (!isDragging) return;
+      
+      try {
         e.preventDefault();
 
         // Calculate new position
         let newX = e.clientX - dragOffset.x;
         let newY = e.clientY - dragOffset.y;
+
+        // Ensure we have valid numbers
+        if (isNaN(newX) || isNaN(newY)) {
+          setIsDragging(false);
+          return;
+        }
 
         // Apply bounds checking for minimized state
         if (isMinimized) {
@@ -379,6 +392,9 @@ export const FloatingPanel: React.FC<FloatingPanelProps> = ({
         }
 
         setPosition({ x: newX, y: newY });
+      } catch (error) {
+        console.error("Error during drag:", error);
+        setIsDragging(false);
       }
     };
 
@@ -386,14 +402,39 @@ export const FloatingPanel: React.FC<FloatingPanelProps> = ({
       setIsDragging(false);
     };
 
+    // Also stop dragging if mouse leaves window or window loses focus
+    const handleMouseLeave = () => {
+      setIsDragging(false);
+    };
+    
+    const handleBlur = () => {
+      setIsDragging(false);
+    };
+
     if (isDragging) {
       document.addEventListener("mousemove", handleMouseMove);
       document.addEventListener("mouseup", handleMouseUp);
+      document.addEventListener("mouseleave", handleMouseLeave);
+      window.addEventListener("blur", handleBlur);
+      
+      // Also add a contextmenu handler to stop drag on right-click
+      const handleContextMenu = () => setIsDragging(false);
+      document.addEventListener("contextmenu", handleContextMenu);
+      
+      return () => {
+        document.removeEventListener("mousemove", handleMouseMove);
+        document.removeEventListener("mouseup", handleMouseUp);
+        document.removeEventListener("mouseleave", handleMouseLeave);
+        window.removeEventListener("blur", handleBlur);
+        document.removeEventListener("contextmenu", handleContextMenu);
+      };
     }
 
     return () => {
       document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseup", handleMouseUp);
+      document.removeEventListener("mouseleave", handleMouseLeave);
+      window.removeEventListener("blur", handleBlur);
     };
   }, [isDragging, dragOffset]);
 
@@ -606,7 +647,7 @@ export const FloatingPanel: React.FC<FloatingPanelProps> = ({
 
       {/* Add/Edit Form Modal */}
       {(showAddForm || editingEntry) && (
-        <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center p-4 z-[10000]">
+        <div className="fixed inset-0 bg-black bg-opacity-80 flex items-start justify-center pt-[10vh] p-4 z-[10000]">
           <div className="bg-slate-800 rounded-xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
             <EntryForm
               entry={editingEntry}
