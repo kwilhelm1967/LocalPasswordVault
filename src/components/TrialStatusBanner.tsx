@@ -175,18 +175,35 @@ export const TrialStatusBanner: React.FC<TrialStatusBannerProps> = ({
     }
   };
 
+  // Alert palette for warning/expired states
+  const alertColors = {
+    background: '#3A1F23',
+    border: '#A14545',
+    text: '#FF6B6B',
+    textMuted: '#FF6B6B99',
+  };
+
   // Expired state
   if (timeRemaining.isExpired) {
     return (
-      <div className="bg-red-500/10 border border-red-500/30 rounded-xl px-4 py-3 mb-4">
+      <div 
+        className="rounded-xl px-4 py-3 mb-4"
+        style={{ 
+          backgroundColor: alertColors.background,
+          border: `1px solid ${alertColors.border}`,
+        }}
+      >
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-red-500/20 rounded-lg">
-              <AlertTriangle className="w-5 h-5 text-red-400" strokeWidth={1.5} />
+            <div 
+              className="p-2 rounded-lg"
+              style={{ backgroundColor: `${alertColors.border}30` }}
+            >
+              <AlertTriangle className="w-5 h-5" strokeWidth={1.5} style={{ color: alertColors.text }} />
             </div>
             <div>
-              <h3 className="text-red-300 font-semibold text-sm">Trial Expired</h3>
-              <p className="text-red-400/80 text-xs">Purchase a license to continue</p>
+              <h3 className="font-semibold text-sm" style={{ color: alertColors.text }}>Trial Expired</h3>
+              <p className="text-xs" style={{ color: alertColors.textMuted }}>Purchase a license to continue</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -215,39 +232,41 @@ export const TrialStatusBanner: React.FC<TrialStatusBannerProps> = ({
     );
   }
 
-  // Warning state (urgent)
+  // Warning state (urgent) - uses same alert palette for very urgent, gold for regular urgent
   if (isUrgent) {
+    const useAlertStyle = isVeryUrgent;
+    
     return (
       <div 
-        className="rounded-xl px-4 py-3 mb-4 border"
+        className="rounded-xl px-4 py-3 mb-4"
         style={{ 
-          backgroundColor: isVeryUrgent ? 'rgba(239, 68, 68, 0.1)' : `${colors.brandGold}15`,
-          borderColor: isVeryUrgent ? 'rgba(239, 68, 68, 0.3)' : `${colors.brandGold}40`,
+          backgroundColor: useAlertStyle ? alertColors.background : `${colors.brandGold}12`,
+          border: `1px solid ${useAlertStyle ? alertColors.border : colors.brandGold}50`,
         }}
       >
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div 
               className="p-2 rounded-lg"
-              style={{ backgroundColor: isVeryUrgent ? 'rgba(239, 68, 68, 0.2)' : `${colors.brandGold}20` }}
+              style={{ backgroundColor: useAlertStyle ? `${alertColors.border}30` : `${colors.brandGold}20` }}
             >
               <AlertTriangle 
                 className="w-5 h-5" 
                 strokeWidth={1.5} 
-                style={{ color: isVeryUrgent ? '#f87171' : colors.brandGold }}
+                style={{ color: useAlertStyle ? alertColors.text : colors.brandGold }}
               />
             </div>
             <div>
               <h3 
                 className="font-semibold text-sm"
-                style={{ color: isVeryUrgent ? '#fca5a5' : colors.brandGold }}
+                style={{ color: useAlertStyle ? alertColors.text : colors.brandGold }}
               >
                 {isVeryUrgent ? 'Trial Expiring Soon!' : 'Trial Ending Soon'}
               </h3>
               <div className="flex items-center gap-2">
                 <span 
                   className="font-mono font-bold text-base"
-                  style={{ color: isVeryUrgent ? '#f87171' : colors.warmIvory }}
+                  style={{ color: useAlertStyle ? alertColors.text : colors.warmIvory }}
                 >
                   {formatTime()}
                 </span>
