@@ -44,9 +44,8 @@ export const features = {
   trialDays: 7,
   maxTrialPasswords: environment.isTrialVersion ? 10 : -1,
   maxDevicesPerLicense: {
-    single: 1,
-    family: 3,
-    business: 10,
+    personal: 1,
+    family: 5,
   },
 };
 
