@@ -348,7 +348,7 @@ export const PurchaseSuccessPage: React.FC = () => {
                 return (
                   <div
                     key={platform.id}
-                    className="rounded-lg transition-all overflow-hidden text-center"
+                    className="rounded-lg transition-all overflow-hidden text-center flex flex-col"
                     style={{
                       backgroundColor: colors.slateBackground,
                       border: isRecommended
@@ -356,16 +356,20 @@ export const PurchaseSuccessPage: React.FC = () => {
                         : `1px solid ${colors.steelBlue400}30`,
                     }}
                   >
-                    {isRecommended && (
-                      <div
-                        className="px-2 py-1 text-[10px] font-medium"
-                        style={{ backgroundColor: colors.steelBlue500, color: "white" }}
-                      >
-                        Your OS
-                      </div>
-                    )}
+                    {/* Badge row - fixed height */}
+                    <div className="h-6 flex items-center justify-center">
+                      {isRecommended && (
+                        <div
+                          className="px-2 py-0.5 text-[10px] font-medium rounded-b"
+                          style={{ backgroundColor: colors.steelBlue500, color: "white" }}
+                        >
+                          Your OS
+                        </div>
+                      )}
+                    </div>
 
-                    <div className={`p-3 ${!isRecommended ? 'pt-4' : ''}`}>
+                    {/* Content */}
+                    <div className="p-3 pt-0 flex flex-col flex-1">
                       <div
                         className="w-10 h-10 rounded-lg flex items-center justify-center mx-auto mb-2"
                         style={{ backgroundColor: `${colors.steelBlue500}20` }}
@@ -377,17 +381,20 @@ export const PurchaseSuccessPage: React.FC = () => {
                         {platform.fileType}
                       </p>
 
-                      <button
-                        onClick={() => handleDownload(platform)}
-                        className="w-full px-3 py-2 rounded-md text-sm font-medium flex items-center justify-center space-x-1.5 transition-all hover:scale-[1.02]"
-                        style={{
-                          backgroundColor: colors.steelBlue500,
-                          color: "white",
-                        }}
-                      >
-                        <Download className="w-3.5 h-3.5" />
-                        <span>Download</span>
-                      </button>
+                      {/* Button aligned at bottom */}
+                      <div className="mt-auto">
+                        <button
+                          onClick={() => handleDownload(platform)}
+                          className="w-full px-3 py-2 rounded-md text-sm font-medium flex items-center justify-center space-x-1.5 transition-all hover:scale-[1.02]"
+                          style={{
+                            backgroundColor: colors.steelBlue500,
+                            color: "white",
+                          }}
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                          <span>Download</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 );
