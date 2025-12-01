@@ -920,6 +920,11 @@ function App() {
         </div>
       );
     }
+
+    // Download page preview
+    if (urlParams.get('preview') === 'download') {
+      return <DownloadPage />;
+    }
   }
 
   /**
