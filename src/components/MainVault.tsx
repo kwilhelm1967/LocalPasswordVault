@@ -739,10 +739,11 @@ export const MainVault: React.FC<MainVaultProps> = ({
                           {/* Warning Badges - only for password entries */}
                           {entry.entryType !== "secure_note" && hasDuplicates && (
                             <span 
-                              className="flex items-center gap-0.5 px-1.5 py-0.5 bg-amber-500/15 border border-amber-500/30 rounded text-[10px] text-amber-400 flex-shrink-0"
+                              className="flex items-center gap-0.5 px-1 py-0.5 rounded-full text-[10px] flex-shrink-0"
+                              style={{ backgroundColor: 'rgba(201, 174, 102, 0.4)', color: '#C9AE66' }}
                               title={`Duplicate password with: ${duplicates.map(d => d.accountName).join(", ")}`}
                             >
-                              <AlertCircle className="w-3 h-3" strokeWidth={1.5} />
+                              <AlertCircle className="w-2.5 h-2.5" strokeWidth={1.5} />
                               <span className="hidden sm:inline">Reused</span>
                             </span>
                           )}
@@ -1058,9 +1059,12 @@ export const MainVault: React.FC<MainVaultProps> = ({
                       const dupes = findDuplicates(entries, viewingEntry);
                       if (dupes.length === 0) return null;
                       return (
-                        <div className="flex items-center gap-1.5 text-xs text-amber-400">
+                        <div 
+                          className="flex items-center gap-1.5 text-xs px-2 py-1 rounded-lg"
+                          style={{ backgroundColor: 'rgba(201, 174, 102, 0.15)', color: '#C9AE66' }}
+                        >
                           <AlertCircle className="w-3.5 h-3.5" strokeWidth={1.5} />
-                          Reused in: {dupes.map(d => d.accountName).join(", ")}
+                          This password is reused in {dupes.length} {dupes.length === 1 ? 'entry' : 'entries'}: {dupes.map(d => d.accountName).join(", ")}
                         </div>
                       );
                     })()}

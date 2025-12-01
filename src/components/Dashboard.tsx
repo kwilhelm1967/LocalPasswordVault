@@ -86,6 +86,15 @@ export const Dashboard: React.FC<DashboardProps> = ({
       (e) => new Date(e.updatedAt) > monthAgo
     ).length;
 
+    // Count reused passwords
+    const passwordCounts: Record<string, number> = {};
+    entries.forEach((entry) => {
+      if (entry.password && entry.entryType !== "secure_note") {
+        passwordCounts[entry.password] = (passwordCounts[entry.password] || 0) + 1;
+      }
+    });
+    const reusedPasswords = Object.values(passwordCounts).filter(count => count > 1).reduce((sum, count) => sum + count, 0);
+
     return {
       totalAccounts,
       categoryCounts,
@@ -93,6 +102,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
       strongPasswords,
       recentlyAdded,
       recentlyUpdated,
+      reusedPasswords,
     };
   }, [entries]);
 
@@ -109,9 +119,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
     
     const strongRatio = stats.strongPasswords / entries.length;
     const weakPenalty = (stats.weakPasswords / entries.length) * 30;
+    const reusedPenalty = (stats.reusedPasswords / entries.length) * 20;
     
-    return Math.max(0, Math.min(100, Math.round(strongRatio * 100 - weakPenalty)));
-  }, [entries.length, stats.strongPasswords, stats.weakPasswords]);
+    return Math.max(0, Math.min(100, Math.round(strongRatio * 100 - weakPenalty - reusedPenalty)));
+  }, [entries.length, stats.strongPasswords, stats.weakPasswords, stats.reusedPasswords]);
 
   const getScoreColor = (score: number) => {
     if (score >= 80) return "text-emerald-400";
@@ -233,6 +244,38 @@ export const Dashboard: React.FC<DashboardProps> = ({
               </span>
             ) : (
               <span className="text-emerald-400">All passwords are secure!</span>
+            )}
+          </div>
+        </div>
+
+        {/* Reused Passwords */}
+        <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl p-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-slate-400 text-xs font-medium uppercase tracking-wider">Reused Passwords</p>
+              <p 
+                className="text-3xl font-bold mt-2"
+                style={stats.reusedPasswords > 0 ? { color: '#C9AE66' } : { color: colors.warmIvory }}
+              >
+                {stats.reusedPasswords}
+              </p>
+            </div>
+            <div 
+              className="w-12 h-12 rounded-xl flex items-center justify-center"
+              style={stats.reusedPasswords > 0 ? { backgroundColor: 'rgba(201, 174, 102, 0.15)' } : { backgroundColor: 'rgb(51 65 85 / 0.5)' }}
+            >
+              <AlertTriangle 
+                className="w-6 h-6" 
+                strokeWidth={1.5} 
+                style={stats.reusedPasswords > 0 ? { color: '#C9AE66' } : { color: 'rgb(100 116 139)' }}
+              />
+            </div>
+          </div>
+          <div className="mt-3 flex items-center gap-1.5 text-xs">
+            {stats.reusedPasswords > 0 ? (
+              <span style={{ color: '#C9AE66' }}>Consider using unique passwords</span>
+            ) : (
+              <span className="text-emerald-400">All passwords are unique!</span>
             )}
           </div>
         </div>
