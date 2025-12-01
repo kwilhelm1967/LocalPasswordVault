@@ -632,47 +632,51 @@ export const MainVault: React.FC<MainVaultProps> = ({
         </div>
 
         {currentView === "dashboard" ? (
-          <Dashboard
-            entries={entries}
-            categories={categories}
-            onAddEntry={() => setShowAddForm(true)}
-            onViewCategory={(categoryId) => {
-              onCategoryChange(categoryId);
-              setShowWeakOnly(false);
-              setShowReusedOnly(false);
-              setCurrentView("passwords");
-            }}
-            onViewEntry={(entry) => setViewingEntry(entry)}
-            onViewWeakPasswords={() => {
-              onCategoryChange("all");
-              setShowWeakOnly(true);
-              setShowReusedOnly(false);
-              setCurrentView("passwords");
-            }}
-            onViewReusedPasswords={() => {
-              onCategoryChange("all");
-              setShowWeakOnly(false);
-              setShowReusedOnly(true);
-              setCurrentView("passwords");
-            }}
-          />
+          <div key="dashboard" className="page-transition-enter">
+            <Dashboard
+              entries={entries}
+              categories={categories}
+              onAddEntry={() => setShowAddForm(true)}
+              onViewCategory={(categoryId) => {
+                onCategoryChange(categoryId);
+                setShowWeakOnly(false);
+                setShowReusedOnly(false);
+                setCurrentView("passwords");
+              }}
+              onViewEntry={(entry) => setViewingEntry(entry)}
+              onViewWeakPasswords={() => {
+                onCategoryChange("all");
+                setShowWeakOnly(true);
+                setShowReusedOnly(false);
+                setCurrentView("passwords");
+              }}
+              onViewReusedPasswords={() => {
+                onCategoryChange("all");
+                setShowWeakOnly(false);
+                setShowReusedOnly(true);
+                setCurrentView("passwords");
+              }}
+            />
+          </div>
         ) : currentView === "settings" ? (
-          <Settings
-            onExport={onExport}
-            onExportEncrypted={onExportEncrypted}
-            onImport={onImport}
-            onImportEncrypted={onImportEncrypted}
-            onChangePassword={() => setShowChangePassword(true)}
-            onClearAllData={() => {
-              // Clear all entries and lock the vault
-              entries.forEach(entry => onDeleteEntry(entry.id));
-              localStorage.clear();
-              onLock();
-            }}
-            totalEntries={entries.length}
-          />
+          <div key="settings" className="page-transition-enter">
+            <Settings
+              onExport={onExport}
+              onExportEncrypted={onExportEncrypted}
+              onImport={onImport}
+              onImportEncrypted={onImportEncrypted}
+              onChangePassword={() => setShowChangePassword(true)}
+              onClearAllData={() => {
+                // Clear all entries and lock the vault
+                entries.forEach(entry => onDeleteEntry(entry.id));
+                localStorage.clear();
+                onLock();
+              }}
+              totalEntries={entries.length}
+            />
+          </div>
         ) : (
-          <>
+          <div key={`passwords-${selectedCategory}-${showWeakOnly}-${showReusedOnly}-${showFavoritesOnly}`} className="page-transition-enter flex-1 flex flex-col overflow-hidden">
             {/* Header */}
             <header className="px-6 py-5 border-b border-slate-800 flex items-center justify-between">
               <div>

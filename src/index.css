@@ -194,6 +194,57 @@ body {
   opacity: 1;
 }
 
+/* ============================================
+   SMOOTH PAGE TRANSITIONS
+   Premium fade + slide for section changes
+   ============================================ */
+
+/* Page content wrapper - apply to main content area */
+.page-transition-enter {
+  animation: pageSlideIn 0.25s ease-out forwards;
+}
+
+@keyframes pageSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Fade transition for modals and overlays */
+.fade-enter {
+  animation: fadeIn 0.2s ease-out forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Slide up transition for forms */
+.slide-up-enter {
+  animation: slideUp 0.25s ease-out forwards;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* Expand/Collapse animation for cards */
 .animate-fadeIn {
   animation: cardFadeIn 0.2s ease-out;
