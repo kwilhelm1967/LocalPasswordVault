@@ -1,5 +1,5 @@
-// License key types
-export type LicenseType = 'single' | 'family' | 'pro' | 'business';
+// License key types - Personal and Family only
+export type LicenseType = 'single' | 'family';
 
 // License key interface
 export interface LicenseKey {
@@ -23,7 +23,7 @@ function getExpirationDate() {
   return { date, formatted };
 }
 
-// Single User Licenses
+// Personal Vault Licenses ($49)
 export const singleUserLicenses: LicenseKey[] = [
   {
     key: "RNKJ-XTPB-LFGM-QVWC3",
@@ -63,7 +63,7 @@ export const singleUserLicenses: LicenseKey[] = [
   }
 ];
 
-// Family Plan Licenses
+// Family Vault Licenses ($79)
 export const familyLicenses: LicenseKey[] = [
   {
     key: "GFTP-QVNM-KZXD-JBSF9",
@@ -103,92 +103,10 @@ export const familyLicenses: LicenseKey[] = [
   }
 ];
 
-// Pro Licenses
-export const proLicenses: LicenseKey[] = [
-  {
-    key: "PRTK-JVNM-QZXD-LBSF2",
-    type: "pro",
-    expires: getExpirationDate().formatted,
-    expirationDate: getExpirationDate().date
-  },
-  {
-    key: "PRLM-NVBQ-KZXD-JBSF4",
-    type: "pro",
-    expires: getExpirationDate().formatted,
-    expirationDate: getExpirationDate().date
-  },
-  {
-    key: "PRWL-QVNM-KZXD-JBGF8",
-    type: "pro",
-    expires: getExpirationDate().formatted,
-    expirationDate: getExpirationDate().date
-  },
-  {
-    key: "PRCD-EFGH-IJKL-MNOP9",
-    type: "pro",
-    expires: getExpirationDate().formatted,
-    expirationDate: getExpirationDate().date
-  },
-  {
-    key: "PRST-UVWX-YZAB-CDEF6",
-    type: "pro",
-    expires: getExpirationDate().formatted,
-    expirationDate: getExpirationDate().date
-  },
-  {
-    key: "PRIJ-KLMN-OPQR-STUV7",
-    type: "pro",
-    expires: getExpirationDate().formatted,
-    expirationDate: getExpirationDate().date
-  }
-];
-
-// Business Plan Licenses
-export const businessLicenses: LicenseKey[] = [
-  {
-    key: "JBSF-GFTP-QVNM-KZXD7",
-    type: "business",
-    expires: getExpirationDate().formatted,
-    expirationDate: getExpirationDate().date
-  },
-  {
-    key: "QVNM-KZXD-JBSF-GFTP5",
-    type: "business",
-    expires: getExpirationDate().formatted,
-    expirationDate: getExpirationDate().date
-  },
-  {
-    key: "KZXD-JBSF-GFTP-QVNM9",
-    type: "business",
-    expires: getExpirationDate().formatted,
-    expirationDate: getExpirationDate().date
-  },
-  {
-    key: "STUV-WXYZ-ABCD-EFGH7",
-    type: "business",
-    expires: getExpirationDate().formatted,
-    expirationDate: getExpirationDate().date
-  },
-  {
-    key: "IJKL-MNOP-QRST-UVWX8",
-    type: "business",
-    expires: getExpirationDate().formatted,
-    expirationDate: getExpirationDate().date
-  },
-  {
-    key: "YZAB-CDEF-GHIJ-KLMN9",
-    type: "business",
-    expires: getExpirationDate().formatted,
-    expirationDate: getExpirationDate().date
-  }
-];
-
 // All licenses combined
 export const allLicenseKeys: LicenseKey[] = [
   ...singleUserLicenses,
-  ...familyLicenses,
-  ...proLicenses,
-  ...businessLicenses
+  ...familyLicenses
 ];
 
 // Utility functions

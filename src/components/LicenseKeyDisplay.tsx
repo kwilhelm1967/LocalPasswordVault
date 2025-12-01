@@ -2,9 +2,7 @@ import React, { useState } from "react";
 import { Calendar, Copy, CheckCircle } from "lucide-react";
 import {
   singleUserLicenses,
-  proLicenses,
   familyLicenses,
-  businessLicenses,
   LicenseKey,
 } from "../utils/licenseKeys";
 
@@ -75,28 +73,18 @@ export const LicenseKeyDisplay: React.FC<LicenseKeyDisplayProps> = ({
         to your clipboard.
       </p>
 
-      {/* Single User Licenses */}
+      {/* Personal Vault Licenses - $49 */}
       {renderLicenseSection(
-        "Single User Licenses",
+        "Personal Vault Licenses ($49)",
         singleUserLicenses,
         "text-blue-400"
       )}
 
-      {/* Family Plan Licenses */}
+      {/* Family Vault Licenses - $79 */}
       {renderLicenseSection(
-        "Family Plan Licenses",
+        "Family Vault Licenses ($79)",
         familyLicenses,
         "text-purple-400"
-      )}
-
-      {/* Pro Licenses */}
-      {renderLicenseSection("Pro Licenses", proLicenses, "text-indigo-400")}
-
-      {/* Business Plan Licenses */}
-      {renderLicenseSection(
-        "Business Plan Licenses",
-        businessLicenses,
-        "text-green-400"
       )}
 
       <div className="mt-6 pt-4 border-t border-slate-700">
