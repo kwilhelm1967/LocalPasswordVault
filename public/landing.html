@@ -1,0 +1,1867 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Local Password Vault - Your Passwords. Your Device. Your Control.</title>
+  <meta name="description" content="The password manager that never sends your data anywhere. Military-grade encryption. Complete privacy. No subscriptions.">
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <style>
+    :root {
+      --obsidian: #0a0e17;
+      --midnight: #111827;
+      --slate: #1e293b;
+      --steel: #334155;
+      --electric: #3b82f6;
+      --electric-light: #60a5fa;
+      --electric-dark: #1d4ed8;
+      --amber: #f59e0b;
+      --amber-light: #fbbf24;
+      --ivory: #f8fafc;
+      --silver: #94a3b8;
+      --muted: #64748b;
+      --emerald: #10b981;
+      --emerald-dark: #059669;
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--obsidian);
+      color: var(--ivory);
+      line-height: 1.6;
+    }
+    
+    .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    
+    /* Animations */
+    @keyframes float {
+      0%, 100% { transform: translateY(0) translateX(0); opacity: 0.1; }
+      50% { transform: translateY(-20px) translateX(10px); opacity: 0.3; }
+    }
+    
+    @keyframes gradient {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    
+    @keyframes glow {
+      0%, 100% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.4); }
+      50% { box-shadow: 0 0 40px rgba(59, 130, 246, 0.6); }
+    }
+    
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+    
+    @keyframes countUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .animate-float {
+      animation: float 8s ease-in-out infinite;
+    }
+    
+    .animate-gradient {
+      background-size: 200% 200%;
+      animation: gradient 8s ease infinite;
+    }
+    
+    .animate-glow {
+      animation: glow 3s ease-in-out infinite;
+    }
+    
+    .animate-pulse {
+      animation: pulse 2s ease-in-out infinite;
+    }
+    
+    .text-gradient {
+      background: linear-gradient(135deg, var(--electric) 0%, var(--electric-light) 50%, var(--amber) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    /* Navigation */
+    .nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 50;
+      border-bottom: 1px solid rgba(51, 65, 85, 0.3);
+      backdrop-filter: blur(20px);
+      background-color: rgba(10, 14, 23, 0.95);
+    }
+    
+    .nav-inner {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 1rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    
+    .logo-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--electric) 0%, var(--electric-dark) 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .logo-text {
+      font-size: 1.125rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+    
+    .nav-links {
+      display: none;
+      gap: 2rem;
+    }
+    
+    @media (min-width: 768px) {
+      .nav-links {
+        display: flex;
+      }
+    }
+    
+    .nav-links a {
+      color: var(--silver);
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+    
+    .nav-links a:hover {
+      color: white;
+    }
+    
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.625rem 1.25rem;
+      border-radius: 12px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      border: none;
+      text-decoration: none;
+    }
+    
+    .btn:hover {
+      transform: scale(1.05);
+    }
+    
+    .btn-primary {
+      background-color: var(--electric);
+      color: var(--ivory);
+    }
+    
+    .btn-secondary {
+      background-color: transparent;
+      border: 2px solid var(--electric);
+      color: var(--electric);
+    }
+    
+    .btn-lg {
+      padding: 1rem 2rem;
+    }
+    
+    /* Hero Section */
+    .hero {
+      position: relative;
+      padding: 8rem 1.5rem 5rem;
+      overflow: hidden;
+    }
+    
+    .hero-inner {
+      max-width: 1280px;
+      margin: 0 auto;
+      display: grid;
+      gap: 4rem;
+      align-items: center;
+    }
+    
+    @media (min-width: 1024px) {
+      .hero-inner {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+    
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      border-radius: 50px;
+      background-color: rgba(59, 130, 246, 0.15);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      margin-bottom: 1.5rem;
+    }
+    
+    .hero-badge span {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--electric-light);
+    }
+    
+    .hero h1 {
+      font-size: 3rem;
+      font-weight: 900;
+      line-height: 1.1;
+      margin-bottom: 1.5rem;
+    }
+    
+    @media (min-width: 1024px) {
+      .hero h1 {
+        font-size: 4.5rem;
+      }
+    }
+    
+    .hero-description {
+      font-size: 1.25rem;
+      color: var(--silver);
+      margin-bottom: 2rem;
+      max-width: 32rem;
+    }
+    
+    .hero-form {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    
+    @media (min-width: 640px) {
+      .hero-form {
+        flex-direction: row;
+      }
+    }
+    
+    .hero-form input {
+      flex: 1;
+      padding: 1rem 1rem 1rem 3rem;
+      border-radius: 12px;
+      background-color: var(--slate);
+      border: 1px solid var(--steel);
+      color: var(--ivory);
+      font-size: 0.875rem;
+      outline: none;
+      transition: all 0.3s;
+    }
+    
+    .hero-form input:focus {
+      border-color: var(--electric);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+    }
+    
+    .hero-form input::placeholder {
+      color: var(--muted);
+    }
+    
+    .input-wrapper {
+      position: relative;
+      flex: 1;
+    }
+    
+    .input-wrapper i {
+      position: absolute;
+      left: 1rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted);
+      width: 20px;
+      height: 20px;
+    }
+    
+    .trust-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+    }
+    
+    .trust-badge {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.875rem;
+      color: var(--muted);
+    }
+    
+    .trust-badge i {
+      color: var(--emerald);
+      width: 20px;
+      height: 20px;
+    }
+    
+    /* Particles */
+    .particles {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      pointer-events: none;
+    }
+    
+    .particle {
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background-color: var(--electric);
+      opacity: 0.2;
+    }
+    
+    /* Gradient orbs */
+    .orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      pointer-events: none;
+    }
+    
+    .orb-1 {
+      top: 5rem;
+      left: 25%;
+      width: 24rem;
+      height: 24rem;
+      background-color: var(--electric);
+      opacity: 0.2;
+    }
+    
+    .orb-2 {
+      bottom: 0;
+      right: 25%;
+      width: 20rem;
+      height: 20rem;
+      background-color: var(--amber);
+      opacity: 0.1;
+    }
+    
+    /* Hero Preview */
+    .hero-preview {
+      position: relative;
+    }
+    
+    .hero-preview-inner {
+      position: relative;
+      padding: 2rem;
+      border-radius: 24px;
+      background-color: rgba(17, 24, 39, 0.9);
+      border: 1px solid var(--steel);
+      backdrop-filter: blur(10px);
+    }
+    
+    .hero-preview-glow {
+      position: absolute;
+      inset: 0;
+      border-radius: 24px;
+      filter: blur(40px);
+      background-color: var(--electric);
+      opacity: 0.3;
+    }
+    
+    /* Shield Icon */
+    .shield-container {
+      position: relative;
+      display: flex;
+      justify-content: flex-start;
+      margin-bottom: 1.5rem;
+    }
+    
+    .shield-icon {
+      position: relative;
+      width: 80px;
+      height: 80px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(29, 78, 216, 0.2) 100%);
+      border: 2px solid rgba(59, 130, 246, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 60px rgba(59, 130, 246, 0.3);
+    }
+    
+    .shield-icon i {
+      width: 40px;
+      height: 40px;
+      color: var(--electric);
+    }
+    
+    .shield-badge {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background-color: var(--emerald);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 20px rgba(16, 185, 129, 0.6);
+    }
+    
+    .shield-badge i {
+      width: 16px;
+      height: 16px;
+      color: white;
+    }
+    
+    /* Password Demo */
+    .password-demo {
+      padding: 1rem;
+      border-radius: 12px;
+      background-color: var(--obsidian);
+      border: 1px solid var(--steel);
+      margin-bottom: 1rem;
+    }
+    
+    .password-demo-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.75rem;
+    }
+    
+    .password-demo-header-left {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .password-demo-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background-color: rgba(59, 130, 246, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .password-demo-icon i {
+      width: 16px;
+      height: 16px;
+      color: var(--electric);
+    }
+    
+    .password-demo-title {
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+    
+    .password-demo-badge {
+      font-size: 0.75rem;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      background-color: rgba(16, 185, 129, 0.2);
+      color: var(--emerald);
+    }
+    
+    .password-demo-field {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.75rem;
+      border-radius: 8px;
+      background-color: var(--midnight);
+      margin-bottom: 0.75rem;
+    }
+    
+    .password-demo-field code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.875rem;
+      letter-spacing: 0.1em;
+      color: var(--electric-light);
+    }
+    
+    .password-demo-actions {
+      display: flex;
+      gap: 0.5rem;
+    }
+    
+    .password-demo-actions button {
+      padding: 0.375rem;
+      border-radius: 8px;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    
+    .password-demo-actions button:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+    
+    .password-demo-actions button i {
+      width: 16px;
+      height: 16px;
+      color: var(--silver);
+    }
+    
+    .password-demo-meta {
+      display: flex;
+      gap: 1rem;
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+    
+    /* Skeleton entries */
+    .skeleton-entry {
+      padding: 1rem;
+      border-radius: 12px;
+      background-color: var(--obsidian);
+      border: 1px solid var(--steel);
+      margin-bottom: 1rem;
+    }
+    
+    .skeleton-entry-inner {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    
+    .skeleton-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+    }
+    
+    .skeleton-text {
+      height: 12px;
+      border-radius: 4px;
+      background-color: var(--steel);
+    }
+    
+    .skeleton-text-sm {
+      height: 8px;
+      margin-top: 0.5rem;
+    }
+    
+    /* Stats Section */
+    .stats {
+      padding: 4rem 1.5rem;
+      border-top: 1px solid rgba(51, 65, 85, 0.3);
+      border-bottom: 1px solid rgba(51, 65, 85, 0.3);
+    }
+    
+    .stats-inner {
+      max-width: 1280px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 2rem;
+    }
+    
+    @media (min-width: 768px) {
+      .stats-inner {
+        grid-template-columns: repeat(4, 1fr);
+      }
+    }
+    
+    .stat {
+      text-align: center;
+    }
+    
+    .stat-value {
+      font-size: 2.5rem;
+      font-weight: 900;
+      color: var(--electric);
+      margin-bottom: 0.25rem;
+    }
+    
+    .stat-label {
+      font-size: 0.875rem;
+      color: var(--muted);
+    }
+    
+    /* Features Section */
+    .features {
+      padding: 6rem 1.5rem;
+    }
+    
+    .features-inner {
+      max-width: 1280px;
+      margin: 0 auto;
+    }
+    
+    .section-header {
+      text-align: center;
+      margin-bottom: 4rem;
+    }
+    
+    .section-header h2 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+    }
+    
+    @media (min-width: 1024px) {
+      .section-header h2 {
+        font-size: 3rem;
+      }
+    }
+    
+    .section-header p {
+      font-size: 1.125rem;
+      color: var(--silver);
+      max-width: 40rem;
+      margin: 0 auto;
+    }
+    
+    .features-grid {
+      display: grid;
+      gap: 1.5rem;
+    }
+    
+    @media (min-width: 768px) {
+      .features-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    
+    @media (min-width: 1024px) {
+      .features-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+    
+    .feature-card {
+      position: relative;
+      padding: 1.5rem;
+      border-radius: 16px;
+      background-color: rgba(51, 65, 85, 0.3);
+      border: 1px solid rgba(51, 65, 85, 0.4);
+      transition: all 0.5s;
+    }
+    
+    .feature-card:hover {
+      transform: scale(1.02);
+    }
+    
+    .feature-card.highlight {
+      background-color: rgba(59, 130, 246, 0.1);
+      border-color: rgba(59, 130, 246, 0.4);
+    }
+    
+    .feature-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background-color: rgba(51, 65, 85, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1rem;
+      transition: transform 0.3s;
+    }
+    
+    .feature-card:hover .feature-icon {
+      transform: scale(1.1);
+    }
+    
+    .feature-card.highlight .feature-icon {
+      background-color: rgba(59, 130, 246, 0.2);
+    }
+    
+    .feature-icon i {
+      width: 24px;
+      height: 24px;
+      color: var(--electric-light);
+    }
+    
+    .feature-card.highlight .feature-icon i {
+      color: var(--electric);
+    }
+    
+    .feature-card h3 {
+      font-size: 1.125rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+    
+    .feature-card p {
+      font-size: 0.875rem;
+      color: var(--silver);
+      line-height: 1.6;
+    }
+    
+    /* Security Section */
+    .security {
+      padding: 6rem 1.5rem;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .security-bg {
+      position: absolute;
+      inset: 0;
+      opacity: 0.05;
+      background-image: radial-gradient(circle at 2px 2px, var(--electric) 1px, transparent 0);
+      background-size: 40px 40px;
+    }
+    
+    .security-inner {
+      max-width: 1280px;
+      margin: 0 auto;
+      position: relative;
+      display: grid;
+      gap: 4rem;
+      align-items: center;
+    }
+    
+    @media (min-width: 1024px) {
+      .security-inner {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+    
+    .security h2 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin-bottom: 1.5rem;
+    }
+    
+    @media (min-width: 1024px) {
+      .security h2 {
+        font-size: 3rem;
+      }
+    }
+    
+    .security-points {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+    
+    .security-point {
+      display: flex;
+      gap: 1rem;
+    }
+    
+    .security-point-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background-color: rgba(16, 185, 129, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    
+    .security-point-icon i {
+      width: 20px;
+      height: 20px;
+      color: var(--emerald);
+    }
+    
+    .security-point h3 {
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+    }
+    
+    .security-point p {
+      font-size: 0.875rem;
+      color: var(--silver);
+    }
+    
+    /* Security Card */
+    .security-card {
+      border-radius: 24px;
+      padding: 2rem;
+      background-color: var(--midnight);
+      border: 1px solid var(--steel);
+    }
+    
+    .security-card-header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    
+    .security-card-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      border-radius: 50px;
+      background-color: rgba(59, 130, 246, 0.15);
+    }
+    
+    .security-card-badge i {
+      width: 16px;
+      height: 16px;
+      color: var(--electric);
+    }
+    
+    .security-card-badge span {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--electric);
+    }
+    
+    .security-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    
+    .security-stack-item {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 1rem;
+      border-radius: 12px;
+      background-color: rgba(51, 65, 85, 0.3);
+    }
+    
+    .security-stack-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .security-stack-icon i {
+      width: 20px;
+      height: 20px;
+    }
+    
+    .security-stack-item span {
+      flex: 1;
+      font-weight: 500;
+    }
+    
+    .security-stack-item .check i {
+      width: 20px;
+      height: 20px;
+      color: var(--emerald);
+    }
+    
+    /* Testimonials Section */
+    .testimonials {
+      padding: 6rem 1.5rem;
+    }
+    
+    .testimonials-inner {
+      max-width: 1280px;
+      margin: 0 auto;
+    }
+    
+    .testimonials-grid {
+      display: grid;
+      gap: 1.5rem;
+    }
+    
+    @media (min-width: 768px) {
+      .testimonials-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+    
+    .testimonial-card {
+      padding: 1.5rem;
+      border-radius: 16px;
+      background-color: rgba(51, 65, 85, 0.3);
+      border: 1px solid rgba(51, 65, 85, 0.4);
+    }
+    
+    .testimonial-stars {
+      display: flex;
+      gap: 0.25rem;
+      margin-bottom: 1rem;
+    }
+    
+    .testimonial-stars i {
+      width: 16px;
+      height: 16px;
+      color: var(--amber);
+      fill: var(--amber);
+    }
+    
+    .testimonial-quote-icon {
+      width: 32px;
+      height: 32px;
+      color: var(--electric);
+      opacity: 0.3;
+      margin-bottom: 0.75rem;
+    }
+    
+    .testimonial-text {
+      font-size: 0.875rem;
+      color: var(--silver);
+      line-height: 1.7;
+      margin-bottom: 1rem;
+    }
+    
+    .testimonial-author {
+      font-weight: 600;
+      font-size: 0.875rem;
+    }
+    
+    .testimonial-role {
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+    
+    /* Pricing Section */
+    .pricing {
+      padding: 6rem 1.5rem;
+    }
+    
+    .pricing-inner {
+      max-width: 64rem;
+      margin: 0 auto;
+    }
+    
+    .pricing-grid {
+      display: grid;
+      gap: 1.5rem;
+    }
+    
+    @media (min-width: 768px) {
+      .pricing-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+    
+    .pricing-card {
+      position: relative;
+      padding: 2rem;
+      border-radius: 24px;
+      background-color: var(--midnight);
+      border: 2px solid var(--steel);
+      transition: all 0.5s;
+    }
+    
+    .pricing-card:hover {
+      transform: scale(1.02);
+    }
+    
+    .pricing-card.popular {
+      background-color: var(--slate);
+      border-color: var(--electric);
+      box-shadow: 0 0 60px rgba(59, 130, 246, 0.2);
+    }
+    
+    .pricing-badge {
+      position: absolute;
+      top: -16px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 0.25rem 1rem;
+      border-radius: 50px;
+      background-color: var(--electric);
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    
+    .pricing-card h3 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+    
+    .pricing-price {
+      display: flex;
+      align-items: baseline;
+      margin-bottom: 1.5rem;
+    }
+    
+    .pricing-amount {
+      font-size: 3rem;
+      font-weight: 900;
+    }
+    
+    .pricing-card.popular .pricing-amount {
+      color: var(--electric);
+    }
+    
+    .pricing-period {
+      font-size: 0.875rem;
+      color: var(--muted);
+      margin-left: 0.5rem;
+    }
+    
+    .pricing-features {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      margin-bottom: 2rem;
+    }
+    
+    .pricing-features li {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      font-size: 0.875rem;
+      color: var(--silver);
+    }
+    
+    .pricing-features li i {
+      width: 20px;
+      height: 20px;
+      color: var(--emerald);
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    
+    .pricing-cta {
+      width: 100%;
+    }
+    
+    /* Download Section */
+    .download {
+      padding: 6rem 1.5rem;
+    }
+    
+    .download-inner {
+      max-width: 56rem;
+      margin: 0 auto;
+    }
+    
+    .download-card {
+      position: relative;
+      padding: 3rem;
+      border-radius: 24px;
+      text-align: center;
+      overflow: hidden;
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, var(--midnight) 50%, rgba(29, 78, 216, 0.15) 100%);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+    }
+    
+    .download-glow {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 24rem;
+      height: 8rem;
+      filter: blur(80px);
+      background-color: var(--electric);
+      opacity: 0.3;
+    }
+    
+    .download-content {
+      position: relative;
+    }
+    
+    .download h2 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+    }
+    
+    @media (min-width: 1024px) {
+      .download h2 {
+        font-size: 3rem;
+      }
+    }
+    
+    .download p {
+      font-size: 1.125rem;
+      color: var(--silver);
+      max-width: 32rem;
+      margin: 0 auto 2.5rem;
+    }
+    
+    .download-buttons {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 1rem;
+    }
+    
+    .download-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 1rem 1.5rem;
+      border-radius: 12px;
+      transition: all 0.3s;
+      cursor: pointer;
+      border: none;
+      text-decoration: none;
+    }
+    
+    .download-btn:hover {
+      transform: scale(1.05);
+    }
+    
+    .download-btn-primary {
+      background-color: var(--electric);
+      color: var(--ivory);
+    }
+    
+    .download-btn-secondary {
+      background-color: var(--slate);
+      border: 1px solid var(--steel);
+      color: var(--ivory);
+    }
+    
+    .download-btn i {
+      width: 20px;
+      height: 20px;
+    }
+    
+    .download-btn-text {
+      text-align: left;
+    }
+    
+    .download-btn-label {
+      font-size: 0.75rem;
+      opacity: 0.8;
+    }
+    
+    .download-btn-platform {
+      font-weight: 600;
+    }
+    
+    /* Footer */
+    .footer {
+      padding: 4rem 1.5rem;
+      border-top: 1px solid rgba(51, 65, 85, 0.3);
+    }
+    
+    .footer-inner {
+      max-width: 1280px;
+      margin: 0 auto;
+    }
+    
+    .footer-grid {
+      display: grid;
+      gap: 3rem;
+      margin-bottom: 3rem;
+    }
+    
+    @media (min-width: 768px) {
+      .footer-grid {
+        grid-template-columns: repeat(4, 1fr);
+      }
+    }
+    
+    .footer-brand p {
+      font-size: 0.875rem;
+      color: var(--muted);
+      margin-top: 1rem;
+    }
+    
+    .footer h4 {
+      font-weight: 600;
+      margin-bottom: 1rem;
+    }
+    
+    .footer ul {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    
+    .footer ul a {
+      font-size: 0.875rem;
+      color: var(--muted);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    
+    .footer ul a:hover {
+      color: white;
+    }
+    
+    .footer-bottom {
+      padding-top: 2rem;
+      border-top: 1px solid rgba(51, 65, 85, 0.3);
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      align-items: center;
+    }
+    
+    @media (min-width: 768px) {
+      .footer-bottom {
+        flex-direction: row;
+        justify-content: space-between;
+      }
+    }
+    
+    .footer-bottom p {
+      font-size: 0.875rem;
+      color: var(--muted);
+    }
+    
+    .footer-contact {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.875rem;
+      color: var(--muted);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    
+    .footer-contact:hover {
+      color: white;
+    }
+    
+    .footer-contact i {
+      width: 16px;
+      height: 16px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Navigation -->
+  <nav class="nav">
+    <div class="nav-inner">
+      <div class="logo">
+        <div class="logo-icon">
+          <i data-lucide="shield" style="width: 20px; height: 20px; color: white;"></i>
+        </div>
+        <span class="logo-text">Local Password Vault</span>
+      </div>
+      
+      <div class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#security">Security</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#download">Download</a>
+      </div>
+      
+      <a href="#pricing" class="btn btn-primary">Get Started Free</a>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="particles" id="particles"></div>
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    
+    <div class="hero-inner">
+      <div>
+        <div class="hero-badge">
+          <i data-lucide="sparkles" style="width: 16px; height: 16px; color: var(--amber);"></i>
+          <span>100% Offline • Zero Cloud Storage</span>
+        </div>
+        
+        <h1>
+          Your passwords.<br>
+          <span class="text-gradient">Your device.</span><br>
+          Your control.
+        </h1>
+        
+        <p class="hero-description">
+          The password manager that never sends your data anywhere. 
+          Military-grade encryption. Complete privacy. No subscriptions.
+        </p>
+        
+        <form class="hero-form" id="trial-form">
+          <div class="input-wrapper">
+            <i data-lucide="mail"></i>
+            <input type="email" placeholder="Enter your email" required>
+          </div>
+          <button type="submit" class="btn btn-primary btn-lg animate-glow">
+            Start Free Trial
+            <i data-lucide="arrow-right" style="width: 16px; height: 16px;"></i>
+          </button>
+        </form>
+        
+        <div class="trust-badges">
+          <div class="trust-badge">
+            <i data-lucide="wifi-off"></i>
+            <span>100% Offline</span>
+          </div>
+          <div class="trust-badge">
+            <i data-lucide="lock"></i>
+            <span>AES-256 Encrypted</span>
+          </div>
+          <div class="trust-badge">
+            <i data-lucide="zap"></i>
+            <span>One-time Purchase</span>
+          </div>
+        </div>
+      </div>
+      
+      <div class="hero-preview">
+        <div class="hero-preview-glow"></div>
+        <div class="hero-preview-inner">
+          <div class="shield-container">
+            <div class="shield-icon">
+              <i data-lucide="shield" class="animate-pulse"></i>
+              <div class="shield-badge">
+                <i data-lucide="check"></i>
+              </div>
+            </div>
+          </div>
+          
+          <div class="password-demo">
+            <div class="password-demo-header">
+              <div class="password-demo-header-left">
+                <div class="password-demo-icon">
+                  <i data-lucide="key"></i>
+                </div>
+                <span class="password-demo-title">bank.example.com</span>
+              </div>
+              <span class="password-demo-badge">Strong</span>
+            </div>
+            
+            <div class="password-demo-field">
+              <code id="password-display">••••••••••••••••</code>
+              <div class="password-demo-actions">
+                <button type="button" id="toggle-password">
+                  <i data-lucide="eye"></i>
+                </button>
+                <button type="button">
+                  <i data-lucide="refresh-cw"></i>
+                </button>
+              </div>
+            </div>
+            
+            <div class="password-demo-meta">
+              <span>Last updated: 2 days ago</span>
+              <span>•</span>
+              <span>Auto-fill enabled</span>
+            </div>
+          </div>
+          
+          <div class="skeleton-entry" style="opacity: 0.6;">
+            <div class="skeleton-entry-inner">
+              <div class="skeleton-icon" style="background-color: rgba(245, 158, 11, 0.2);"></div>
+              <div style="flex: 1;">
+                <div class="skeleton-text" style="width: 8rem;"></div>
+                <div class="skeleton-text skeleton-text-sm" style="width: 6rem;"></div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="skeleton-entry" style="opacity: 0.4;">
+            <div class="skeleton-entry-inner">
+              <div class="skeleton-icon" style="background-color: rgba(16, 185, 129, 0.2);"></div>
+              <div style="flex: 1;">
+                <div class="skeleton-text" style="width: 7rem;"></div>
+                <div class="skeleton-text skeleton-text-sm" style="width: 5rem;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Stats Section -->
+  <section class="stats">
+    <div class="stats-inner">
+      <div class="stat">
+        <div class="stat-value" data-count="50000">0</div>
+        <div class="stat-label">Active Users</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value" data-count="5000000" data-suffix="M">0</div>
+        <div class="stat-label">Passwords Secured</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">0</div>
+        <div class="stat-label">Cloud Breaches</div>
+      </div>
+      <div class="stat">
+        <div class="stat-value">100%</div>
+        <div class="stat-label">Offline Privacy</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section class="features" id="features">
+    <div class="features-inner">
+      <div class="section-header">
+        <h2>Security without compromise</h2>
+        <p>Every feature designed with one goal: keeping your passwords secure and accessible only to you.</p>
+      </div>
+      
+      <div class="features-grid">
+        <div class="feature-card highlight">
+          <div class="feature-icon">
+            <i data-lucide="wifi-off"></i>
+          </div>
+          <h3>100% Offline</h3>
+          <p>Your passwords never leave your device. No servers, no cloud, no risk of online breaches.</p>
+        </div>
+        
+        <div class="feature-card">
+          <div class="feature-icon">
+            <i data-lucide="lock"></i>
+          </div>
+          <h3>AES-256 Encryption</h3>
+          <p>Military-grade encryption protects your data. Even if someone gets your file, they can't read it.</p>
+        </div>
+        
+        <div class="feature-card">
+          <div class="feature-icon">
+            <i data-lucide="fingerprint"></i>
+          </div>
+          <h3>Biometric Unlock</h3>
+          <p>Use Windows Hello or Touch ID for quick, secure access to your vault.</p>
+        </div>
+        
+        <div class="feature-card">
+          <div class="feature-icon">
+            <i data-lucide="clock"></i>
+          </div>
+          <h3>Auto-Lock</h3>
+          <p>Automatically locks after inactivity. Your vault is protected even if you walk away.</p>
+        </div>
+        
+        <div class="feature-card">
+          <div class="feature-icon">
+            <i data-lucide="database"></i>
+          </div>
+          <h3>Secure Backup</h3>
+          <p>Create encrypted backups. Restore on any device with your master password.</p>
+        </div>
+        
+        <div class="feature-card">
+          <div class="feature-icon">
+            <i data-lucide="zap"></i>
+          </div>
+          <h3>Password Generator</h3>
+          <p>Create strong, unique passwords instantly. Customize length and complexity.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Security Section -->
+  <section class="security" id="security">
+    <div class="security-bg"></div>
+    <div class="security-inner">
+      <div>
+        <h2>
+          Why offline is<br>
+          <span class="text-gradient">the only way</span>
+        </h2>
+        
+        <div class="security-points">
+          <div class="security-point">
+            <div class="security-point-icon">
+              <i data-lucide="check"></i>
+            </div>
+            <div>
+              <h3>No server = No breach target</h3>
+              <p>Cloud password managers are honeypots for hackers. We eliminate that risk entirely.</p>
+            </div>
+          </div>
+          
+          <div class="security-point">
+            <div class="security-point-icon">
+              <i data-lucide="check"></i>
+            </div>
+            <div>
+              <h3>Zero-knowledge by design</h3>
+              <p>We don't just promise zero-knowledge—we literally can't access your data because we never have it.</p>
+            </div>
+          </div>
+          
+          <div class="security-point">
+            <div class="security-point-icon">
+              <i data-lucide="check"></i>
+            </div>
+            <div>
+              <h3>Works without internet</h3>
+              <p>Access your passwords anytime, anywhere—even without connectivity.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="security-card">
+        <div class="security-card-header">
+          <div class="security-card-badge">
+            <i data-lucide="shield"></i>
+            <span>Your Security Stack</span>
+          </div>
+        </div>
+        
+        <div class="security-stack">
+          <div class="security-stack-item">
+            <div class="security-stack-icon" style="background-color: rgba(59, 130, 246, 0.2);">
+              <i data-lucide="lock" style="color: var(--electric);"></i>
+            </div>
+            <span>AES-256 Encryption</span>
+            <div class="check"><i data-lucide="check"></i></div>
+          </div>
+          
+          <div class="security-stack-item">
+            <div class="security-stack-icon" style="background-color: rgba(245, 158, 11, 0.2);">
+              <i data-lucide="key" style="color: var(--amber);"></i>
+            </div>
+            <span>PBKDF2 Key Derivation</span>
+            <div class="check"><i data-lucide="check"></i></div>
+          </div>
+          
+          <div class="security-stack-item">
+            <div class="security-stack-icon" style="background-color: rgba(16, 185, 129, 0.2);">
+              <i data-lucide="database" style="color: var(--emerald);"></i>
+            </div>
+            <span>Secure Memory Handling</span>
+            <div class="check"><i data-lucide="check"></i></div>
+          </div>
+          
+          <div class="security-stack-item">
+            <div class="security-stack-icon" style="background-color: rgba(96, 165, 250, 0.2);">
+              <i data-lucide="clock" style="color: var(--electric-light);"></i>
+            </div>
+            <span>Auto-Lock Protection</span>
+            <div class="check"><i data-lucide="check"></i></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Testimonials Section -->
+  <section class="testimonials">
+    <div class="testimonials-inner">
+      <div class="section-header">
+        <h2>Trusted by security-conscious users</h2>
+      </div>
+      
+      <div class="testimonials-grid">
+        <div class="testimonial-card">
+          <div class="testimonial-stars">
+            <i data-lucide="star"></i>
+            <i data-lucide="star"></i>
+            <i data-lucide="star"></i>
+            <i data-lucide="star"></i>
+            <i data-lucide="star"></i>
+          </div>
+          <i data-lucide="quote" class="testimonial-quote-icon"></i>
+          <p class="testimonial-text">"Finally, a password manager that doesn't require me to trust a third party with my most sensitive data. Pure genius."</p>
+          <p class="testimonial-author">Marcus Chen</p>
+          <p class="testimonial-role">Security Engineer</p>
+        </div>
+        
+        <div class="testimonial-card">
+          <div class="testimonial-stars">
+            <i data-lucide="star"></i>
+            <i data-lucide="star"></i>
+            <i data-lucide="star"></i>
+            <i data-lucide="star"></i>
+            <i data-lucide="star"></i>
+          </div>
+          <i data-lucide="quote" class="testimonial-quote-icon"></i>
+          <p class="testimonial-text">"After the LastPass breach, I knew I needed something different. This is exactly what I was looking for—total control."</p>
+          <p class="testimonial-author">Sarah Mitchell</p>
+          <p class="testimonial-role">Privacy Advocate</p>
+        </div>
+        
+        <div class="testimonial-card">
+          <div class="testimonial-stars">
+            <i data-lucide="star"></i>
+            <i data-lucide="star"></i>
+            <i data-lucide="star"></i>
+            <i data-lucide="star"></i>
+            <i data-lucide="star"></i>
+          </div>
+          <i data-lucide="quote" class="testimonial-quote-icon"></i>
+          <p class="testimonial-text">"The one-time purchase model is refreshing. No monthly fees, no upsells, just solid security that works."</p>
+          <p class="testimonial-author">David Park</p>
+          <p class="testimonial-role">Small Business Owner</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pricing Section -->
+  <section class="pricing" id="pricing">
+    <div class="pricing-inner">
+      <div class="section-header">
+        <h2>One price. Forever yours.</h2>
+        <p>No subscriptions. No recurring fees. Pay once, use forever.</p>
+      </div>
+      
+      <div class="pricing-grid">
+        <div class="pricing-card">
+          <h3>Free Trial</h3>
+          <div class="pricing-price">
+            <span class="pricing-amount">$0</span>
+            <span class="pricing-period">7 days</span>
+          </div>
+          <ul class="pricing-features">
+            <li><i data-lucide="check"></i> Full feature access</li>
+            <li><i data-lucide="check"></i> Unlimited passwords</li>
+            <li><i data-lucide="check"></i> Password generator</li>
+            <li><i data-lucide="check"></i> Secure notes</li>
+            <li><i data-lucide="check"></i> No credit card required</li>
+          </ul>
+          <a href="#trial-form" class="btn btn-secondary pricing-cta">Start Free Trial</a>
+        </div>
+        
+        <div class="pricing-card popular">
+          <div class="pricing-badge">Most Popular</div>
+          <h3>Personal Vault</h3>
+          <div class="pricing-price">
+            <span class="pricing-amount">$29</span>
+            <span class="pricing-period">one-time</span>
+          </div>
+          <ul class="pricing-features">
+            <li><i data-lucide="check"></i> Lifetime license</li>
+            <li><i data-lucide="check"></i> 1 device activation</li>
+            <li><i data-lucide="check"></i> All security features</li>
+            <li><i data-lucide="check"></i> Free updates forever</li>
+            <li><i data-lucide="check"></i> Email support</li>
+          </ul>
+          <a href="#" class="btn btn-primary pricing-cta">Buy Now</a>
+        </div>
+        
+        <div class="pricing-card">
+          <h3>Family Vault</h3>
+          <div class="pricing-price">
+            <span class="pricing-amount">$79</span>
+            <span class="pricing-period">one-time</span>
+          </div>
+          <ul class="pricing-features">
+            <li><i data-lucide="check"></i> 5 device activations</li>
+            <li><i data-lucide="check"></i> Perfect for families</li>
+            <li><i data-lucide="check"></i> All security features</li>
+            <li><i data-lucide="check"></i> Free updates forever</li>
+            <li><i data-lucide="check"></i> Priority support</li>
+          </ul>
+          <a href="#" class="btn btn-secondary pricing-cta">Buy Family Pack</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Download Section -->
+  <section class="download" id="download">
+    <div class="download-inner">
+      <div class="download-card">
+        <div class="download-glow"></div>
+        <div class="download-content">
+          <h2>Ready to take control?</h2>
+          <p>Download Local Password Vault and experience true password security. Available for Windows, macOS, and Linux.</p>
+          
+          <div class="download-buttons">
+            <a href="#" class="download-btn download-btn-primary">
+              <i data-lucide="monitor"></i>
+              <div class="download-btn-text">
+                <div class="download-btn-label">Download for</div>
+                <div class="download-btn-platform">Windows</div>
+              </div>
+            </a>
+            
+            <a href="#" class="download-btn download-btn-secondary">
+              <i data-lucide="apple"></i>
+              <div class="download-btn-text">
+                <div class="download-btn-label">Download for</div>
+                <div class="download-btn-platform">macOS</div>
+              </div>
+            </a>
+            
+            <a href="#" class="download-btn download-btn-secondary">
+              <i data-lucide="terminal"></i>
+              <div class="download-btn-text">
+                <div class="download-btn-label">Download for</div>
+                <div class="download-btn-platform">Linux</div>
+              </div>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <div class="logo">
+            <div class="logo-icon">
+              <i data-lucide="shield" style="width: 20px; height: 20px; color: white;"></i>
+            </div>
+            <span class="logo-text">Local Password Vault</span>
+          </div>
+          <p>Your passwords. Your device. Your control.</p>
+        </div>
+        
+        <div>
+          <h4>Product</h4>
+          <ul>
+            <li><a href="#features">Features</a></li>
+            <li><a href="#security">Security</a></li>
+            <li><a href="#pricing">Pricing</a></li>
+            <li><a href="#download">Download</a></li>
+          </ul>
+        </div>
+        
+        <div>
+          <h4>Support</h4>
+          <ul>
+            <li><a href="#">Help Center</a></li>
+            <li><a href="#">Contact Us</a></li>
+            <li><a href="#">FAQ</a></li>
+          </ul>
+        </div>
+        
+        <div>
+          <h4>Legal</h4>
+          <ul>
+            <li><a href="#">Privacy Policy</a></li>
+            <li><a href="#">Terms of Service</a></li>
+            <li><a href="#">EULA</a></li>
+          </ul>
+        </div>
+      </div>
+      
+      <div class="footer-bottom">
+        <p>© 2025 Local Password Vault. All rights reserved.</p>
+        <a href="mailto:support@localpasswordvault.com" class="footer-contact">
+          <i data-lucide="mail"></i>
+          <span>support@localpasswordvault.com</span>
+        </a>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Initialize Lucide icons
+    lucide.createIcons();
+    
+    // Generate particles
+    const particlesContainer = document.getElementById('particles');
+    for (let i = 0; i < 50; i++) {
+      const particle = document.createElement('div');
+      particle.className = 'particle';
+      particle.style.left = Math.random() * 100 + '%';
+      particle.style.top = Math.random() * 100 + '%';
+      particle.style.animationDelay = Math.random() * 5 + 's';
+      particle.style.animationDuration = (5 + Math.random() * 10) + 's';
+      particle.classList.add('animate-float');
+      particlesContainer.appendChild(particle);
+    }
+    
+    // Password toggle
+    let passwordVisible = false;
+    const toggleBtn = document.getElementById('toggle-password');
+    const passwordDisplay = document.getElementById('password-display');
+    
+    toggleBtn.addEventListener('click', () => {
+      passwordVisible = !passwordVisible;
+      passwordDisplay.textContent = passwordVisible ? 'xK9#mP2$vL7@nQ4' : '••••••••••••••••';
+      toggleBtn.innerHTML = passwordVisible 
+        ? '<i data-lucide="eye-off"></i>' 
+        : '<i data-lucide="eye"></i>';
+      lucide.createIcons();
+    });
+    
+    // Animated counters
+    const observerOptions = {
+      threshold: 0.5
+    };
+    
+    const animateCounter = (element) => {
+      const target = parseInt(element.dataset.count) || 0;
+      const suffix = element.dataset.suffix || '';
+      const duration = 2000;
+      const steps = 60;
+      const increment = target / steps;
+      let current = 0;
+      
+      const timer = setInterval(() => {
+        current += increment;
+        if (current >= target) {
+          if (suffix === 'M') {
+            element.textContent = '5M+';
+          } else if (target > 1000) {
+            element.textContent = target.toLocaleString() + '+';
+          } else {
+            element.textContent = target;
+          }
+          clearInterval(timer);
+        } else {
+          if (suffix === 'M') {
+            element.textContent = Math.floor(current / 1000000) + 'M+';
+          } else {
+            element.textContent = Math.floor(current).toLocaleString();
+          }
+        }
+      }, duration / steps);
+    };
+    
+    const counterObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting && entry.target.dataset.count) {
+          animateCounter(entry.target);
+          counterObserver.unobserve(entry.target);
+        }
+      });
+    }, observerOptions);
+    
+    document.querySelectorAll('.stat-value[data-count]').forEach(el => {
+      counterObserver.observe(el);
+    });
+    
+    // Smooth scroll for anchor links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function(e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+    });
+    
+    // Form submission
+    document.getElementById('trial-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const email = this.querySelector('input[type="email"]').value;
+      // Replace with your actual form submission logic
+      // Submit to trial API endpoint
+      // See docs/DEVELOPER_GUIDE.md for backend integration details
+      console.log('Trial signup:', email);
+    });
+  </script>
+</body>
+</html>
+

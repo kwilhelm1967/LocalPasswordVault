@@ -20,6 +20,7 @@ import { KeyActivationScreen } from "./components/KeyActivationScreen";
 import { ExpiredTrialScreen } from "./components/ExpiredTrialScreen";
 import { TrialStatusBanner } from "./components/TrialStatusBanner";
 import { PurchaseSuccessPage } from "./components/PurchaseSuccessPage";
+import { LandingPage } from "./components/LandingPage";
 
 // Fixed categories with proper typing
 const FIXED_CATEGORIES: Category[] = [
@@ -930,6 +931,11 @@ function App() {
     // Purchase success page preview
     if (urlParams.get('preview') === 'success' || urlParams.get('key') || urlParams.get('license')) {
       return <PurchaseSuccessPage />;
+    }
+
+    // Landing page preview
+    if (urlParams.get('preview') === 'landing') {
+      return <LandingPage />;
     }
   }
 

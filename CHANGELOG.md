@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.1] - 2025-12-01
+
+### ✨ New Features
+
+#### Sound Effects System
+- Added optional UI sound effects for interactions
+- Success, click, and error sounds
+- Toggle in Settings → Sound Effects
+- Respects user preferences (off by default)
+
+#### Landing Page
+- New marketing landing page component (`src/components/LandingPage.tsx`)
+- Standalone HTML version for website deployment (`public/landing.html`)
+- Sections: Hero, Stats, Features, Security, Testimonials, Pricing, Download
+- Animated counters, particle effects, interactive password demo
+- Trial signup form (requires backend integration)
+
+### 📝 Documentation
+- Added `docs/DEVELOPER_GUIDE.md` — Integration guide for developers
+- Documents trial form API integration points
+- Preview routes documentation
+- Color palette reference
+
+### 🔧 Developer Experience
+- Landing page preview route: `/?preview=landing`
+- Purchase success page preview: `/?preview=success`
+
+### 💰 Pricing Update
+- Personal Vault: $29 (was $49)
+
+---
+
 ## [1.2.0] - 2024-12-01
 
 ### 🔒 Security Enhancements
