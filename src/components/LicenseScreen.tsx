@@ -600,18 +600,22 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
               </div>
 
               <div className="grid md:grid-cols-2 gap-4 max-w-4xl mx-auto">
-                {/* Single User */}
+                {/* Personal Vault */}
                 <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-6 hover:border-blue-500/50 transition-all">
                   <div className="text-center mb-6">
                     <Shield className="w-12 h-12 text-blue-400 mx-auto mb-4" />
                     <h3 className="text-xl font-semibold text-white mb-2">
-                      Personal License
+                      Personal Vault
                     </h3>
                     <div className="text-3xl font-bold text-white mb-1">
-                      $29.99
+                      $49
                     </div>
-                    <p className="text-slate-400 text-sm">One-time purchase</p>
+                    <p className="text-slate-400 text-sm">Lifetime License</p>
                   </div>
+
+                  <p className="text-slate-400 text-sm mb-4">
+                    <span className="text-cyan-400 font-medium">Best for:</span> Individuals who want full control and zero online exposure.
+                  </p>
 
                   <ul className="space-y-3 mb-6">
                     <li className="flex items-center space-x-2 text-slate-300">
@@ -620,11 +624,11 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
                     </li>
                     <li className="flex items-center space-x-2 text-slate-300">
                       <CheckCircle className="w-4 h-4 text-green-400" />
-                      <span>Advanced encryption</span>
+                      <span>AES-256 encryption</span>
                     </li>
                     <li className="flex items-center space-x-2 text-slate-300">
                       <CheckCircle className="w-4 h-4 text-green-400" />
-                      <span>Export data</span>
+                      <span>100% offline & private</span>
                     </li>
                     <li className="flex items-center space-x-2 text-slate-300">
                       <CheckCircle className="w-4 h-4 text-green-400" />
@@ -641,49 +645,49 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
                     className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-medium transition-all text-center flex items-center justify-center space-x-2"
                   >
                     <CreditCard className="w-4 h-4" />
-                    <span>Purchase Personal</span>
+                    <span>Buy the Personal Vault - $49</span>
                   </button>
                 </div>
 
-                {/* Family Plan */}
+                {/* Family Vault */}
                 <div className="bg-slate-800/50 backdrop-blur-sm border-2 border-purple-500 rounded-xl p-6 relative">
                   <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
                     <span className="bg-purple-600 text-white px-3 py-1 rounded-full text-xs font-medium">
-                      Most Popular
+                      Best Value
                     </span>
                   </div>
 
                   <div className="text-center mb-6">
                     <Users className="w-12 h-12 text-purple-400 mx-auto mb-4" />
                     <h3 className="text-xl font-semibold text-white mb-2">
-                      Family Plan
+                      Family Vault
                     </h3>
                     <div className="text-3xl font-bold text-white mb-1">
-                      $49.99
+                      $79
                     </div>
-                    <p className="text-slate-400 text-sm">One-time purchase</p>
+                    <p className="text-slate-400 text-sm">Lifetime License</p>
                   </div>
+
+                  <p className="text-slate-400 text-sm mb-4">
+                    <span className="text-cyan-400 font-medium">Best for:</span> Families who want to protect everyone under one roof.
+                  </p>
 
                   <ul className="space-y-3 mb-6">
                     <li className="flex items-center space-x-2 text-slate-300">
                       <CheckCircle className="w-4 h-4 text-green-400" />
-                      <span>Everything in Single User</span>
+                      <span>Everything in Personal Vault</span>
                     </li>
                     <li className="flex items-center space-x-2 text-slate-300">
                       <CheckCircle className="w-4 h-4 text-green-400" />
-                      <span>5 separate license keys</span>
+                      <span>3 separate license keys</span>
                     </li>
                     <li className="flex items-center space-x-2 text-slate-300">
                       <CheckCircle className="w-4 h-4 text-green-400" />
-                      <span>Floating panel</span>
-                    </li>
-                    <li className="hidden items-center space-x-2 text-slate-300">
-                      <CheckCircle className="w-4 h-4 text-green-400" />
-                      <span>Priority support</span>
+                      <span>Share with family members</span>
                     </li>
                     <li className="flex items-center space-x-2 text-slate-300">
                       <CheckCircle className="w-4 h-4 text-green-400" />
-                      <span>Family sharing</span>
+                      <span>Each person has their own vault</span>
                     </li>
                   </ul>
 
@@ -692,7 +696,7 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
                     className="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 px-4 rounded-lg font-medium transition-all text-center flex items-center justify-center space-x-2"
                   >
                     <CreditCard className="w-4 h-4" />
-                    <span>Purchase Family Plan</span>
+                    <span>Buy the Family Vault - $79</span>
                   </button>
                 </div>
               </div>

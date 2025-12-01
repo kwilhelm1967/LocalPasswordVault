@@ -33,12 +33,10 @@ export const DownloadInstructions: React.FC<DownloadInstructionsProps> = ({
               <p className="text-slate-300 text-sm mb-2">
                 <strong>License Type:</strong>{" "}
                 {licenseType === "single"
-                  ? "Single User"
-                  : licenseType === "pro"
-                  ? "Pro"
+                  ? "Personal Vault"
                   : licenseType === "family"
-                  ? "Family Plan"
-                  : "Business Plan"}
+                  ? "Family Vault"
+                  : "Personal Vault"}
               </p>
               <p className="text-slate-300 text-sm mb-2">
                 <strong>License Key:</strong>

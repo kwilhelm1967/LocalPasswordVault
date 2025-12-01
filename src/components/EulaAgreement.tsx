@@ -72,9 +72,8 @@ export const EulaAgreement: React.FC<EulaAgreementProps> = ({
             purchased:
           </p>
           <ul className="list-disc pl-6 mb-4 space-y-1">
-            <li>Single User License: 1 device</li>
-            <li>Family Plan: up to 3 devices</li>
-            <li>Business License: up to 10 devices</li>
+            <li>Personal Vault: 1 device</li>
+            <li>Family Vault: up to 3 devices</li>
           </ul>
           <p className="mb-4">
             This license is for personal or internal business use only. You may

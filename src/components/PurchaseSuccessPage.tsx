@@ -119,15 +119,12 @@ export const PurchaseSuccessPage: React.FC = () => {
     }
     if (type) {
       setPlanType(type);
-    } else if (keys.length >= 10) {
-      setPlanType("business");
-      if (!plan) setPlanName("Business License");
     } else if (keys.length >= 3) {
       setPlanType("family");
-      if (!plan) setPlanName("Family Plan");
+      if (!plan) setPlanName("Family Vault");
     } else {
       setPlanType("single");
-      if (!plan) setPlanName("Single User License");
+      if (!plan) setPlanName("Personal Vault");
     }
   }, []);
 

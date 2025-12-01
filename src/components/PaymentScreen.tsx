@@ -62,9 +62,8 @@ export const PaymentScreen: React.FC<PaymentScreenProps> = ({
             Complete Your Purchase
           </h1>
           <p className="text-slate-400">
-            {selectedPlan === "single" && "Single User License - $29.99"}
-            {selectedPlan === "family" && "Family Plan - $49.99"}
-            {selectedPlan === "business" && "Business License - $99.99"}
+            {selectedPlan === "single" && "Personal Vault - $49 Lifetime License"}
+            {selectedPlan === "family" && "Family Vault - $79 Lifetime License"}
           </p>
         </div>
 
@@ -99,15 +98,11 @@ const CheckoutForm: React.FC<PaymentScreenProps> = ({
   const getPrice = () => {
     switch (selectedPlan) {
       case "single":
-        return 29.99;
-      case "pro":
-        return 68.0;
+        return 49;
       case "family":
-        return 49.99;
-      case "business":
-        return 99.99;
+        return 79;
       default:
-        return 29.99;
+        return 49;
     }
   };
 
