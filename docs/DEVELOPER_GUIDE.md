@@ -217,6 +217,88 @@ Before deploying landing page changes:
 
 ---
 
+---
+
+## Download Model Change (Important)
+
+### Previous Model (Old)
+Users had to download a bundled ZIP containing **all 3 OS installers**:
+- `LocalPasswordVault-Setup.exe` (Windows)
+- `LocalPasswordVault.dmg` (macOS)
+- `LocalPasswordVault.AppImage` (Linux)
+
+This meant:
+- ~270 MB download for everyone
+- Users had to extract and find their correct installer
+- Wasted bandwidth for unused platforms
+
+### New Model (Current)
+Users download **only the installer for their detected OS**:
+
+```
+User visits download page
+       ↓
+Browser detects OS via navigator.userAgent
+       ↓
+Page highlights "Your OS" badge on matching platform
+       ↓
+User clicks download button
+       ↓
+Backend serves single platform-specific file
+```
+
+**Benefits:**
+- ~85-95 MB download (one platform only)
+- Automatic OS detection
+- Cleaner user experience
+- Less bandwidth/hosting costs
+
+### Implementation Details
+
+**Frontend OS Detection** (`src/components/DownloadPage.tsx`):
+```typescript
+const detectPlatform = (): 'windows' | 'macos' | 'linux' | 'unknown' => {
+  const userAgent = navigator.userAgent.toLowerCase();
+  if (userAgent.includes('win')) return 'windows';
+  if (userAgent.includes('mac')) return 'macos';
+  if (userAgent.includes('linux')) return 'linux';
+  return 'unknown';
+};
+```
+
+**Download URLs:**
+- Windows: `https://localpasswordvault.com/download/windows`
+- macOS: `https://localpasswordvault.com/download/macos`
+- Linux: `https://localpasswordvault.com/download/linux`
+
+**Backend Requirements:**
+The backend must serve the correct file based on the URL path:
+
+| URL Path | File Served |
+|----------|-------------|
+| `/download/windows` | `LocalPasswordVault-Setup.exe` |
+| `/download/macos` | `LocalPasswordVault.dmg` |
+| `/download/linux` | `LocalPasswordVault.AppImage` |
+
+### Files That Use This Model
+
+| File | Purpose |
+|------|---------|
+| `src/components/DownloadPage.tsx` | Main download page with OS detection |
+| `src/components/PurchaseSuccessPage.tsx` | Post-purchase download with OS detection |
+| `src/components/LandingPage.tsx` | Marketing page download section |
+| `public/landing.html` | Standalone landing page |
+| `src/components/DownloadInstructions.tsx` | Download modal/popup |
+
+### UI Behavior
+
+1. **OS Detection**: On page load, `detectPlatform()` identifies the user's OS
+2. **Sorting**: Download cards are sorted to show detected OS first
+3. **Badge**: "Your OS" badge appears on the recommended platform
+4. **All Options Visible**: User can still download other platforms if needed
+
+---
+
 ## Support
 
 - **Website**: [LocalPasswordVault.com](https://LocalPasswordVault.com)
