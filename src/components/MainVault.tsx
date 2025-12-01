@@ -26,6 +26,8 @@ import {
   ChevronDown,
   Globe,
   ExternalLink,
+  History,
+  RotateCcw,
   Clock,
   AlertCircle,
   CheckSquare,
@@ -76,6 +78,7 @@ import { CategoryIcon } from "./CategoryIcon";
 import { EntryForm } from "./EntryForm";
 import { Dashboard } from "./Dashboard";
 import { Settings, clearClipboardAfterTimeout, getVaultSettings } from "./Settings";
+import { generateTOTP, getTimeRemaining, isValidTOTPSecret } from "../utils/totp";
 
 interface MainVaultProps {
   entries: PasswordEntry[];
@@ -130,6 +133,9 @@ export const MainVault: React.FC<MainVaultProps> = ({
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [showSortDropdown, setShowSortDropdown] = useState(false);
   const sortDropdownRef = useRef<HTMLDivElement>(null);
+  const [showPasswordHistory, setShowPasswordHistory] = useState(false);
+  const [totpCode, setTotpCode] = useState<string>("");
+  const [totpTimeRemaining, setTotpTimeRemaining] = useState(30);
   
   // Bulk select state
   const [bulkSelectMode, setBulkSelectMode] = useState(false);
@@ -310,6 +316,35 @@ export const MainVault: React.FC<MainVaultProps> = ({
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  // TOTP code generation
+  useEffect(() => {
+    if (!viewingEntry?.totpSecret || !isValidTOTPSecret(viewingEntry.totpSecret)) {
+      setTotpCode("");
+      return;
+    }
+
+    const updateTOTP = async () => {
+      try {
+        const code = await generateTOTP(viewingEntry.totpSecret!);
+        setTotpCode(code);
+        setTotpTimeRemaining(getTimeRemaining());
+      } catch {
+        setTotpCode("Error");
+      }
+    };
+
+    updateTOTP();
+    const interval = setInterval(() => {
+      setTotpTimeRemaining(getTimeRemaining());
+      // Regenerate code when timer hits 30 (new period)
+      if (getTimeRemaining() === 30) {
+        updateTOTP();
+      }
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [viewingEntry?.totpSecret]);
 
   const copyToClipboard = async (text: string, id: string) => {
     await navigator.clipboard.writeText(text);
@@ -1083,6 +1118,48 @@ export const MainVault: React.FC<MainVaultProps> = ({
                   </div>
                 </div>
 
+                {/* 2FA Code */}
+                {viewingEntry.totpSecret && isValidTOTPSecret(viewingEntry.totpSecret) && totpCode && (
+                  <div>
+                    <label className="text-xs text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                      <span>🔐</span> 2FA Code
+                    </label>
+                    <div className="mt-1 flex items-center justify-between bg-slate-700/30 rounded-lg p-3">
+                      <div className="flex items-center gap-3">
+                        <span 
+                          className="text-2xl font-mono font-bold tracking-widest"
+                          style={{ color: totpTimeRemaining <= 5 ? '#ef4444' : colors.warmIvory }}
+                        >
+                          {totpCode.slice(0, 3)} {totpCode.slice(3)}
+                        </span>
+                        <div className="flex flex-col items-center">
+                          <div 
+                            className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold"
+                            style={{ 
+                              backgroundColor: totpTimeRemaining <= 5 ? 'rgba(239, 68, 68, 0.2)' : 'rgba(91, 130, 184, 0.2)',
+                              color: totpTimeRemaining <= 5 ? '#ef4444' : colors.steelBlue400
+                            }}
+                          >
+                            {totpTimeRemaining}
+                          </div>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => copyToClipboard(totpCode, `totp-${viewingEntry.id}`)}
+                        className={`p-1.5 rounded transition-colors ${
+                          copiedId === `totp-${viewingEntry.id}` 
+                            ? "text-emerald-400" 
+                            : "text-slate-500 hover:text-white"
+                        }`}
+                        title="Copy code"
+                      >
+                        <Copy className="w-4 h-4" strokeWidth={1.5} />
+                      </button>
+                    </div>
+                    <p className="mt-1 text-xs text-slate-500">Code refreshes every 30 seconds</p>
+                  </div>
+                )}
+
                 {viewingEntry.website && (
                   <div>
                     <label className="text-xs text-slate-500 uppercase tracking-wider">Website</label>
@@ -1149,6 +1226,93 @@ export const MainVault: React.FC<MainVaultProps> = ({
                     })()}
                   </div>
                 </div>
+                
+                {/* Password History */}
+                {viewingEntry.passwordHistory && viewingEntry.passwordHistory.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-slate-700/50">
+                    <button
+                      onClick={() => setShowPasswordHistory(!showPasswordHistory)}
+                      className="flex items-center gap-2 text-xs text-slate-400 hover:text-white transition-colors"
+                    >
+                      <History className="w-3.5 h-3.5" strokeWidth={1.5} />
+                      <span>Password History ({viewingEntry.passwordHistory.length})</span>
+                      <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showPasswordHistory ? 'rotate-180' : ''}`} strokeWidth={1.5} />
+                    </button>
+                    
+                    {showPasswordHistory && (
+                      <div className="mt-3 space-y-2 animate-in slide-in-from-top-2 duration-150">
+                        {viewingEntry.passwordHistory.map((item, index) => (
+                          <div 
+                            key={index}
+                            className="bg-slate-700/30 rounded-lg p-3 flex items-center justify-between group"
+                          >
+                            <div className="flex-1 min-w-0">
+                              <code className="text-xs text-slate-400 font-mono truncate block">
+                                {visiblePasswords.has(`history-${index}`) 
+                                  ? item.password 
+                                  : "••••••••••••"}
+                              </code>
+                              <span className="text-[10px] text-slate-500 mt-1 block">
+                                Changed {new Date(item.changedAt).toLocaleDateString()}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1 ml-2">
+                              <button
+                                onClick={() => {
+                                  const key = `history-${index}`;
+                                  setVisiblePasswords(prev => {
+                                    const next = new Set(prev);
+                                    next.has(key) ? next.delete(key) : next.add(key);
+                                    return next;
+                                  });
+                                }}
+                                className="p-1.5 text-slate-500 hover:text-white rounded transition-colors"
+                                title={visiblePasswords.has(`history-${index}`) ? "Hide" : "Show"}
+                              >
+                                {visiblePasswords.has(`history-${index}`) 
+                                  ? <EyeOff className="w-3.5 h-3.5" strokeWidth={1.5} />
+                                  : <Eye className="w-3.5 h-3.5" strokeWidth={1.5} />}
+                              </button>
+                              <button
+                                onClick={() => copyToClipboard(item.password, `history-${index}`)}
+                                className={`p-1.5 rounded transition-colors ${
+                                  copiedId === `history-${index}` 
+                                    ? "text-emerald-400" 
+                                    : "text-slate-500 hover:text-white"
+                                }`}
+                                title="Copy"
+                              >
+                                <Copy className="w-3.5 h-3.5" strokeWidth={1.5} />
+                              </button>
+                              <button
+                                onClick={() => {
+                                  // Restore this password - edit the entry with the old password
+                                  const updatedEntry = {
+                                    ...viewingEntry,
+                                    password: item.password,
+                                    passwordChangedAt: new Date(),
+                                    passwordHistory: [
+                                      { password: viewingEntry.password, changedAt: viewingEntry.passwordChangedAt || new Date() },
+                                      ...viewingEntry.passwordHistory.filter((_, i) => i !== index)
+                                    ].slice(0, 10),
+                                    updatedAt: new Date(),
+                                  };
+                                  onUpdateEntry(updatedEntry);
+                                  setViewingEntry(updatedEntry);
+                                  setShowPasswordHistory(false);
+                                }}
+                                className="p-1.5 text-slate-500 hover:text-blue-400 rounded transition-colors"
+                                title="Restore this password"
+                              >
+                                <RotateCcw className="w-3.5 h-3.5" strokeWidth={1.5} />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="mt-6 flex gap-3">
@@ -1166,7 +1330,10 @@ export const MainVault: React.FC<MainVaultProps> = ({
                   Edit
                 </button>
                 <button
-                  onClick={() => setViewingEntry(null)}
+                  onClick={() => {
+                    setViewingEntry(null);
+                    setShowPasswordHistory(false);
+                  }}
                   className="px-4 py-2.5 bg-slate-700/50 hover:bg-slate-600/50 text-white rounded-lg text-sm font-medium transition-colors"
                 >
                   Close

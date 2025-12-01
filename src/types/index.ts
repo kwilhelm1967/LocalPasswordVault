@@ -1,5 +1,10 @@
 export type EntryType = "password" | "secure_note";
 
+export interface PasswordHistoryItem {
+  password: string;
+  changedAt: Date;
+}
+
 export interface PasswordEntry {
   id: string;
   entryType?: EntryType; // defaults to "password" for backwards compatibility
@@ -14,6 +19,8 @@ export interface PasswordEntry {
   updatedAt: Date;
   isFavorite?: boolean;
   passwordChangedAt?: Date;
+  passwordHistory?: PasswordHistoryItem[]; // Previous passwords
+  totpSecret?: string; // 2FA TOTP secret key (Base32 encoded)
 }
 
 export interface Category {

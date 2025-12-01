@@ -71,6 +71,7 @@ export const EntryForm: React.FC<EntryFormProps> = ({
     notes: entry?.notes || "",
     balance: entry?.balance || "",
     category: entry?.category || "",
+    totpSecret: entry?.totpSecret || "",
   });
   
   const isSecureNote = entryType === "secure_note";
@@ -187,6 +188,15 @@ export const EntryForm: React.FC<EntryFormProps> = ({
           ? new Date() 
           : (entry?.passwordChangedAt || entry?.createdAt)),
         isFavorite: entry?.isFavorite,
+        // Password history - add old password to history if it changed
+        passwordHistory: isSecureNote ? undefined : (passwordChanged && entry?.password
+          ? [
+              { password: entry.password, changedAt: entry.passwordChangedAt || entry.createdAt || new Date() },
+              ...(entry.passwordHistory || [])
+            ].slice(0, 10) // Keep only last 10 passwords
+          : entry?.passwordHistory),
+        // 2FA secret
+        totpSecret: isSecureNote ? undefined : (formData.totpSecret?.trim() || undefined),
       };
 
       // Submit to parent component
@@ -645,6 +655,28 @@ export const EntryForm: React.FC<EntryFormProps> = ({
               <p className="mt-1 text-xs text-slate-500">Your note will be encrypted with the same security as passwords</p>
             )}
           </div>
+
+          {/* 2FA/TOTP Secret - Only for password entries */}
+          {!isSecureNote && (
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-2">
+                <span className="flex items-center gap-1.5">
+                  🔐 2FA Secret (TOTP)
+                </span>
+              </label>
+              <input
+                type="text"
+                value={formData.totpSecret || ""}
+                onChange={(e) => {
+                  const value = e.target.value.toUpperCase().replace(/[^A-Z2-7]/g, '');
+                  setFormData((prev) => ({ ...prev, totpSecret: value }));
+                }}
+                className="w-full px-4 py-3 rounded-xl text-white placeholder-slate-400 focus:outline-none transition-all text-sm bg-slate-700/50 border border-slate-600/50 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 font-mono"
+                placeholder="Enter Base32 secret (e.g., JBSWY3DPEHPK3PXP)"
+              />
+              <p className="mt-1 text-xs text-slate-500">Optional - paste the secret key from your authenticator setup</p>
+            </div>
+          )}
 
           {/* Action Buttons */}
           <div className="flex gap-3 pt-6 border-t border-slate-700/50">
