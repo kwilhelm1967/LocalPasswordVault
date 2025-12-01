@@ -15,6 +15,9 @@ import { useElectron } from "./hooks/useElectron";
 import { LicenseKeyDisplay } from "./components/LicenseKeyDisplay";
 import { DownloadPage } from "./components/DownloadPage";
 import { TrialTestingTools } from "./components/TrialTestingTools";
+// Dev preview imports (for testing trial screens)
+import { KeyActivationScreen } from "./components/KeyActivationScreen";
+import { ExpiredTrialScreen } from "./components/ExpiredTrialScreen";
 
 // Fixed categories with proper typing
 const FIXED_CATEGORIES: Category[] = [
@@ -865,6 +868,34 @@ function App() {
         />
       </div>
     );
+  }
+
+  /**
+   * Dev Preview Mode: Add ?preview=keyactivation or ?preview=expired to see those screens
+   */
+  if (import.meta.env.DEV) {
+    const urlParams = new URLSearchParams(window.location.search);
+    const preview = urlParams.get('preview');
+    
+    if (preview === 'keyactivation') {
+      return (
+        <KeyActivationScreen
+          onBack={() => window.location.href = '/?dev=1'}
+          onKeyEntered={(key) => alert(`Key entered: ${key}`)}
+          isActivating={false}
+          error={null}
+        />
+      );
+    }
+    
+    if (preview === 'expired') {
+      return (
+        <ExpiredTrialScreen
+          onBuyLifetimeAccess={() => alert('Buy clicked')}
+          onAlreadyPurchased={() => window.location.href = '/?preview=keyactivation'}
+        />
+      );
+    }
   }
 
   /**
