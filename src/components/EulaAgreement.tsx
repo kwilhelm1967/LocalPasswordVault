@@ -94,14 +94,31 @@ export const EulaAgreement: React.FC<EulaAgreementProps> = ({
           </h3>
           <p className="mb-2">You agree not to:</p>
           <ul className="list-disc pl-6 mb-4 space-y-1">
-            <li>Reverse-engineer, decompile, or disassemble the Software</li>
-            <li>Modify or create derivative works of the Software</li>
-            <li>Bypass or tamper with license validation mechanisms</li>
-            <li>Use the Software in violation of any applicable law</li>
+            <li>Reverse-engineer, decompile, disassemble, or attempt to derive the source code of the Software</li>
+            <li>Modify, adapt, translate, or create derivative works based on the Software</li>
+            <li>Copy, reproduce, or duplicate the Software except for backup purposes</li>
+            <li>Sell, resell, license, sublicense, rent, lease, or lend the Software to any third party</li>
+            <li>Redistribute the Software in any form, whether for commercial or non-commercial purposes</li>
+            <li>Remove, alter, or obscure any proprietary notices or labels on the Software</li>
+            <li>Bypass, disable, or tamper with license validation or security mechanisms</li>
+            <li>Use the Software in violation of any applicable law or regulation</li>
+            <li>Share your license key with anyone outside your licensed device count</li>
           </ul>
 
           <h3 className="text-white font-semibold mt-6 mb-2">
-            4. No Cloud Connectivity
+            4. Intellectual Property
+          </h3>
+          <p className="mb-4">
+            The Software, including all code, graphics, user interface, and documentation, 
+            is the exclusive property of Local Password Vault and is protected by copyright, 
+            trade secret, and other intellectual property laws. This license grants you no 
+            rights to the source code. You acknowledge that the Software contains proprietary 
+            and confidential information that is protected by applicable intellectual property 
+            and other laws.
+          </p>
+
+          <h3 className="text-white font-semibold mt-6 mb-2">
+            5. No Cloud Connectivity
           </h3>
           <p className="mb-4">
             This Software is strictly offline and does not transmit or store
@@ -110,7 +127,7 @@ export const EulaAgreement: React.FC<EulaAgreementProps> = ({
           </p>
 
           <h3 className="text-white font-semibold mt-6 mb-2">
-            5. Disclaimer of Warranties
+            6. Disclaimer of Warranties
           </h3>
           <p className="mb-4">
             The Software is provided "as is," without warranty of any kind.
@@ -120,7 +137,7 @@ export const EulaAgreement: React.FC<EulaAgreementProps> = ({
           </p>
 
           <h3 className="text-white font-semibold mt-6 mb-2">
-            6. Limitation of Liability
+            7. Limitation of Liability
           </h3>
           <p className="mb-4">
             To the maximum extent permitted by law, Local Password Vault shall
@@ -129,7 +146,7 @@ export const EulaAgreement: React.FC<EulaAgreementProps> = ({
             passwords, business interruption, or financial loss.
           </p>
 
-          <h3 className="text-white font-semibold mt-6 mb-2">7. Termination</h3>
+          <h3 className="text-white font-semibold mt-6 mb-2">8. Termination</h3>
           <p className="mb-4">
             Violation of any term in this Agreement may result in immediate
             termination of your license, with no refund. Upon termination, you
@@ -137,7 +154,7 @@ export const EulaAgreement: React.FC<EulaAgreementProps> = ({
           </p>
 
           <h3 className="text-white font-semibold mt-6 mb-2">
-            8. Governing Law
+            9. Governing Law
           </h3>
           <p className="mb-4">
             This Agreement is governed by the laws of the State of Texas, United
