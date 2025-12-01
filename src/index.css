@@ -134,36 +134,53 @@ body {
   animation: fadeIn 0.2s ease-out;
 }
 
-/* Password Vault Navigation Styles - Gold Underline on Hover */
+/* Password Vault Navigation Styles - Left Accent Bar on Hover */
+/* Premium style matching Legacy Vault (Notion, VS Code, Discord pattern) */
 .nav-item-hover {
   position: relative;
+  overflow: visible;
 }
 
-.nav-item-hover::after {
+/* Left accent bar - hidden by default */
+.nav-item-hover::before {
   content: '';
   position: absolute;
-  bottom: 0;
-  left: 50%;
-  width: 0;
-  height: 2px;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 0;
   background-color: var(--color-brand-gold);
-  transition: width 0.2s ease, left 0.2s ease;
+  border-radius: 0 2px 2px 0;
+  transition: height 0.2s ease;
 }
 
-.nav-item-hover:hover::after {
-  width: 80%;
-  left: 10%;
+/* Subtle background on hover */
+.nav-item-hover:hover {
+  background-color: rgba(201, 174, 102, 0.08) !important;
 }
 
-/* Selected category indicator - Gold Underline */
-.nav-item-selected::after {
+/* Left accent bar appears on hover */
+.nav-item-hover:hover::before {
+  height: 60%;
+}
+
+/* Selected item - permanent left accent bar */
+.nav-item-selected::before {
   content: '';
   position: absolute;
-  bottom: 0;
-  left: 10%;
-  width: 80%;
-  height: 2px;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 70%;
   background-color: var(--color-brand-gold);
+  border-radius: 0 2px 2px 0;
+}
+
+/* Selected item - subtle background tint */
+.nav-item-selected {
+  background-color: rgba(201, 174, 102, 0.1) !important;
 }
 
 /* Lock vault gold accent icon */

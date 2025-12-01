@@ -495,16 +495,15 @@ export const MainVault: React.FC<MainVaultProps> = ({
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto px-2 py-2">
+        <nav className="flex-1 overflow-y-auto pr-2 py-2">
           {/* Dashboard Link */}
           <button
             onClick={() => setCurrentView("dashboard")}
-            className={`nav-item-hover w-full px-3 py-2 mb-1 rounded-lg text-left text-sm transition-all flex items-center gap-2.5 ${
+            className={`nav-item-hover w-full pl-5 pr-3 py-2 mb-1 rounded-r-lg text-left text-sm transition-all flex items-center gap-2.5 ${
               currentView === "dashboard"
                 ? "nav-item-selected text-white"
-                : "text-slate-400 hover:bg-slate-700/30 hover:text-white"
+                : "text-slate-400"
             }`}
-            style={currentView === "dashboard" ? { backgroundColor: `${colors.steelBlue600}20` } : {}}
           >
             <LayoutDashboard className="w-4 h-4 opacity-70" strokeWidth={1.5} />
             Dashboard
@@ -518,12 +517,11 @@ export const MainVault: React.FC<MainVaultProps> = ({
               onCategoryChange("all");
               setCurrentView("passwords");
             }}
-            className={`nav-item-hover w-full px-3 py-2 mb-2 rounded-lg text-left text-sm transition-all flex items-center gap-2.5 ${
+            className={`nav-item-hover w-full pl-5 pr-3 py-2 mb-2 rounded-r-lg text-left text-sm transition-all flex items-center gap-2.5 ${
               currentView === "passwords" && showFavoritesOnly
                 ? "nav-item-selected text-white"
-                : "text-slate-400 hover:bg-slate-700/30 hover:text-white"
+                : "text-slate-400"
             }`}
-            style={currentView === "passwords" && showFavoritesOnly ? { backgroundColor: `${colors.steelBlue600}20` } : {}}
           >
             <Star className="w-4 h-4 opacity-70" strokeWidth={1.5} style={{ color: colors.brandGold }} />
             Favorites
@@ -532,7 +530,7 @@ export const MainVault: React.FC<MainVaultProps> = ({
             )}
           </button>
 
-          <p className="px-2 mb-2 mt-3 text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
+          <p className="pl-5 pr-2 mb-2 mt-3 text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
             Categories
           </p>
           
@@ -544,12 +542,11 @@ export const MainVault: React.FC<MainVaultProps> = ({
               setShowFavoritesOnly(false);
               setCurrentView("passwords");
             }}
-            className={`nav-item-hover w-full px-3 py-2 mb-0.5 rounded-lg text-left text-sm transition-all flex items-center gap-2.5 ${
+            className={`nav-item-hover w-full pl-5 pr-3 py-2 mb-0.5 rounded-r-lg text-left text-sm transition-all flex items-center gap-2.5 ${
               currentView === "passwords" && selectedCategory === "all" && !showWeakOnly && !showReusedOnly && !showFavoritesOnly
                 ? "nav-item-selected text-white"
-                : "text-slate-400 hover:bg-slate-700/30 hover:text-white"
+                : "text-slate-400"
             }`}
-            style={currentView === "passwords" && selectedCategory === "all" && !showWeakOnly && !showReusedOnly && !showFavoritesOnly ? { backgroundColor: `${colors.steelBlue600}20` } : {}}
           >
             <Shield className="w-4 h-4 opacity-70" strokeWidth={1.5} />
             All Accounts
@@ -565,12 +562,11 @@ export const MainVault: React.FC<MainVaultProps> = ({
                   setShowWeakOnly(false);
                   setCurrentView("passwords");
                 }}
-                className={`nav-item-hover w-full px-3 py-2 mb-0.5 rounded-lg text-left text-sm transition-all flex items-center gap-2.5 ${
+                className={`nav-item-hover w-full pl-5 pr-3 py-2 mb-0.5 rounded-r-lg text-left text-sm transition-all flex items-center gap-2.5 ${
                   isSelected
                     ? "nav-item-selected text-white"
-                    : "text-slate-400 hover:bg-slate-700/30 hover:text-white"
+                    : "text-slate-400"
                 }`}
-                style={isSelected ? { backgroundColor: `${colors.steelBlue600}20` } : {}}
               >
                 <CategoryIcon name={category.icon} size={16} className="opacity-70" strokeWidth={1.5} />
                 {category.name}
@@ -580,15 +576,14 @@ export const MainVault: React.FC<MainVaultProps> = ({
         </nav>
 
         {/* Bottom Actions */}
-        <div className="p-3 border-t border-slate-700/50 space-y-1">
+        <div className="pr-3 pb-3 pt-3 border-t border-slate-700/50 space-y-1">
           <button
             onClick={() => setCurrentView("settings")}
-            className={`nav-item-hover w-full px-3 py-2 rounded-lg text-sm flex items-center gap-2.5 transition-colors ${
+            className={`nav-item-hover w-full pl-5 pr-3 py-2 rounded-r-lg text-sm flex items-center gap-2.5 transition-colors ${
               currentView === "settings"
                 ? "nav-item-selected text-white"
-                : "text-slate-400 hover:text-white hover:bg-slate-700/30"
+                : "text-slate-400"
             }`}
-            style={currentView === "settings" ? { backgroundColor: `${colors.steelBlue600}20` } : {}}
           >
             <SettingsIcon className="w-4 h-4" strokeWidth={1.5} />
             Settings
@@ -596,7 +591,7 @@ export const MainVault: React.FC<MainVaultProps> = ({
           {onMinimize && (
             <button
               onClick={onMinimize}
-              className="w-full px-3 py-2 text-slate-300 hover:text-white bg-slate-700/30 hover:bg-slate-700/50 rounded-lg text-sm flex items-center gap-2.5 transition-colors border border-slate-600/30"
+              className="w-full pl-5 pr-3 py-2 text-slate-300 hover:text-white bg-slate-700/30 hover:bg-slate-700/50 rounded-r-lg text-sm flex items-center gap-2.5 transition-colors border border-l-0 border-slate-600/30"
             >
               <Minimize2 
                 className="w-4 h-4" 
@@ -608,10 +603,10 @@ export const MainVault: React.FC<MainVaultProps> = ({
           )}
           <button
             onClick={onLock}
-            className="w-full px-3 py-2 text-slate-400 hover:text-slate-300 hover:bg-slate-700/30 rounded-lg text-sm flex items-center gap-2.5 transition-colors group"
+            className="nav-item-hover w-full pl-5 pr-3 py-2 text-slate-400 rounded-r-lg text-sm flex items-center gap-2.5 transition-colors"
           >
             <Lock 
-              className="w-4 h-4 lock-vault-icon" 
+              className="w-4 h-4" 
               strokeWidth={1.5}
               style={{ color: colors.brandGold }}
             />
