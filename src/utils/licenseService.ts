@@ -191,7 +191,8 @@ export class LicenseService {
             if (now > trialExpiryDate) {
               // Trial has expired, remove license and mark trial as expired
               if (import.meta.env.DEV) {
-                console.log('⏰ Trial expired locally in getLicenseInfo:', {
+                // Dev mode: trial expiry debug info available
+                void {
                   trialExpiryDate,
                   now,
                   expiredDuration: now.getTime() - trialExpiryDate.getTime()

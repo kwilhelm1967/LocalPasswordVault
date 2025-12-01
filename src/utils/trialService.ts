@@ -185,7 +185,6 @@ export class TrialService {
     // If we have a license token, use it for trial status (offline capable)
     if (licenseToken) {
       try {
-        console.log('🔑 LICENSE TOKEN FOUND, attempting to parse...');
         const tokenParts = licenseToken.split('.');
         if (tokenParts.length !== 3) {
           throw new Error('Invalid JWT format - expected 3 parts');
@@ -193,18 +192,7 @@ export class TrialService {
 
         const tokenData = JSON.parse(atob(tokenParts[1])); // Decode JWT payload
 
-        // 🔍 DEBUG: Log JWT token data for warning timestamps
-        console.log('🔍 JWT Token Data Analysis:', {
-          isTrial: tokenData.isTrial,
-          trialExpiryDate: tokenData.trialExpiryDate,
-          warningPopup1Timestamp: tokenData.warningPopup1Timestamp,
-          warningPopup2Timestamp: tokenData.warningPopup2Timestamp,
-          hasWarningTimestamps: !!(tokenData.warningPopup1Timestamp && tokenData.warningPopup2Timestamp),
-          allTokenData: tokenData
-        });
-
         if (tokenData.isTrial && tokenData.trialExpiryDate) {
-          console.log('✅ JWT TOKEN IS VALID TRIAL - proceeding with calculation');
           const now = new Date();
           const expiryDate = new Date(tokenData.trialExpiryDate);
           const isExpired = now >= expiryDate; // Use >= to include exact expiry time
@@ -637,7 +625,6 @@ export class TrialService {
       if (!popup1Shown && trialInfo.warningPopup1Timestamp) {
         const popup1Time = new Date(trialInfo.warningPopup1Timestamp);
         if (now >= popup1Time) {
-          console.log('🚨 TRIGGERING POPUP 1 (Expiring Soon)');
           localStorage.setItem(TrialService.WARNING_POPUP_1_SHOWN_KEY, 'true');
           this.triggerWarningPopupCallbacks({
             shouldShowExpiringWarning: true,
@@ -652,7 +639,6 @@ export class TrialService {
       if (!popup2Shown && trialInfo.warningPopup2Timestamp) {
         const popup2Time = new Date(trialInfo.warningPopup2Timestamp);
         if (now >= popup2Time) {
-          console.log('🚨 TRIGGERING POPUP 2 (Final Notice)');
           localStorage.setItem(TrialService.WARNING_POPUP_2_SHOWN_KEY, 'true');
           this.triggerWarningPopupCallbacks({
             shouldShowExpiringWarning: false,
@@ -688,36 +674,13 @@ export class TrialService {
    * Debug method to log current trial status and warning times
    */
   async logTrialStatus(): Promise<void> {
+    // Development-only trial status logging
+    if (!import.meta.env.DEV) return;
+    
     try {
-      const trialInfo = await this.getTrialInfo();
-      const now = new Date();
-
-      console.log('📋 TRIAL STATUS DEBUG REPORT:', {
-        currentTime: now.toISOString(),
-        trialActive: trialInfo.isTrialActive,
-        isExpired: trialInfo.isExpired,
-        trialEndDate: trialInfo.endDate?.toISOString(),
-        timeRemaining: trialInfo.timeRemaining,
-        warning1Timestamp: trialInfo.warningPopup1Timestamp,
-        warning2Timestamp: trialInfo.warningPopup2Timestamp,
-        warning1Shown: this.hasWarningPopupBeenShown(1),
-        warning2Shown: this.hasWarningPopupBeenShown(2),
-        licenseTokenPresent: !!localStorage.getItem(TrialService.LICENSE_TOKEN_KEY)
-      });
-
-      if (trialInfo.warningPopup1Timestamp) {
-        const warning1Time = new Date(trialInfo.warningPopup1Timestamp);
-        const timeToWarning1 = warning1Time.getTime() - now.getTime();
-        console.log(`⏰ WARNING 1: ${timeToWarning1 > 0 ? Math.floor(timeToWarning1 / 1000) + 's' : 'PAST'} (${warning1Time.toISOString()})`);
-      }
-
-      if (trialInfo.warningPopup2Timestamp) {
-        const warning2Time = new Date(trialInfo.warningPopup2Timestamp);
-        const timeToWarning2 = warning2Time.getTime() - now.getTime();
-        console.log(`⏰ WARNING 2: ${timeToWarning2 > 0 ? Math.floor(timeToWarning2 / 1000) + 's' : 'PAST'} (${warning2Time.toISOString()})`);
-      }
-    } catch (error) {
-      console.error('❌ ERROR in logTrialStatus:', error);
+      await this.getTrialInfo();
+    } catch {
+      // Silent in production
     }
   }
 }

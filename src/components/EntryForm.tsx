@@ -244,28 +244,19 @@ export const EntryForm: React.FC<EntryFormProps> = ({
         // Small delay to ensure storage has processed the changes
         await new Promise((resolve) => setTimeout(resolve, 100));
 
-        // Save current entries to temporary shared storage for floating panel
+        // Sync to floating panel
         const currentEntries = await storageService.loadEntries();
         if (window.electronAPI?.saveSharedEntries) {
           await window.electronAPI.saveSharedEntries(currentEntries);
-          console.log(
-            "EntryForm: Saved entries to shared storage for floating panel"
-          );
         }
-
-        // Force immediate cross-window sync after saving
         if (window.electronAPI?.broadcastEntriesChanged) {
           await window.electronAPI.broadcastEntriesChanged();
-          console.log("EntryForm: Broadcasted entries changed event");
         }
-
-        // Also trigger sync to floating panel if available
         if (window.electronAPI?.syncVaultToFloating) {
           await window.electronAPI.syncVaultToFloating();
-          console.log("EntryForm: Synced vault to floating panel");
         }
-      } catch (error) {
-        console.error("EntryForm: Failed to synchronize entries:", error);
+      } catch {
+        // Floating panel sync failed - non-critical
       }
     } catch (error) {
       console.error("Error submitting form:", error);
@@ -284,43 +275,23 @@ export const EntryForm: React.FC<EntryFormProps> = ({
         await onDelete();
         setShowDeleteConfirm(false);
 
-        // Enhanced synchronization - ensure floating panel gets updates after delete
+        // Sync to floating panel after delete
         try {
-          // Small delay to ensure storage has processed the changes
           await new Promise((resolve) => setTimeout(resolve, 100));
-
-          // Save current entries to temporary shared storage for floating panel
           const currentEntries = await storageService.loadEntries();
           if (window.electronAPI?.saveSharedEntries) {
             await window.electronAPI.saveSharedEntries(currentEntries);
-            console.log(
-              "EntryForm: Saved entries to shared storage for floating panel after delete"
-            );
           }
-
-          // Force immediate cross-window sync after saving
           if (window.electronAPI?.broadcastEntriesChanged) {
             await window.electronAPI.broadcastEntriesChanged();
-            console.log(
-              "EntryForm: Broadcasted entries changed event after delete"
-            );
           }
-
-          // Also trigger sync to floating panel if available
           if (window.electronAPI?.syncVaultToFloating) {
             await window.electronAPI.syncVaultToFloating();
-            console.log(
-              "EntryForm: Synced vault to floating panel after delete"
-            );
           }
-        } catch (error) {
-          console.error(
-            "EntryForm: Failed to synchronize entries after delete:",
-            error
-          );
+        } catch {
+          // Floating panel sync failed - non-critical
         }
-      } catch (error) {
-        console.error("Error deleting entry:", error);
+      } catch {
         setShowDeleteConfirm(false);
       }
     }

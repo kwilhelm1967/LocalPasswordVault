@@ -134,7 +134,7 @@ export const ElectronFloatingPanel: React.FC<ElectronFloatingPanelProps> = ({
       setIsTrialExpired(trialInfo.isExpired);
 
       if (trialInfo.isExpired) {
-        console.log("Floating panel: Trial expired - blocking access");
+        // Trial expired - access blocked
       }
     };
 
@@ -151,23 +151,19 @@ export const ElectronFloatingPanel: React.FC<ElectronFloatingPanelProps> = ({
       if (window.electronAPI && window.electronAPI.getVaultStatus) {
         try {
           const mainVaultStatus = await window.electronAPI.getVaultStatus();
-          console.log("Floating panel: Main vault unlocked status:", mainVaultStatus);
           setIsMainVaultUnlocked(mainVaultStatus);
 
           // If trial is expired, don't initialize floating panel
           if (isTrialExpired) {
-            console.log("Floating panel: Trial expired - not initializing vault");
             return;
           }
 
           if (mainVaultStatus && !storageService.isVaultUnlocked()) {
-            console.log("Floating panel: Attempting to sync with main vault");
-            // Try to initialize the floating panel's vault using existing data
+            // Sync with main vault
             await window.electronAPI.syncVaultToFloating();
             // Load entries from shared storage
             const sharedEntries = await window.electronAPI.loadSharedEntries();
             if (sharedEntries) {
-              console.log("Floating panel: Loaded shared entries:", sharedEntries.length);
               const mappedEntries = sharedEntries.length > 0
                 ? sharedEntries.map((entry: any) => ({
                     ...entry,
@@ -192,7 +188,6 @@ export const ElectronFloatingPanel: React.FC<ElectronFloatingPanelProps> = ({
     if (!window.electronAPI?.onVaultStatusChange) return;
 
     const handleVaultStatusChange = async (_event: any, unlocked: boolean) => {
-      console.log("Floating panel: Vault status changed", unlocked);
       setIsMainVaultUnlocked(unlocked);
 
       if (unlocked) {
@@ -200,7 +195,6 @@ export const ElectronFloatingPanel: React.FC<ElectronFloatingPanelProps> = ({
         try {
           const sharedEntries = await window.electronAPI.loadSharedEntries();
           if (sharedEntries) {
-            console.log("Floating panel: Reloaded entries after vault unlock:", sharedEntries.length);
             const mappedEntries = sharedEntries.length > 0
               ? sharedEntries.map((entry: any) => ({
                   ...entry,
@@ -228,14 +222,12 @@ export const ElectronFloatingPanel: React.FC<ElectronFloatingPanelProps> = ({
 
     const handleEntriesChanged = async () => {
       try {
-        console.log("Floating panel: Entries changed event received");
 
         // Try to load from shared storage first (for updates from MainVault)
         if (window.electronAPI?.loadSharedEntries) {
           const sharedEntries = await window.electronAPI.loadSharedEntries();
           // Handle empty array case explicitly
           if (sharedEntries) {
-            console.log("Floating panel: Loaded entries from shared storage:", sharedEntries.length);
             const mappedEntries = sharedEntries.length > 0
               ? sharedEntries.map((entry: any) => ({
                   ...entry,
@@ -250,7 +242,6 @@ export const ElectronFloatingPanel: React.FC<ElectronFloatingPanelProps> = ({
 
         // Fallback: reload from localStorage if vault is unlocked
         if (storageService.isVaultUnlocked()) {
-          console.log("Floating panel: Fallback - loading from localStorage");
           const loadedEntries = await storageService.loadEntries();
           onEntriesReload?.(loadedEntries || []);
         }

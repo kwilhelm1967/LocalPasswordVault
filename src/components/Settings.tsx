@@ -1259,15 +1259,13 @@ export const clearClipboardAfterTimeout = (timeout: number, copiedText?: string)
           // Only clear if clipboard still contains our copied text
           if (currentClipboard === lastCopiedText) {
             await navigator.clipboard.writeText("");
-            console.log("Clipboard auto-cleared for security");
           }
         } catch {
           // If we can't read clipboard (permission denied), clear it anyway for safety
           await navigator.clipboard.writeText("");
-          console.log("Clipboard cleared (could not verify content)");
         }
-      } catch (error) {
-        console.warn("Failed to clear clipboard:", error);
+      } catch {
+        // Clipboard clear failed - non-critical
       } finally {
         lastCopiedText = null;
         clearTimeoutId = null;

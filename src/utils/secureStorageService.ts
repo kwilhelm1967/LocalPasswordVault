@@ -65,8 +65,7 @@ export class SecureStorageService {
 
     // Only store hash in secure environment
     if (this.hasSecureStorage()) {
-      // For secure storage, we handle hash verification differently
-      console.log("✅ Secure storage available - password hash handled securely");
+      // Secure storage handles hash verification
     } else {
       // Fallback: store in localStorage (encrypted)
       localStorage.setItem("vault_password_hash", passwordHash);
@@ -77,8 +76,6 @@ export class SecureStorageService {
 
     if (this.hasSecureStorage()) {
       // Store test data securely in file system
-      // This will be handled by the main process
-      console.log("✅ Test data stored securely");
     } else {
       localStorage.setItem("vault_test_v2", testEncrypted);
     }
@@ -95,9 +92,7 @@ export class SecureStorageService {
       let testData: string | null = null;
 
       if (hasSecureStorage) {
-        // For secure storage, the hash verification is handled by the main process
-        // We'll rely on the secure storage's built-in verification
-        console.log("🔐 Using secure storage for password verification");
+        // Secure storage handles verification
       } else {
         // Fallback to localStorage
         storedPasswordHash = localStorage.getItem("vault_password_hash");
@@ -191,7 +186,6 @@ export class SecureStorageService {
         if (!success) {
           throw new Error("Failed to save to secure storage");
         }
-        console.log("✅ Data saved to secure file storage");
 
         // Remove sensitive data from localStorage
         this.cleanupLocalStorage();
@@ -274,7 +268,6 @@ export class SecureStorageService {
         // Handle migration from old unencrypted data
         const oldData = localStorage.getItem("password_entries");
         if (oldData && oldData !== "undefined" && oldData !== "null") {
-          console.log("Migrating unencrypted data to encrypted storage...");
           const entries = JSON.parse(oldData);
           if (Array.isArray(entries)) {
             const migratedEntries = entries.map((entry: any) => ({
@@ -314,7 +307,6 @@ export class SecureStorageService {
             const entries = JSON.parse(decryptedBackup);
 
             if (Array.isArray(entries)) {
-              console.log("✅ Successfully recovered from backup");
               localStorage.setItem("password_entries_v2", backupData);
               return entries.map((entry: any) => ({
                 ...entry,
@@ -350,8 +342,6 @@ export class SecureStorageService {
     sensitiveKeys.forEach(key => {
       localStorage.removeItem(key);
     });
-
-    console.log("🧹 Cleaned sensitive data from localStorage");
   }
 
   /**

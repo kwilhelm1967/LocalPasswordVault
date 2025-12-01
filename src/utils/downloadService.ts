@@ -79,8 +79,8 @@ For assistance, contact support@localpasswordvault.com
 
   // Track download events
   async trackDownload(packageType: string, platform?: string): Promise<void> {
-    // In a real implementation, this would send analytics data
-    console.log(`Download tracked: ${packageType}${platform ? ` for ${platform}` : ''}`);
+    // Analytics tracking placeholder
+    void { packageType, platform };
     
     // Store download history
     const downloads = this.getDownloadHistory();

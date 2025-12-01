@@ -55,7 +55,7 @@ class AnalyticsService {
     
     // In a real app, we would send this to a server
     if (environment.isTest) {
-      console.log('[TEST] Tracking event:', eventData);
+      void eventData; // Test mode - event captured
     }
   }
 

@@ -151,7 +151,6 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
 
     // Hide floating button when user goes to purchase
     if (window.electronAPI?.hideFloatingButton) {
-      console.log("User going to purchase website - hiding floating toggle button");
       window.electronAPI.hideFloatingButton();
     }
   };
@@ -191,8 +190,7 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
   // Hide floating button when expired trial screen is shown
   useEffect(() => {
     if (showExpiredTrialScreen && window.electronAPI?.hideFloatingButton) {
-      // Immediately hide the floating button when trial expires
-      console.log("Trial expired - hiding floating toggle button");
+      // Hide floating button when trial expires
       window.electronAPI.hideFloatingButton();
     }
   }, [showExpiredTrialScreen]);
@@ -235,7 +233,6 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
 
         // Show floating button again when license is successfully activated
         if (window.electronAPI?.showFloatingButton) {
-          console.log("License activated - showing floating toggle button");
           window.electronAPI.showFloatingButton();
         }
       } else {
@@ -318,7 +315,6 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
 
     // Hide floating button during purchase flow
     if (window.electronAPI?.hideFloatingButton) {
-      console.log("Purchase flow started - hiding floating toggle button");
       window.electronAPI.hideFloatingButton();
     }
   };
@@ -579,7 +575,6 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
                           }
                           // Hide floating button when user goes to purchase
                           if (window.electronAPI?.hideFloatingButton) {
-                            console.log("User going to purchase website - hiding floating toggle button");
                             window.electronAPI.hideFloatingButton();
                           }
                         }}

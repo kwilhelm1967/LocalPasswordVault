@@ -170,7 +170,6 @@ const useVaultData = (isLocked: boolean, isElectron: boolean, loadSharedEntries?
         try {
           const sharedEntries = await loadSharedEntries();
           if (sharedEntries && sharedEntries.length > 0) {
-            console.log("Loading entries from shared storage:", sharedEntries.length);
             loadedEntries = sharedEntries.map((entry: any) => ({
               ...entry,
               createdAt: new Date(entry.createdAt),
@@ -179,23 +178,21 @@ const useVaultData = (isLocked: boolean, isElectron: boolean, loadSharedEntries?
             // Also save to localStorage as backup
             await storageService.saveEntries(loadedEntries);
           }
-        } catch (error) {
-          console.log("Failed to load from shared storage, using localStorage");
+        } catch {
+          // Fallback to localStorage
         }
       }
 
       // If no shared entries or failed to load, use localStorage
       if (loadedEntries.length === 0) {
         loadedEntries = await storageService.loadEntries();
-        console.log("Loading entries from localStorage:", loadedEntries.length);
 
-        // Save to shared storage if we're in Electron and we have entries
+        // Sync to shared storage for Electron floating panel
         if (isElectron && saveSharedEntries && loadedEntries && loadedEntries.length > 0) {
           try {
             await saveSharedEntries(loadedEntries);
-            console.log("Saved entries to shared storage:", loadedEntries.length);
-          } catch (error) {
-            console.log("Failed to save to shared storage");
+          } catch {
+            // Shared storage unavailable
           }
         }
       }
@@ -234,7 +231,6 @@ const useVaultData = (isLocked: boolean, isElectron: boolean, loadSharedEntries?
           return;
         }
 
-        console.log("Entries changed event received, reloading from shared storage");
         // Reload from shared storage
         if (loadSharedEntries) {
           const sharedEntries = await loadSharedEntries();
@@ -350,7 +346,6 @@ const useEntryManagement = (
 
       if (isElectron && isFloatingMode && isVaultLockedLocally) {
         // In floating panel with locked local storage, only save to shared storage
-        console.log("Floating panel: Saving only to shared storage");
         if (saveSharedEntries) {
           await saveSharedEntries(updatedEntries);
         }
@@ -387,7 +382,6 @@ const useEntryManagement = (
 
       if (isElectron && isFloatingMode && isVaultLockedLocally) {
         // In floating panel with locked local storage, only save to shared storage
-        console.log("Floating panel: Updating only in shared storage");
         if (saveSharedEntries) {
           await saveSharedEntries(updatedEntries);
         }
@@ -419,7 +413,6 @@ const useEntryManagement = (
 
       if (isElectron && isFloatingMode && isVaultLockedLocally) {
         // In floating panel with locked local storage, only save to shared storage
-        console.log("Floating panel: Deleting only from shared storage");
         if (saveSharedEntries) {
           await saveSharedEntries(updatedEntries);
         }
@@ -489,7 +482,6 @@ function App() {
 
     // Check warning popups every 1 second in development (for precise timing), every 10 seconds in production
     const checkInterval = import.meta.env.DEV ? 1000 : 10000;
-    console.log(`⏰ SETTING UP WARNING POPUP MONITORING (interval: ${checkInterval}ms)`);
 
     const warningInterval = setInterval(async () => {
       await trialService.checkWarningPopups();
@@ -559,7 +551,6 @@ function App() {
       const timeout = getAutoLockTimeout();
       if (timeout > 0) {
         timeoutId = setTimeout(() => {
-          console.log("Auto-lock triggered due to inactivity");
           handleLock();
         }, timeout);
       }
@@ -594,7 +585,6 @@ function App() {
         
         // If been away longer than timeout, lock immediately
         if (timeout > 0 && elapsed > timeout) {
-          console.log("Auto-lock triggered: inactive while tab was hidden");
           handleLock();
         } else {
           resetTimer();
@@ -708,12 +698,10 @@ function App() {
         if (isElectron && saveSharedEntries) {
           try {
             await saveSharedEntries(merged);
-            console.log("Updated shared storage with imported entries:", merged.length);
 
-            // Now trigger the cross-window synchronization to notify ElectronFloatingPanel
+            // Trigger cross-window sync for floating panel
             if (window.electronAPI?.broadcastEntriesChanged) {
               await window.electronAPI.broadcastEntriesChanged();
-              console.log("Broadcasted entries changed event after import");
             }
           } catch (error) {
             console.error("Failed to update shared storage after import:", error);
@@ -844,7 +832,6 @@ function App() {
   // SAFETY CHECK: Force redirect if trial has expired but user doesn't have a valid license
   useEffect(() => {
     if (appStatus && appStatus.trialInfo.isExpired && appStatus.canUseApp && !appStatus.isLicensed) {
-      console.log("🚨 SAFETY CHECK: Forcing redirect due to expired trial without valid license");
       checkStatusImmediately();
     }
   }, [appStatus?.trialInfo.isExpired, appStatus?.canUseApp, appStatus?.isLicensed, checkStatusImmediately]);

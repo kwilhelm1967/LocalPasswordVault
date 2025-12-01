@@ -471,7 +471,6 @@ export class StorageService {
               const entries = JSON.parse(decryptedBackup);
 
               if (Array.isArray(entries)) {
-                console.log("Successfully recovered from backup");
                 // Restore backup as main data
                 localStorage.setItem("password_entries_v2", backupData);
                 return entries.map((entry: any) => ({
@@ -490,9 +489,6 @@ export class StorageService {
       // Handle migration from old unencrypted data
       const oldData = localStorage.getItem("password_entries");
       if (oldData && oldData !== "undefined" && oldData !== "null") {
-        console.log(
-          "Migrating unencrypted password data to encrypted storage..."
-        );
         const entries = JSON.parse(oldData);
 
         if (Array.isArray(entries)) {
