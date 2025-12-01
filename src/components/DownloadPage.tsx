@@ -104,7 +104,7 @@ const DownloadCard: React.FC<DownloadCardProps> = ({
           className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-xs font-semibold text-white"
           style={{ backgroundColor: colors.steelBlue500 }}
         >
-          Recommended for You
+          Your OS
         </div>
       )}
 

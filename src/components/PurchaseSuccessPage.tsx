@@ -361,7 +361,7 @@ export const PurchaseSuccessPage: React.FC = () => {
                         className="px-2 py-1 text-[10px] font-medium"
                         style={{ backgroundColor: colors.steelBlue500, color: "white" }}
                       >
-                        Recommended
+                        Your OS
                       </div>
                     )}
 
