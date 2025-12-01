@@ -3,7 +3,7 @@ import { FileText, Download, Check } from "lucide-react";
 
 interface DownloadInstructionsProps {
   licenseKey: string;
-  licenseType: "single" | "pro" | "family" | "business";
+  licenseType: "single" | "family";
   onClose: () => void;
 }
 

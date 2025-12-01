@@ -547,7 +547,7 @@ export class LicenseService {
    */
   getLicenseDisplayName(type: LicenseType): string {
     const names = {
-      personal: "Single User License",
+      personal: "Personal Vault",
       family: "Family Plan",
       trial: "7-Day Trial License",
     };

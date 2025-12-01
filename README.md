@@ -188,6 +188,18 @@ npm run lint          # Run ESLint
 
 ---
 
+## 💰 Pricing
+
+| Plan | Price | Keys | Devices |
+|------|-------|------|---------|
+| **Personal Vault** | $49 | 1 | 1 |
+| **Family Vault** | $79 | 5 | 5 |
+| **Free Trial** | $0 | — | 1 (7 days) |
+
+All paid plans are **one-time lifetime purchases** — no subscriptions, no recurring fees.
+
+---
+
 ## 📄 License
 
 Proprietary software. See LICENSE file for details.

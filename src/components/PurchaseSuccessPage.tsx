@@ -119,7 +119,7 @@ export const PurchaseSuccessPage: React.FC = () => {
     }
     if (type) {
       setPlanType(type);
-    } else if (keys.length >= 3) {
+    } else if (keys.length >= 5) {
       setPlanType("family");
       if (!plan) setPlanName("Family Vault");
     } else {
@@ -248,7 +248,7 @@ export const PurchaseSuccessPage: React.FC = () => {
                     <p className="text-sm" style={{ color: colors.warmIvory, opacity: 0.6 }}>
                       {licenseKeys.length === 1 
                         ? "Save this key — you'll need it to activate the app"
-                        : "Each key activates one device — share with family members"}
+                        : "Each key activates one device — install on up to 5 devices"}
                     </p>
                   </div>
                 </div>

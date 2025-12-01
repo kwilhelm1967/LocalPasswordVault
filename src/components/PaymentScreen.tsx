@@ -22,7 +22,7 @@ const stripePromise = loadStripe(environment.stripePublishableKey);
 interface PaymentScreenProps {
   onBack: () => void;
   onPaymentComplete: (licenseKey: string) => void;
-  selectedPlan: "single" | "pro" | "family" | "business";
+  selectedPlan: "single" | "family";
 }
 
 // Main payment screen component

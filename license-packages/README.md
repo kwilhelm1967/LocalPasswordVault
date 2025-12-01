@@ -1,45 +1,64 @@
 # License Packages
 
-This directory contains the license packages for all tiers of Local Password Vault:
+This directory contains the license packages for Local Password Vault.
 
-## 1. Single User ($29.99)
+---
 
-- 1 device
-- Unlimited passwords
-- All core features
-- Export
-- Floating panel
+## 📦 Available Plans
 
-## 2. Family Plan ($49.99)
+### 1. Personal Vault — $49 (Lifetime License)
 
-- 3 devices
-- Everything from Single User
-- Cloud sync (optional)
-- Priority support
-- Family sharing
+**Best for:** Individuals who want full control and zero online exposure.
 
-## 3. Pro ($68.00)
+- ✅ 1 device
+- ✅ Unlimited passwords
+- ✅ AES-256-GCM encryption
+- ✅ 100% offline & private
+- ✅ Floating panel (Mini Vault)
+- ✅ Export/Import
+- ✅ Password generator
+- ✅ One-time purchase — works for life
 
-- 6 devices
-- Everything from Single User
-- Priority support
-- Multi-device support
+---
 
-## 4. Business Plan ($99.99)
+### 2. Family Vault — $79 (Lifetime License)
 
-- 10+ devices
-- Everything from Family Plan
-- Team management
-- Admin dashboard
-- Enterprise support
+**Best for:** Families who want to protect everyone under one roof.
 
-## Package Contents
+- ✅ Everything in Personal Vault
+- ✅ 5 Keys to install on 5 devices
+- ✅ Ability to create 5 encrypted vaults
+- ✅ One-time lifetime ownership — never pay again
+- ✅ Each family member has their own vault
+
+---
+
+### 3. Free Trial Vault — $0 (7-Day Trial)
+
+**Best for:** Anyone who wants to see how true offline protection works before buying.
+
+- ✅ Full Local Password Vault experience
+- ✅ Use on one device for 7 days
+- ✅ Explore full offline encryption
+- ✅ Nothing stored or synced online
+- ✅ No credit card required
+
+---
+
+## 📄 Package Contents
 
 Each license package contains:
 
-- **README.txt** - Overview and getting started
-- **LICENSE.txt** - Legal license agreement
-- **GETTING_STARTED.txt** - Detailed setup instructions
-- **QUICK_START.txt** - Fast setup guide
-- **FEATURES.txt** - Complete feature list
-- **SUPPORT.txt** - Support information and resources
+- **README.txt** — Overview and getting started
+- **LICENSE.txt** — Legal license agreement
+- **GETTING_STARTED.txt** — Detailed setup instructions
+- **QUICK_START.txt** — Fast setup guide
+- **FEATURES.txt** — Complete feature list
+- **SUPPORT.txt** — Support information and resources
+
+---
+
+## 🔗 Links
+
+- **Website**: [LocalPasswordVault.com](https://LocalPasswordVault.com)
+- **Support**: support@LocalPasswordVault.com

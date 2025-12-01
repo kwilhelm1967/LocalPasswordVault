@@ -31,10 +31,10 @@ Your primary job is to help me complete these specific tasks:
     * [cite_start]Fix the Category Selection (replace dropdown with buttons)[cite: 36].
     * [cite_start]Fix the Text/Scrolling Issues[cite: 39].
 
-2.  **Implement New 2-Plan Structure:**
-    * [cite_start]**Remove all 4 old plans** (Single, Family, Business, Pro)[cite: 46].
-    * **Implement 2 new plans:** "Personal" (1 key) and "Family" (5 keys).
-    * For the Family plan, all 5 keys must be sent in one email.
+2.  **Current 3-Plan Structure (IMPLEMENTED):**
+    * **Personal Vault** — $49 Lifetime License (1 key, 1 device)
+    * **Family Vault** — $79 Lifetime License (5 keys, 5 devices)
+    * **Free Trial Vault** — $0 (7-day trial, full features)
 
 3.  **Build New Purchase Flow:**
     * [cite_start]Implement the *exact* architecture from the doc: **Stripe (Webhook) -> Linode (Backend API) -> Supabase (DB) -> Brevo (Email)**[cite: 43, 105, 110, 111].

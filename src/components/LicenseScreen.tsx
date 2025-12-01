@@ -679,15 +679,15 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
                     </li>
                     <li className="flex items-center space-x-2 text-slate-300">
                       <CheckCircle className="w-4 h-4 text-green-400" />
-                      <span>3 separate license keys</span>
+                      <span>5 Keys to install on 5 devices</span>
                     </li>
                     <li className="flex items-center space-x-2 text-slate-300">
                       <CheckCircle className="w-4 h-4 text-green-400" />
-                      <span>Share with family members</span>
+                      <span>Ability to create 5 encrypted vaults</span>
                     </li>
                     <li className="flex items-center space-x-2 text-slate-300">
                       <CheckCircle className="w-4 h-4 text-green-400" />
-                      <span>Each person has their own vault</span>
+                      <span>One-time lifetime ownership</span>
                     </li>
                   </ul>
 
