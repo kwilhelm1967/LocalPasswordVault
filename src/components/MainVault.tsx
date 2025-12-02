@@ -1086,7 +1086,7 @@ export const MainVault: React.FC<MainVaultProps> = ({
                           </p>
                         </>
                       )}
-                    </div>
+                      </div>
                     )}
                   </div>
                 );
@@ -1094,7 +1094,7 @@ export const MainVault: React.FC<MainVaultProps> = ({
             </div>
           )}
             </div>
-          </>
+          </div>
         )}
       </main>
 
