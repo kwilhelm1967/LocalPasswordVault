@@ -2,6 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import { ErrorBoundary } from './components/ErrorBoundary.tsx';
+import { LiveRegionProvider } from './components/accessibility';
 import './index.css';
 
 // Ensure dark background is set immediately
@@ -26,7 +27,9 @@ const root = createRoot(rootElement);
 root.render(
   <StrictMode>
     <ErrorBoundary>
-      <App />
+      <LiveRegionProvider>
+        <App />
+      </LiveRegionProvider>
     </ErrorBoundary>
   </StrictMode>
 );

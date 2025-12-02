@@ -23,6 +23,8 @@ import { PurchaseSuccessPage } from "./components/PurchaseSuccessPage";
 import { LandingPage } from "./components/LandingPage";
 import { OfflineIndicator } from "./components/OfflineIndicator";
 import { UndoToast } from "./components/UndoToast";
+import { WhatsNewModal, useWhatsNew } from "./components/WhatsNewModal";
+import { SkipLink } from "./components/accessibility";
 
 // Fixed categories with proper typing
 const FIXED_CATEGORIES: Category[] = [
@@ -1045,9 +1047,32 @@ function App() {
     return <LoginScreen onLogin={handleLogin} />;
   }
 
+  // What's New modal state
+  const { shouldShow: showWhatsNew, dismiss: dismissWhatsNew } = useWhatsNew();
+  const [whatsNewOpen, setWhatsNewOpen] = useState(showWhatsNew);
+
+  // Listen for "What's New" open event from Settings
+  useEffect(() => {
+    const handleOpenWhatsNew = () => setWhatsNewOpen(true);
+    window.addEventListener('open-whats-new', handleOpenWhatsNew);
+    return () => window.removeEventListener('open-whats-new', handleOpenWhatsNew);
+  }, []);
+
   // Main app
   return (
     <div className="relative">
+      {/* Skip to main content link for keyboard users */}
+      <SkipLink targetId="main-content" />
+
+      {/* What's New Modal */}
+      <WhatsNewModal 
+        isOpen={whatsNewOpen} 
+        onClose={() => {
+          setWhatsNewOpen(false);
+          dismissWhatsNew();
+        }} 
+      />
+
       {/* License Keys Display */}
       {showLicenseKeys && features.showTestingTools && (
         <div className="fixed inset-0 z-50 bg-slate-900/95 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
@@ -1077,10 +1102,12 @@ function App() {
 
       {/* Main Vault */}
       {showMainVault && (
-        <MainVault
-          key={`main-vault-${entries.length}`}
-          {...mainVaultProps}
-        />
+        <div id="main-content" tabIndex={-1}>
+          <MainVault
+            key={`main-vault-${entries.length}`}
+            {...mainVaultProps}
+          />
+        </div>
       )}
 
       {/* Floating Panel (Web) */}

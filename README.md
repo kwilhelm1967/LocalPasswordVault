@@ -29,11 +29,19 @@ A professional-grade, offline-first password management application built with R
 ### 🎯 User Experience
 - **Mini Vault** — Floating panel for quick access (Electron)
 - **Dashboard** — Overview with security score and statistics
-- **Categories** — Banking, Shopping, Entertainment, Business, Social, Other
-- **Search & Filter** — Find accounts instantly
+- **Categories** — Banking, Shopping, Entertainment, Email, Work, Business, Other
+- **Search & Filter** — Debounced search for instant results
 - **Password Generator** — Customizable strong password creation
+- **Password Strength Meter** — Visual feedback on password quality
+- **Password Age Alerts** — Warnings for passwords >90 days old
+- **2FA/TOTP Built-in** — Generate authenticator codes
+- **Custom Fields** — Add any data to entries
+- **Secure Notes** — Store sensitive text
+- **Password History** — Track previous passwords
+- **Undo Delete** — 5-second window to restore
+- **Offline Indicator** — Know when you're offline
 - **Encrypted Export/Import** — Password-protected backups
-- **Expand/Collapse Cards** — Click to reveal password details
+- **Keyboard Accessible** — Full keyboard navigation
 
 ---
 

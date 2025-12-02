@@ -27,7 +27,9 @@ import {
   Edit3,
   Volume2,
   VolumeX,
+  Gift,
 } from "lucide-react";
+import { APP_VERSION } from "../config/changelog";
 import { generateRecoveryPhrase, storeRecoveryPhrase } from "../utils/recoveryPhrase";
 import { storageService } from "../utils/storage";
 
@@ -798,9 +800,9 @@ export const Settings: React.FC<SettingsProps> = ({
 
       {/* About */}
       <SectionTitle>About</SectionTitle>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
         {[
-          { label: "Version", value: "1.0.0", icon: Info },
+          { label: "Version", value: APP_VERSION, icon: Info },
           { label: "Encryption", value: "AES-256", icon: Shield },
           { label: "Key", value: "PBKDF2", icon: Key },
           { label: "Storage", value: "Local", icon: Database },
@@ -819,6 +821,30 @@ export const Settings: React.FC<SettingsProps> = ({
           </BouncyCard>
         ))}
       </div>
+      
+      {/* What's New Button */}
+      <BouncyCard 
+        variant="accent" 
+        className="mb-8"
+        onClick={() => {
+          // Dispatch custom event to open What's New modal
+          window.dispatchEvent(new CustomEvent('open-whats-new'));
+        }}
+      >
+        <div className="flex items-center gap-4">
+          <div 
+            className="w-10 h-10 rounded-xl flex items-center justify-center"
+            style={{ background: `linear-gradient(135deg, ${colors.brandGold}30, ${colors.brandGold}10)` }}
+          >
+            <Gift className="w-5 h-5" strokeWidth={1.5} style={{ color: colors.brandGold }} />
+          </div>
+          <div className="flex-1">
+            <h3 style={{ color: colors.warmIvory }} className="font-semibold mb-0.5">What's New in v{APP_VERSION}</h3>
+            <p className="text-slate-500 text-xs">See the latest features and improvements</p>
+          </div>
+          <Sparkles className="w-5 h-5" strokeWidth={1.5} style={{ color: colors.brandGold }} />
+        </div>
+      </BouncyCard>
 
       {/* Danger Zone */}
       <SectionTitle>Danger Zone</SectionTitle>
