@@ -278,53 +278,80 @@ export const PurchaseSuccessPage: React.FC = () => {
                 )}
               </div>
 
-              <div className="space-y-3">
-                {licenseKeys.map((key, index) => (
-                  <div
-                    key={index}
-                    className="rounded-lg p-4 flex items-center justify-between"
-                    style={{ backgroundColor: colors.deepNavy, border: `1px solid ${colors.steelBlue400}30` }}
+              {/* Compact grid for multiple keys, single row for one key */}
+              {licenseKeys.length === 1 ? (
+                <div
+                  className="rounded-lg p-4 flex items-center justify-between"
+                  style={{ backgroundColor: colors.deepNavy, border: `1px solid ${colors.steelBlue400}30` }}
+                >
+                  <code
+                    className="text-lg font-mono tracking-wider select-all"
+                    style={{ color: colors.steelBlue400 }}
                   >
-                    <div className="flex items-center space-x-3">
-                      {licenseKeys.length > 1 && (
-                        <span 
-                          className="text-xs font-medium px-2 py-1 rounded"
-                          style={{ backgroundColor: `${colors.steelBlue500}30`, color: colors.steelBlue400 }}
-                        >
-                          Key {index + 1}
-                        </span>
-                      )}
-                      <code
-                        className="text-base font-mono tracking-wider select-all"
-                        style={{ color: colors.steelBlue400 }}
-                      >
-                        {key}
-                      </code>
-                    </div>
+                    {licenseKeys[0]}
+                  </code>
+                  <button
+                    onClick={() => handleCopyKey(licenseKeys[0], 0)}
+                    className="ml-4 px-4 py-2 rounded-lg flex items-center space-x-2 transition-all"
+                    style={{
+                      backgroundColor: copiedIndex === 0 ? `${colors.successGreen}20` : `${colors.steelBlue500}20`,
+                      border: `1px solid ${copiedIndex === 0 ? colors.successGreen : colors.steelBlue400}40`,
+                      color: copiedIndex === 0 ? colors.successGreen : colors.steelBlue400,
+                    }}
+                  >
+                    {copiedIndex === 0 ? (
+                      <>
+                        <Check className="w-4 h-4" />
+                        <span className="text-sm font-medium">Copied!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-4 h-4" />
+                        <span className="text-sm font-medium">Copy</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-2">
+                  {licenseKeys.map((key, index) => (
                     <button
+                      key={index}
                       onClick={() => handleCopyKey(key, index)}
-                      className="ml-4 px-3 py-1.5 rounded-lg flex items-center space-x-2 transition-all"
-                      style={{
-                        backgroundColor: copiedIndex === index ? `${colors.successGreen}20` : `${colors.steelBlue500}20`,
-                        border: `1px solid ${copiedIndex === index ? colors.successGreen : colors.steelBlue400}40`,
-                        color: copiedIndex === index ? colors.successGreen : colors.steelBlue400,
+                      className="rounded-lg px-3 py-2.5 flex items-center justify-between transition-all hover:scale-[1.01] group"
+                      style={{ 
+                        backgroundColor: copiedIndex === index ? `${colors.successGreen}15` : colors.deepNavy, 
+                        border: `1px solid ${copiedIndex === index ? colors.successGreen : colors.steelBlue400}30` 
                       }}
                     >
-                      {copiedIndex === index ? (
-                        <>
-                          <Check className="w-4 h-4" />
-                          <span className="text-sm font-medium">Copied!</span>
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="w-4 h-4" />
-                          <span className="text-sm font-medium">Copy</span>
-                        </>
-                      )}
+                      <div className="flex items-center space-x-2 min-w-0">
+                        <span 
+                          className="text-[10px] font-bold px-1.5 py-0.5 rounded flex-shrink-0"
+                          style={{ 
+                            backgroundColor: copiedIndex === index ? `${colors.successGreen}30` : `${colors.steelBlue500}30`, 
+                            color: copiedIndex === index ? colors.successGreen : colors.steelBlue400 
+                          }}
+                        >
+                          {index + 1}
+                        </span>
+                        <code
+                          className="text-xs font-mono tracking-wide select-all truncate"
+                          style={{ color: copiedIndex === index ? colors.successGreen : colors.steelBlue400 }}
+                        >
+                          {key}
+                        </code>
+                      </div>
+                      <span className="flex-shrink-0 ml-2">
+                        {copiedIndex === index ? (
+                          <Check className="w-3.5 h-3.5" style={{ color: colors.successGreen }} />
+                        ) : (
+                          <Copy className="w-3.5 h-3.5 opacity-40 group-hover:opacity-100" style={{ color: colors.steelBlue400 }} />
+                        )}
+                      </span>
                     </button>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
 
               {customerEmail && (
                 <div className="mt-4 flex items-center space-x-2 text-sm" style={{ color: colors.warmIvory, opacity: 0.6 }}>
