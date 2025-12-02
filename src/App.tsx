@@ -25,6 +25,8 @@ import { OfflineIndicator } from "./components/OfflineIndicator";
 import { UndoToast } from "./components/UndoToast";
 import { WhatsNewModal, useWhatsNew } from "./components/WhatsNewModal";
 import { SkipLink } from "./components/accessibility";
+import { OnboardingTutorial, useOnboarding } from "./components/OnboardingTutorial";
+import { KeyboardShortcutsModal, useKeyboardShortcuts } from "./components/KeyboardShortcutsModal";
 
 // Fixed categories with proper typing
 const FIXED_CATEGORIES: Category[] = [
@@ -503,12 +505,32 @@ function App() {
   const { shouldShow: showWhatsNew, dismiss: dismissWhatsNew } = useWhatsNew();
   const [whatsNewOpen, setWhatsNewOpen] = useState(showWhatsNew);
 
+  // Onboarding tutorial state
+  const { showOnboarding, setShowOnboarding, completeOnboarding } = useOnboarding();
+
+  // Keyboard shortcuts modal state
+  const { isShortcutsOpen, openShortcuts, closeShortcuts } = useKeyboardShortcuts();
+
   // Listen for "What's New" open event from Settings
   useEffect(() => {
     const handleOpenWhatsNew = () => setWhatsNewOpen(true);
     window.addEventListener('open-whats-new', handleOpenWhatsNew);
     return () => window.removeEventListener('open-whats-new', handleOpenWhatsNew);
   }, []);
+
+  // Listen for "Replay Onboarding" event from Settings
+  useEffect(() => {
+    const handleReplayOnboarding = () => setShowOnboarding(true);
+    window.addEventListener('replay-onboarding', handleReplayOnboarding);
+    return () => window.removeEventListener('replay-onboarding', handleReplayOnboarding);
+  }, [setShowOnboarding]);
+
+  // Listen for "Show Keyboard Shortcuts" event from Settings
+  useEffect(() => {
+    const handleShowShortcuts = () => openShortcuts();
+    window.addEventListener('show-keyboard-shortcuts', handleShowShortcuts);
+    return () => window.removeEventListener('show-keyboard-shortcuts', handleShowShortcuts);
+  }, [openShortcuts]);
 
   // Warning popup callback
   const handleWarningPopup = useCallback((state: WarningPopupState) => {
@@ -1071,6 +1093,19 @@ function App() {
           setWhatsNewOpen(false);
           dismissWhatsNew();
         }} 
+      />
+
+      {/* Onboarding Tutorial */}
+      <OnboardingTutorial
+        isOpen={showOnboarding}
+        onClose={() => setShowOnboarding(false)}
+        onComplete={completeOnboarding}
+      />
+
+      {/* Keyboard Shortcuts Modal */}
+      <KeyboardShortcutsModal
+        isOpen={isShortcutsOpen}
+        onClose={closeShortcuts}
       />
 
       {/* License Keys Display */}

@@ -28,6 +28,8 @@ import {
   Volume2,
   VolumeX,
   Gift,
+  BookOpen,
+  Keyboard,
 } from "lucide-react";
 import { APP_VERSION } from "../config/changelog";
 import { generateRecoveryPhrase, storeRecoveryPhrase } from "../utils/recoveryPhrase";
@@ -843,6 +845,60 @@ export const Settings: React.FC<SettingsProps> = ({
             <p className="text-slate-500 text-xs">See the latest features and improvements</p>
           </div>
           <Sparkles className="w-5 h-5" strokeWidth={1.5} style={{ color: colors.brandGold }} />
+        </div>
+      </BouncyCard>
+
+      {/* Help Section */}
+      <SectionTitle>Help & Support</SectionTitle>
+      
+      {/* Replay Tutorial */}
+      <BouncyCard 
+        variant="accent" 
+        className="mb-4"
+        onClick={() => {
+          localStorage.removeItem("onboarding_completed");
+          window.dispatchEvent(new CustomEvent('replay-onboarding'));
+        }}
+      >
+        <div className="flex items-center gap-4">
+          <div 
+            className="w-10 h-10 rounded-xl flex items-center justify-center"
+            style={{ background: `linear-gradient(135deg, ${colors.steelBlue500}30, ${colors.steelBlue500}10)` }}
+          >
+            <BookOpen className="w-5 h-5" strokeWidth={1.5} style={{ color: colors.steelBlue400 }} />
+          </div>
+          <div className="flex-1">
+            <h3 style={{ color: colors.warmIvory }} className="font-semibold mb-0.5">Replay Tutorial</h3>
+            <p className="text-slate-500 text-xs">Learn how to use the app step by step</p>
+          </div>
+          <span style={{ color: colors.steelBlue400 }}>→</span>
+        </div>
+      </BouncyCard>
+
+      {/* Keyboard Shortcuts */}
+      <BouncyCard 
+        variant="accent" 
+        className="mb-8"
+        onClick={() => {
+          // Close settings first, then show shortcuts after a brief delay
+          onClose();
+          setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('show-keyboard-shortcuts'));
+          }, 100);
+        }}
+      >
+        <div className="flex items-center gap-4">
+          <div 
+            className="w-10 h-10 rounded-xl flex items-center justify-center"
+            style={{ background: `linear-gradient(135deg, ${colors.steelBlue500}30, ${colors.steelBlue500}10)` }}
+          >
+            <Keyboard className="w-5 h-5" strokeWidth={1.5} style={{ color: colors.steelBlue400 }} />
+          </div>
+          <div className="flex-1">
+            <h3 style={{ color: colors.warmIvory }} className="font-semibold mb-0.5">Keyboard Shortcuts</h3>
+            <p className="text-slate-500 text-xs">Press ? anytime to see all shortcuts</p>
+          </div>
+          <kbd className="px-2 py-1 text-xs font-mono bg-slate-700 text-slate-300 rounded border border-slate-600">?</kbd>
         </div>
       </BouncyCard>
 
