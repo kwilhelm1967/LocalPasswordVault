@@ -25,6 +25,25 @@ function getExpirationDate() {
 
 // Personal Vault Licenses ($49)
 export const singleUserLicenses: LicenseKey[] = [
+  // NEW_PERSONAL_KEYS_HERE
+  {
+    key: "PERS-PGS3-XJ9V-NEGT",
+    type: "single",
+    expires: getExpirationDate().formatted,
+    expirationDate: getExpirationDate().date
+  },
+  {
+    key: "PERS-8JU7-W77F-C3U3",
+    type: "single",
+    expires: getExpirationDate().formatted,
+    expirationDate: getExpirationDate().date
+  },
+  {
+    key: "PERS-Y9DS-2TNH-74YN",
+    type: "single",
+    expires: getExpirationDate().formatted,
+    expirationDate: getExpirationDate().date
+  },
   {
     key: "RNKJ-XTPB-LFGM-QVWC3",
     type: "single",
@@ -65,6 +84,13 @@ export const singleUserLicenses: LicenseKey[] = [
 
 // Family Vault Licenses ($79)
 export const familyLicenses: LicenseKey[] = [
+  // NEW_FAMILY_KEYS_HERE
+  {
+    key: "FMLY-DC7S-E5WQ-MGNY",
+    type: "family",
+    expires: getExpirationDate().formatted,
+    expirationDate: getExpirationDate().date
+  },
   {
     key: "GFTP-QVNM-KZXD-JBSF9",
     type: "family",
@@ -111,13 +137,10 @@ export const allLicenseKeys: LicenseKey[] = [
 
 // Utility functions
 export function validateLicenseKey(key: string): boolean {
-  // Check format
-  const pattern = /^[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/;
+  const pattern = /^[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4,5}$/;
   if (!pattern.test(key)) {
     return false;
   }
-  
-  // Check if it's in our list of valid keys
   return allLicenseKeys.some(license => license.key === key);
 }
 
@@ -129,6 +152,5 @@ export function getLicenseType(key: string): LicenseType | null {
 export function isLicenseExpired(key: string): boolean {
   const license = allLicenseKeys.find(license => license.key === key);
   if (!license) return true;
-  
   return new Date() > license.expirationDate;
 }
