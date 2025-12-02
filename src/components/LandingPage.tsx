@@ -771,23 +771,42 @@ export const LandingPage: React.FC = () => {
             />
             <FeatureCard
               icon={<Fingerprint className="w-6 h-6" />}
-              title="Biometric Unlock"
-              description="Use Windows Hello or Touch ID for quick, secure access to your vault."
+              title="2FA Authenticator Built-in"
+              description="Generate TOTP codes for two-factor authentication. No separate app needed."
             />
             <FeatureCard
               icon={<Clock className="w-6 h-6" />}
-              title="Auto-Lock"
-              description="Automatically locks after inactivity. Your vault is protected even if you walk away."
+              title="Auto-Lock & Undo"
+              description="Auto-locks after inactivity. Accidentally delete something? 5-second undo to restore it."
             />
             <FeatureCard
               icon={<Database className="w-6 h-6" />}
-              title="Secure Backup"
-              description="Create encrypted backups. Restore on any device with your master password."
+              title="Password History"
+              description="Track all previous passwords. Restore old passwords anytime with one click."
             />
             <FeatureCard
               icon={<Zap className="w-6 h-6" />}
               title="Password Generator"
-              description="Create strong, unique passwords instantly. Customize length and complexity."
+              description="Create strong, unique passwords instantly. Visual strength meter shows security level."
+            />
+          </div>
+          
+          {/* Second row of features */}
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+            <FeatureCard
+              icon={<RefreshCw className="w-6 h-6" />}
+              title="Secure Backup"
+              description="Create encrypted backups. Restore on any device with your master password."
+            />
+            <FeatureCard
+              icon={<Smartphone className="w-6 h-6" />}
+              title="Works Offline Always"
+              description="Visual indicator when offline. Full access to all passwords without internet."
+            />
+            <FeatureCard
+              icon={<Key className="w-6 h-6" />}
+              title="Custom Fields"
+              description="Add any field to entries—PINs, security questions, notes. You control the data."
             />
           </div>
         </div>
