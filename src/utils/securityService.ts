@@ -167,18 +167,16 @@ export class SecurityService {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     let result = '';
     
-    if (typeof window !== 'undefined' && window.crypto && window.crypto.getRandomValues) {
-      const array = new Uint8Array(length);
-      window.crypto.getRandomValues(array);
-      
-      for (let i = 0; i < length; i++) {
-        result += chars[array[i] % chars.length];
-      }
-    } else {
-      // Fallback for environments without crypto API
-      for (let i = 0; i < length; i++) {
-        result += chars[Math.floor(Math.random() * chars.length)];
-      }
+    // Require crypto API - no insecure fallbacks for a password manager
+    if (typeof crypto === 'undefined' || !crypto.getRandomValues) {
+      throw new Error('Secure random generation not available - crypto API required');
+    }
+    
+    const array = new Uint8Array(length);
+    crypto.getRandomValues(array);
+    
+    for (let i = 0; i < length; i++) {
+      result += chars[array[i] % chars.length];
     }
     
     return result;

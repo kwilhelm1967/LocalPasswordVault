@@ -80,22 +80,23 @@ interface EntryTemplate {
   usernameHint: string;
 }
 
+// Categories must match FIXED_CATEGORIES: banking, shopping, entertainment, email, work, business, other
 const ENTRY_TEMPLATES: EntryTemplate[] = [
-  { name: "Google", icon: "🔍", accountName: "Google", website: "google.com", category: "social", usernameHint: "your@gmail.com" },
+  { name: "Google", icon: "🔍", accountName: "Google", website: "google.com", category: "email", usernameHint: "your@gmail.com" },
   { name: "Amazon", icon: "📦", accountName: "Amazon", website: "amazon.com", category: "shopping", usernameHint: "your@email.com" },
   { name: "Netflix", icon: "🎬", accountName: "Netflix", website: "netflix.com", category: "entertainment", usernameHint: "your@email.com" },
-  { name: "Facebook", icon: "👥", accountName: "Facebook", website: "facebook.com", category: "social", usernameHint: "your@email.com" },
-  { name: "Twitter/X", icon: "🐦", accountName: "Twitter", website: "x.com", category: "social", usernameHint: "@username" },
+  { name: "Facebook", icon: "👥", accountName: "Facebook", website: "facebook.com", category: "other", usernameHint: "your@email.com" },
+  { name: "Twitter/X", icon: "🐦", accountName: "Twitter", website: "x.com", category: "other", usernameHint: "@username" },
   { name: "LinkedIn", icon: "💼", accountName: "LinkedIn", website: "linkedin.com", category: "work", usernameHint: "your@email.com" },
   { name: "GitHub", icon: "💻", accountName: "GitHub", website: "github.com", category: "work", usernameHint: "username" },
   { name: "Apple ID", icon: "🍎", accountName: "Apple ID", website: "apple.com", category: "other", usernameHint: "your@icloud.com" },
   { name: "Microsoft", icon: "🪟", accountName: "Microsoft", website: "microsoft.com", category: "work", usernameHint: "your@outlook.com" },
-  { name: "PayPal", icon: "💳", accountName: "PayPal", website: "paypal.com", category: "financial", usernameHint: "your@email.com" },
-  { name: "Bank Account", icon: "🏦", accountName: "Bank", website: "", category: "financial", usernameHint: "account number" },
+  { name: "PayPal", icon: "💳", accountName: "PayPal", website: "paypal.com", category: "banking", usernameHint: "your@email.com" },
+  { name: "Bank Account", icon: "🏦", accountName: "Bank", website: "", category: "banking", usernameHint: "account number" },
   { name: "Spotify", icon: "🎵", accountName: "Spotify", website: "spotify.com", category: "entertainment", usernameHint: "your@email.com" },
-  { name: "Discord", icon: "🎮", accountName: "Discord", website: "discord.com", category: "social", usernameHint: "username#0000" },
-  { name: "Instagram", icon: "📷", accountName: "Instagram", website: "instagram.com", category: "social", usernameHint: "@username" },
-  { name: "Reddit", icon: "🤖", accountName: "Reddit", website: "reddit.com", category: "social", usernameHint: "u/username" },
+  { name: "Discord", icon: "🎮", accountName: "Discord", website: "discord.com", category: "entertainment", usernameHint: "username#0000" },
+  { name: "Instagram", icon: "📷", accountName: "Instagram", website: "instagram.com", category: "other", usernameHint: "@username" },
+  { name: "Reddit", icon: "🤖", accountName: "Reddit", website: "reddit.com", category: "other", usernameHint: "u/username" },
 ];
 
 interface EntryFormProps {

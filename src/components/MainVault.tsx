@@ -33,12 +33,14 @@ import {
   CheckSquare,
   Square,
   FileText,
+  Check,
 } from "lucide-react";
 
 // Refined color palette
 const colors = {
   steelBlue600: "#4A6FA5",
   steelBlue500: "#5B82B8",
+  steelBlue400: "#6C93C9", // lighter blue variant
   mutedSky: "#93B4D1",
   warmIvory: "#F3F4F6",
   brandGold: "#C9AE66",
@@ -82,7 +84,8 @@ const CustomFieldDisplay: React.FC<{ field: CustomField }> = ({ field }) => {
     await navigator.clipboard.writeText(field.value);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
-    clearClipboardAfterTimeout();
+    const settings = getVaultSettings();
+    clearClipboardAfterTimeout(settings.clipboardClearTimeout, field.value);
   };
   
   return (
@@ -125,7 +128,7 @@ import { Dashboard } from "./Dashboard";
 import { Settings, clearClipboardAfterTimeout, getVaultSettings } from "./Settings";
 import { generateTOTP, getTimeRemaining, isValidTOTPSecret } from "../utils/totp";
 import { TrialStatusBanner } from "./TrialStatusBanner";
-import { playLockSound, playCopySound, playDeleteSound, playSuccessSound } from "../utils/soundEffects";
+import { playLockSound, playCopySound, playDeleteSound } from "../utils/soundEffects";
 
 interface MainVaultProps {
   entries: PasswordEntry[];
@@ -1402,7 +1405,7 @@ export const MainVault: React.FC<MainVaultProps> = ({
                                     passwordChangedAt: new Date(),
                                     passwordHistory: [
                                       { password: viewingEntry.password, changedAt: viewingEntry.passwordChangedAt || new Date() },
-                                      ...viewingEntry.passwordHistory.filter((_, i) => i !== index)
+                                      ...(viewingEntry.passwordHistory || []).filter((_, i) => i !== index)
                                     ].slice(0, 10),
                                     updatedAt: new Date(),
                                   };

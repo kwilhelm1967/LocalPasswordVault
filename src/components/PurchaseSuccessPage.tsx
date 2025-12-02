@@ -78,7 +78,6 @@ export const PurchaseSuccessPage: React.FC = () => {
   const [licenseKeys, setLicenseKeys] = useState<string[]>([]);
   const [customerEmail, setCustomerEmail] = useState<string>("");
   const [planName, setPlanName] = useState<string>("Lifetime License");
-  const [planType, setPlanType] = useState<string>("single");
   const detectedOS = getOS();
 
   // Extract license keys and other params from URL
@@ -109,7 +108,6 @@ export const PurchaseSuccessPage: React.FC = () => {
     
     const email = urlParams.get("email");
     const plan = urlParams.get("plan");
-    const type = urlParams.get("type"); // single, family, business
 
     if (email) {
       setCustomerEmail(decodeURIComponent(email));
@@ -117,14 +115,13 @@ export const PurchaseSuccessPage: React.FC = () => {
     if (plan) {
       setPlanName(decodeURIComponent(plan));
     }
-    if (type) {
-      setPlanType(type);
-    } else if (keys.length >= 5) {
-      setPlanType("family");
-      if (!plan) setPlanName("Family Vault");
-    } else {
-      setPlanType("single");
-      if (!plan) setPlanName("Personal Vault");
+    if (!plan) {
+      // Set plan name based on key count if not provided
+      if (keys.length >= 5) {
+        setPlanName("Family Vault");
+      } else {
+        setPlanName("Personal Vault");
+      }
     }
   }, []);
 

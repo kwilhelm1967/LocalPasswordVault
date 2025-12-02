@@ -52,22 +52,19 @@ const useAppStatus = () => {
 
   // Handle trial expiration with immediate redirect
   const handleTrialExpiration = useCallback(() => {
-
-    // Force multiple immediate updates to ensure redirect happens
-    setTimeout(() => updateAppStatus(), 0);
-    setTimeout(() => updateAppStatus(), 10);
-    setTimeout(() => updateAppStatus(), 50);
-
     // Clear any vault data to prevent access
     if (storageService.isVaultUnlocked()) {
       storageService.lockVault();
     }
 
-    // Disable further checking after a few confirmations
+    // Update status immediately
+    updateAppStatus();
+
+    // Disable further checking after confirming expiration
     setTimeout(() => {
       setCheckingEnabled(false);
-    }, 10000); // Stop checking after 10 seconds
-  }, [updateAppStatus, checkingEnabled]);
+    }, 5000);
+  }, [updateAppStatus]);
 
   // Immediate status check function
   const checkStatusImmediately = useCallback(async () => {
@@ -102,12 +99,8 @@ const useAppStatus = () => {
       // Force immediate lock if trial expired
       const currentStatus = await licenseService.getAppStatus();
       if (currentStatus.trialInfo.isExpired && currentStatus.canUseApp) {
-        // Force multiple status updates to ensure lock
-        for (let i = 0; i < 3; i++) {
-          setTimeout(() => {
-            window.location.reload();
-          }, i * 1000);
-        }
+        // Force a single reload to ensure proper state reset
+        window.location.reload();
       }
 
       // If expiration detected 3+ times, stop checking
@@ -454,8 +447,8 @@ function App() {
   const [showDownloadPage, setShowDownloadPage] = useState(false);
   const [showLicenseKeys, setShowLicenseKeys] = useState(features.showTestingTools);
 
-  // Trial warning popup state
-  const [warningPopupState, setWarningPopupState] = useState<WarningPopupState>({
+  // Trial warning popup state (state stored for potential future use)
+  const [, setWarningPopupState] = useState<WarningPopupState>({
     shouldShowExpiringWarning: false,
     shouldShowFinalWarning: false,
     timeRemaining: '',
