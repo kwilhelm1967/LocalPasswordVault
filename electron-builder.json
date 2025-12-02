@@ -42,11 +42,7 @@
       }
     ],
     "icon": "assets/icons/icon.ico",
-    "requestedExecutionLevel": "asInvoker",
-    "certificateFile": "./certs/windows-signing.pfx",
-    "certificatePassword": "${WIN_CSC_KEY_PASSWORD}",
-    "signingHashAlgorithms": ["sha256"],
-    "publisherName": "Your Company Name"
+    "requestedExecutionLevel": "asInvoker"
   },
   "linux": {
     "target": [
