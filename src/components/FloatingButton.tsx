@@ -1,19 +1,27 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { Lock } from "lucide-react";
+import { Shield, Lock, GripVertical } from "lucide-react";
+
+// Brand colors
+const colors = {
+  steelBlue600: "#4A6FA5",
+  steelBlue500: "#5B82B8",
+  brandGold: "#C9AE66",
+  deepNavy: "#0F172A",
+};
 
 export const FloatingButton: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
   const dragStartPos = useRef({ x: 0, y: 0, clientX: 0, clientY: 0 });
   const buttonRef = useRef<HTMLDivElement>(null);
   const dragHandleRef = useRef<HTMLDivElement>(null);
   const dragTimeoutRef = useRef<NodeJS.Timeout>();
   const isDragHandle = useRef(false);
-  const DRAG_THRESHOLD = 5; // pixels
+  const DRAG_THRESHOLD = 5;
   const lastClickTsRef = useRef(0);
   const CLICK_THROTTLE_MS = 250;
 
-  // Clean up on unmount
   useEffect(() => {
     return () => {
       if (dragTimeoutRef.current) {
@@ -23,7 +31,7 @@ export const FloatingButton: React.FC = () => {
   }, []);
 
   const handleDragMouseDown = (e: React.MouseEvent) => {
-    if (e.button !== 0) return; // Only handle left click
+    if (e.button !== 0) return;
 
     isDragHandle.current = true;
     const rect = buttonRef.current?.getBoundingClientRect();
@@ -44,43 +52,32 @@ export const FloatingButton: React.FC = () => {
     e.preventDefault();
     e.stopPropagation();
 
-    // Ignore while dragging or processing
-    if (isProcessing || isDragging) {
-      return;
-    }
+    if (isProcessing || isDragging) return;
 
-    // Simple throttle to avoid rapid re-triggers
     const now = Date.now();
-    if (now - lastClickTsRef.current < CLICK_THROTTLE_MS) {
-      return;
-    }
+    if (now - lastClickTsRef.current < CLICK_THROTTLE_MS) return;
     lastClickTsRef.current = now;
 
     setIsProcessing(true);
 
     try {
-      // Check if vault is already unlocked
       const isUnlocked = window.electronAPI?.isVaultUnlocked
         ? await window.electronAPI.isVaultUnlocked()
         : false;
 
       if (isUnlocked && window.electronAPI) {
-        // Check if floating panel is currently open
         const isFloatingPanelOpen = window.electronAPI.isFloatingPanelOpen
           ? await window.electronAPI.isFloatingPanelOpen()
           : false;
 
         if (isFloatingPanelOpen) {
-          // If floating panel is open, close it and restore main window
           window.electronAPI.restoreMainWindow();
           window.electronAPI.hideFloatingPanel();
         } else {
-          // If floating panel is closed, open it and minimize/hide main window
           window.electronAPI.showFloatingPanel();
           window.electronAPI.hideMainWindow?.() ?? window.electronAPI.minimizeMainWindow?.();
         }
       } else if (!isUnlocked && window.electronAPI?.showMainWindow) {
-        // If vault is locked, show main window to unlock
         window.electronAPI.showMainWindow();
       }
     } catch (error) {
@@ -94,7 +91,6 @@ export const FloatingButton: React.FC = () => {
     (e: MouseEvent) => {
       if (!dragStartPos.current.clientX || !isDragHandle.current) return;
 
-      // Check if mouse has moved beyond threshold to start dragging
       const dx = Math.abs(e.clientX - dragStartPos.current.clientX);
       const dy = Math.abs(e.clientY - dragStartPos.current.clientY);
 
@@ -104,7 +100,7 @@ export const FloatingButton: React.FC = () => {
 
       if (!isDragging) return;
 
-      const buttonSize = 48; // Match Tailwind w-12 h-12 and Electron window size
+      const buttonSize = 52;
       const newX = Math.max(
         0,
         Math.min(
@@ -134,8 +130,8 @@ export const FloatingButton: React.FC = () => {
       isDragHandle.current = false;
 
       if (isDragging) {
-        const buttonSize = 48; // Match Tailwind w-12 h-12 and Electron window size
-        const snapThreshold = 100; // Distance from edge to snap
+        const buttonSize = 52;
+        const snapThreshold = 100;
 
         let newX = Math.max(
           0,
@@ -152,13 +148,11 @@ export const FloatingButton: React.FC = () => {
           )
         );
 
-        // Snap to edges
         const distanceToLeft = newX;
         const distanceToRight = window.screen.availWidth - newX - buttonSize;
         const distanceToTop = newY;
         const distanceToBottom = window.screen.availHeight - buttonSize - newY;
 
-        // Snap to the nearest edge if within threshold
         if (distanceToLeft < snapThreshold || distanceToRight < snapThreshold) {
           newX =
             distanceToLeft < distanceToRight
@@ -186,13 +180,11 @@ export const FloatingButton: React.FC = () => {
         setIsDragging(false);
       }, 100);
 
-      // Reset drag start position
       dragStartPos.current = { x: 0, y: 0, clientX: 0, clientY: 0 };
     },
     [isDragging]
   );
 
-  // Global mouse event listeners for dragging
   useEffect(() => {
     const handleGlobalMouseMove = (e: MouseEvent) => {
       if (isDragHandle.current) {
@@ -228,47 +220,126 @@ export const FloatingButton: React.FC = () => {
   return (
     <div
       ref={buttonRef}
-      className="fixed z-[9999] bg-transparent w-12 h-12 flex items-center justify-center"
+      className="fixed z-[9999]"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
     >
-      <div className={`w-12 h-12 flex overflow-hidden bg-blue-500`}>
-        {/* Drag Handle */}
-        <div
-          ref={dragHandleRef}
-          onMouseDown={handleDragMouseDown}
-          className={`w-4 h-full flex items-center justify-center cursor-grab active:cursor-grabbing
-            ${isDragging ? "cursor-grabbing" : "cursor-grab"}
-            hover:bg-black/10 transition-colors duration-200`}
-          title="Drag to move"
-        >
-          <div className="text-white/80 text-xs leading-none select-none pointer-events-none">
-            ⋮⋮
+      {/* Main Button Container */}
+      <div
+        className="relative w-[52px] h-[52px] rounded-2xl overflow-hidden"
+        style={{
+          background: `linear-gradient(135deg, ${colors.steelBlue500} 0%, ${colors.steelBlue600} 100%)`,
+          boxShadow: isHovered
+            ? `0 8px 32px rgba(74, 111, 165, 0.5), 0 0 0 1px rgba(255,255,255,0.1) inset, 0 0 20px rgba(201, 174, 102, 0.3)`
+            : `0 4px 20px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255,255,255,0.1) inset`,
+          transform: isHovered && !isDragging ? 'scale(1.05)' : 'scale(1)',
+          transition: 'transform 0.2s ease, box-shadow 0.3s ease',
+        }}
+      >
+        {/* Glossy overlay */}
+        <div 
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: 'linear-gradient(180deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0) 50%, rgba(0,0,0,0.1) 100%)',
+          }}
+        />
+
+        {/* Gold accent line at top */}
+        <div 
+          className="absolute top-0 left-2 right-2 h-[2px] rounded-full"
+          style={{ 
+            background: `linear-gradient(90deg, transparent, ${colors.brandGold}, transparent)`,
+            opacity: isHovered ? 1 : 0.6,
+            transition: 'opacity 0.3s ease',
+          }}
+        />
+
+        <div className="flex h-full">
+          {/* Drag Handle */}
+          <div
+            ref={dragHandleRef}
+            onMouseDown={handleDragMouseDown}
+            className={`w-[14px] h-full flex items-center justify-center transition-all duration-200 ${
+              isDragging ? "cursor-grabbing bg-black/20" : "cursor-grab hover:bg-black/10"
+            }`}
+            title="Drag to move"
+          >
+            <GripVertical 
+              className="w-3 h-3 text-white/60" 
+              strokeWidth={2.5}
+            />
+          </div>
+
+          {/* Subtle divider */}
+          <div className="w-[1px] h-full bg-white/10" />
+
+          {/* Menu Toggle */}
+          <div
+            onClick={handleMenuClick}
+            className={`flex-1 h-full flex items-center justify-center transition-all duration-200 ${
+              isProcessing ? "cursor-wait" : "cursor-pointer hover:bg-white/5"
+            }`}
+            title={isProcessing ? "Processing..." : "Toggle Local Password Vault"}
+          >
+            {isProcessing ? (
+              <div 
+                className="w-5 h-5 rounded-full border-2 border-white/30 border-t-white animate-spin"
+              />
+            ) : (
+              <div className="relative">
+                {/* Shield icon with lock */}
+                <Shield 
+                  className="w-6 h-6 text-white drop-shadow-sm" 
+                  strokeWidth={1.8}
+                  fill="rgba(255,255,255,0.1)"
+                />
+                <Lock 
+                  className="w-2.5 h-2.5 text-white absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 mt-[1px]" 
+                  strokeWidth={2.5}
+                />
+                
+                {/* Pulse ring on hover */}
+                {isHovered && !isProcessing && (
+                  <div 
+                    className="absolute inset-0 -m-1 rounded-full animate-ping"
+                    style={{
+                      background: `radial-gradient(circle, ${colors.brandGold}40 0%, transparent 70%)`,
+                      animationDuration: '1.5s',
+                    }}
+                  />
+                )}
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Menu Toggle */}
-        <div
-          onClick={handleMenuClick}
-          className={`flex-1 h-full flex items-center justify-center cursor-pointer
-            hover:bg-black/10 transition-colors duration-200
-            ${isProcessing ? "cursor-wait" : "cursor-pointer"}`}
-          title={isProcessing ? "Processing..." : "Toggle Local Password Vault"}
-        >
-          {isProcessing ? (
-            <div className="w-4 h-4 border-2 border-white/30 border-t-white  animate-spin" />
-          ) : (
-            <Lock className="w-5 h-5 text-white" />
-          )}
-        </div>
+        {/* Bottom shine */}
+        <div 
+          className="absolute bottom-0 left-0 right-0 h-[1px]"
+          style={{
+            background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)',
+          }}
+        />
       </div>
 
+      {/* Drag tooltip */}
       {isDragging && (
         <div
-          className="absolute -top-10 left-1/2 -translate-x-1/2
-          bg-black/90 text-white px-3 py-1.5  text-xs font-semibold
-          whitespace-nowrap backdrop-blur-md border border-white/20 z-[10001]
-          shadow-lg"
+          className="absolute -top-12 left-1/2 -translate-x-1/2 whitespace-nowrap z-[10001] animate-fadeIn"
+          style={{
+            background: `linear-gradient(135deg, ${colors.deepNavy} 0%, #1e293b 100%)`,
+            border: `1px solid ${colors.brandGold}40`,
+            borderRadius: '8px',
+            padding: '6px 12px',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
+          }}
         >
-          Release to snap to edge
+          <span 
+            className="text-xs font-medium"
+            style={{ color: colors.brandGold }}
+          >
+            Release to snap to edge
+          </span>
         </div>
       )}
     </div>
