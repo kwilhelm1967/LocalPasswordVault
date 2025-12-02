@@ -293,28 +293,21 @@ export const EntryForm: React.FC<EntryFormProps> = ({
         })),
       };
 
-      // Submit to parent component
+      // Submit to parent component (awaits storage save)
       await onSubmit(entryData);
       playSuccessSound();
 
-      // Enhanced synchronization - ensure floating panel gets updates
-      try {
-        // Small delay to ensure storage has processed the changes
-        await new Promise((resolve) => setTimeout(resolve, 100));
-
-        // Sync to floating panel
-        const currentEntries = await storageService.loadEntries();
-        if (window.electronAPI?.saveSharedEntries) {
-          await window.electronAPI.saveSharedEntries(currentEntries);
+      // Sync to floating panel (Electron only)
+      // Parent's onSubmit already awaited storage save, so entries are ready
+      if (window.electronAPI) {
+        try {
+          const currentEntries = await storageService.loadEntries();
+          await window.electronAPI.saveSharedEntries?.(currentEntries);
+          await window.electronAPI.broadcastEntriesChanged?.();
+          await window.electronAPI.syncVaultToFloating?.();
+        } catch {
+          // Floating panel sync failed - non-critical
         }
-        if (window.electronAPI?.broadcastEntriesChanged) {
-          await window.electronAPI.broadcastEntriesChanged();
-        }
-        if (window.electronAPI?.syncVaultToFloating) {
-          await window.electronAPI.syncVaultToFloating();
-        }
-      } catch {
-        // Floating panel sync failed - non-critical
       }
     } catch (error) {
       console.error("Error submitting form:", error);
@@ -333,21 +326,16 @@ export const EntryForm: React.FC<EntryFormProps> = ({
         await onDelete();
         setShowDeleteConfirm(false);
 
-        // Sync to floating panel after delete
-        try {
-          await new Promise((resolve) => setTimeout(resolve, 100));
-          const currentEntries = await storageService.loadEntries();
-          if (window.electronAPI?.saveSharedEntries) {
-            await window.electronAPI.saveSharedEntries(currentEntries);
+        // Sync to floating panel after delete (Electron only)
+        if (window.electronAPI) {
+          try {
+            const currentEntries = await storageService.loadEntries();
+            await window.electronAPI.saveSharedEntries?.(currentEntries);
+            await window.electronAPI.broadcastEntriesChanged?.();
+            await window.electronAPI.syncVaultToFloating?.();
+          } catch {
+            // Floating panel sync failed - non-critical
           }
-          if (window.electronAPI?.broadcastEntriesChanged) {
-            await window.electronAPI.broadcastEntriesChanged();
-          }
-          if (window.electronAPI?.syncVaultToFloating) {
-            await window.electronAPI.syncVaultToFloating();
-          }
-        } catch {
-          // Floating panel sync failed - non-critical
         }
       } catch {
         setShowDeleteConfirm(false);

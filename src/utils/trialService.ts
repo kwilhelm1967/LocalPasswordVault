@@ -1,3 +1,5 @@
+import { generateHardwareFingerprint } from "./hardwareFingerprint";
+
 export interface TrialInfo {
   isTrialActive: boolean;
   daysRemaining: number;
@@ -160,7 +162,7 @@ export class TrialService {
     }
 
     // Verify hardware hash matches
-    const currentHardwareHash = await this.generateHardwareFingerprint();
+    const currentHardwareHash = await generateHardwareFingerprint();
     if (storedHardwareHash && storedHardwareHash !== currentHardwareHash) {
       console.error('Hardware hash mismatch detected');
       return {
@@ -354,55 +356,6 @@ export class TrialService {
       console.error('❌ QUICK JWT PARSE ERROR:', error);
       return null;
     }
-  }
-
-  /**
-   * Generate hardware fingerprint for trial validation
-   */
-  private async generateHardwareFingerprint(): Promise<string> {
-    const components = [];
-
-    // Screen and display info
-    components.push(`${screen.width}x${screen.height}x${screen.colorDepth}`);
-    components.push(screen.pixelDepth.toString());
-
-    // System info
-    components.push(navigator.platform);
-    components.push(navigator.language);
-    components.push(navigator.hardwareConcurrency?.toString() || "unknown");
-    components.push(Intl.DateTimeFormat().resolvedOptions().timeZone);
-
-    // Browser and engine info
-    components.push(navigator.userAgent.slice(0, 100));
-    components.push(navigator.vendor || "unknown");
-
-    // WebGL fingerprinting
-    try {
-      const canvas = document.createElement("canvas");
-      const gl = canvas.getContext("webgl") as WebGLRenderingContext;
-      if (gl) {
-        const debugInfo = gl.getExtension("WEBGL_debug_renderer_info");
-        if (debugInfo) {
-          components.push(gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL));
-          components.push(gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL));
-        }
-        components.push(gl.getParameter(gl.VERSION));
-      }
-    } catch (e) {
-      components.push("webgl_unavailable");
-    }
-
-    // Generate hash from components
-    const fingerprint = components.join("|");
-
-    // Create SHA-256 hash using Web Crypto API
-    const encoder = new TextEncoder();
-    const data = encoder.encode(fingerprint);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-
-    return hashHex;
   }
 
   // Backend API method removed - trial status is now determined from JWT token
