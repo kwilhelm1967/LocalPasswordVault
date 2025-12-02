@@ -1,0 +1,119 @@
+================================================================================
+                    LOCAL PASSWORD VAULT - SUPPORT
+                              Free Trial
+================================================================================
+
+                         📧 CONTACT SUPPORT
+================================================================================
+
+Email:          support@LocalPasswordVault.com
+Response Time:  Within 48 hours (business days)
+Website:        https://LocalPasswordVault.com
+Knowledge Base: https://LocalPasswordVault.com/kb
+
+================================================================================
+                         🔧 TRIAL-SPECIFIC ISSUES
+================================================================================
+
+ISSUE: Didn't Receive Trial Key Email
+-------------------------------------
+1. Check your spam/junk folder
+2. Wait a few minutes and check again
+3. Try requesting another trial key
+4. Contact support if still not received
+
+ISSUE: Trial Key Not Working
+----------------------------
+1. Make sure you entered it correctly (no spaces)
+2. Trial keys start with "TRIA-"
+3. Keys are case-insensitive
+4. Contact support with your email address
+
+ISSUE: Trial Expired Too Soon
+-----------------------------
+Trials are exactly 7 days from activation (not 7 days from install).
+Unfortunately, trials cannot be extended.
+
+Options:
+- Purchase a license to continue
+- Export your data before it's locked
+
+ISSUE: Can I Get Another Trial?
+-------------------------------
+No, trials are limited to one per person/household. This ensures fair 
+access for everyone.
+
+Ready to continue? Purchase at: https://LocalPasswordVault.com/pricing
+
+================================================================================
+                         🔧 GENERAL ISSUES
+================================================================================
+
+ISSUE: Forgot Master Password
+-----------------------------
+Unfortunately, master passwords cannot be recovered. We don't store them.
+If you have a backup, you can restore from that.
+
+ISSUE: Application Won't Start
+------------------------------
+Windows: Right-click > Run as Administrator
+macOS: System Preferences > Security > Open Anyway
+Linux: Check file permissions (chmod +x)
+
+ISSUE: Import Failed
+--------------------
+1. Check file format matches selection
+2. Ensure UTF-8 encoding
+3. Try exporting from your old manager again
+
+================================================================================
+                         📚 SELF-HELP RESOURCES
+================================================================================
+
+Knowledge Base: https://LocalPasswordVault.com/kb
+Video Tutorials: https://LocalPasswordVault.com/tutorials
+
+================================================================================
+                         📝 BEFORE CONTACTING SUPPORT
+================================================================================
+
+Please include:
+1. Your trial key or email used for trial
+2. Operating system and version
+3. Description of the issue
+4. Steps to reproduce
+5. Screenshots if applicable
+
+================================================================================
+                         🔒 SECURITY REMINDERS
+================================================================================
+
+We will NEVER ask for:
+- Your master password
+- Payment for trial support
+
+If someone asks for these, it's a scam.
+
+================================================================================
+                    💡 READY TO UPGRADE?
+================================================================================
+
+If you love Local Password Vault:
+
+Personal Plan: $49 (1 device, lifetime)
+- Best for individuals
+
+Family Plan: $79 (5 devices, lifetime)
+- Best for households
+- Includes priority support
+
+Visit: https://LocalPasswordVault.com/pricing
+
+Your trial data will be preserved when you upgrade!
+
+================================================================================
+
+© 2025 Local Password Vault | https://LocalPasswordVault.com
+
+================================================================================
+

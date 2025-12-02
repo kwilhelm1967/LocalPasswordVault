@@ -1,0 +1,59 @@
+================================================================================
+                    LOCAL PASSWORD VAULT - QUICK START
+                              Family Plan (5 Licenses)
+================================================================================
+
+FOR THE FAMILY ORGANIZER:
+
+1. DISTRIBUTE  → Give each family member their own license key
+2. SHARE       → Share the installer file or download link
+3. SUPPORT     → Help family members set up if needed
+
+================================================================================
+
+FOR EACH FAMILY MEMBER:
+
+1. INSTALL     → Run LocalPasswordVault-Setup.exe
+
+2. ACTIVATE    → Enter YOUR license key: FMLY-XXXX-XXXX-XXXX
+
+3. PASSWORD    → Create YOUR master password (PRIVATE - don't share!)
+
+4. ADD         → Click "+ Add Account" to store your first password
+
+5. DONE!       → Your passwords are now encrypted and secure
+
+================================================================================
+                              DAILY USE
+================================================================================
+
+🔍 SEARCH      → Type in the search box to find accounts instantly
+
+📋 COPY        → Click the copy icon to copy password to clipboard
+
+🔒 LOCK        → Click "Lock Vault" when stepping away
+
+🎲 GENERATE    → Use the password generator for strong passwords
+
+================================================================================
+                              REMEMBER
+================================================================================
+
+⚠️  Each person has their OWN master password - don't share it!
+⚠️  Master passwords cannot be recovered - write them down!
+⚠️  Each person should create their own backups
+⚠️  Vaults are private - family can't see each other's passwords
+
+================================================================================
+                           FAMILY PRIORITY SUPPORT
+================================================================================
+
+Email: priority@LocalPasswordVault.com
+Response: Within 24 hours
+
+================================================================================
+
+Need more help? See GETTING_STARTED.txt or visit LocalPasswordVault.com/kb
+
+================================================================================
+

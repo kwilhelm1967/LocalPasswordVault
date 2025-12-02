@@ -1,0 +1,161 @@
+================================================================================
+                    LOCAL PASSWORD VAULT - FEATURES
+                              Family Plan
+================================================================================
+
+                    👨‍👩‍👧‍👦 FAMILY PLAN EXCLUSIVE
+================================================================================
+
+5 Device Licenses
+-----------------
+Protect up to 5 family members, each with their own private vault.
+One license key per person, one device per key.
+
+5 Unique License Keys
+---------------------
+Each family member gets their own key. No sharing, no conflicts.
+Easy to track who has which license.
+
+Priority Support
+----------------
+Family customers get faster support response:
+- Email: priority@LocalPasswordVault.com
+- Response within 24 hours, 7 days a week
+- Mention your Family Plan status for priority handling
+
+Independent Vaults
+------------------
+Each family member's vault is completely private:
+- Separate master passwords
+- No sync between devices
+- Maximum privacy for everyone
+
+================================================================================
+
+              ALL PERSONAL PLAN FEATURES INCLUDED
+
+================================================================================
+
+                         🔒 SECURITY FEATURES
+================================================================================
+
+AES-256-GCM Encryption
+----------------------
+Military-grade encryption protects all your data. Even if someone gets your 
+vault file, they cannot read it without your master password.
+
+100% Offline Operation
+----------------------
+Your passwords NEVER leave your device. No cloud servers. No sync. No risk 
+of online breaches. Works without internet.
+
+Zero-Knowledge Architecture
+---------------------------
+We don't know your master password. We can't access your data. True privacy.
+
+PBKDF2 Key Derivation
+---------------------
+Your master password is processed through 100,000+ iterations making brute 
+force attacks practically impossible.
+
+Secure Memory Handling
+----------------------
+Sensitive data is cleared from memory when not in use.
+
+Auto-Lock Protection
+--------------------
+Automatically locks your vault after a period of inactivity.
+
+================================================================================
+                         📱 CORE FEATURES
+================================================================================
+
+Unlimited Password Storage
+--------------------------
+Store as many passwords as you need. No limits.
+
+Password Generator
+------------------
+Create strong, unique passwords instantly:
+- Adjustable length (8-128 characters)
+- Include/exclude uppercase, lowercase, numbers, symbols
+- Visual strength meter
+- One-click generation
+
+Floating Mini Vault
+-------------------
+Compact floating panel for quick access while browsing.
+
+Categories & Organization
+-------------------------
+Organize passwords by category:
+- Banking, Shopping, Entertainment
+- Email, Work, Business
+- Custom categories
+
+Search & Filter
+---------------
+Find any password instantly with real-time search.
+
+================================================================================
+                         🔐 ADVANCED FEATURES
+================================================================================
+
+2FA/TOTP Authenticator
+----------------------
+Built-in two-factor authentication:
+- Store TOTP secrets with your accounts
+- Generate 6-digit codes automatically
+- No separate authenticator app needed
+
+Password History
+----------------
+Track all previous passwords:
+- See when passwords were changed
+- Restore old passwords if needed
+
+Custom Fields
+-------------
+Add any information to entries:
+- PINs, security questions, notes
+- Secret fields (hidden by default)
+
+Secure Notes
+------------
+Store sensitive text that isn't passwords.
+
+================================================================================
+                         📤 IMPORT & EXPORT
+================================================================================
+
+Import From
+-----------
+Chrome, Firefox, LastPass, 1Password, Bitwarden, generic CSV
+
+Export To
+---------
+Encrypted backup, plain CSV, JSON
+
+================================================================================
+                         🎨 USER EXPERIENCE
+================================================================================
+
+- Dark theme
+- Keyboard shortcuts
+- Undo delete (5-second restore)
+- Offline indicator
+
+================================================================================
+                         💻 PLATFORM SUPPORT
+================================================================================
+
+- Windows 10/11 (64-bit)
+- macOS 10.15+ (Intel & Apple Silicon)
+- Linux (Ubuntu 20.04+, Debian 10+, Fedora 35+)
+
+================================================================================
+
+© 2025 Local Password Vault | https://LocalPasswordVault.com
+
+================================================================================
+

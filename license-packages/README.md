@@ -1,64 +1,85 @@
 # License Packages
 
-This directory contains the license packages for Local Password Vault.
+This directory contains the complete document packages for Local Password Vault.
+Each plan folder contains all documents needed to bundle with installers.
 
 ---
 
-## 📦 Available Plans
+## 📁 Folder Structure
 
-### 1. Personal Vault — $49 (Lifetime License)
-
-**Best for:** Individuals who want full control and zero online exposure.
-
-- ✅ 1 device
-- ✅ Unlimited passwords
-- ✅ AES-256-GCM encryption
-- ✅ 100% offline & private
-- ✅ Floating panel (Mini Vault)
-- ✅ Export/Import
-- ✅ Password generator
-- ✅ One-time purchase — works for life
-
----
-
-### 2. Family Vault — $79 (Lifetime License)
-
-**Best for:** Families who want to protect everyone under one roof.
-
-- ✅ Everything in Personal Vault
-- ✅ 5 Keys to install on 5 devices
-- ✅ Ability to create 5 encrypted vaults
-- ✅ One-time lifetime ownership — never pay again
-- ✅ Each family member has their own vault
-
----
-
-### 3. Free Trial Vault — $0 (7-Day Trial)
-
-**Best for:** Anyone who wants to see how true offline protection works before buying.
-
-- ✅ Full Local Password Vault experience
-- ✅ Use on one device for 7 days
-- ✅ Explore full offline encryption
-- ✅ Nothing stored or synced online
-- ✅ No credit card required
+```
+license-packages/
+├── personal-plan/          ← $49 Personal Vault
+│   ├── README.txt
+│   ├── LICENSE.txt
+│   ├── GETTING_STARTED.txt
+│   ├── QUICK_START.txt
+│   ├── FEATURES.txt
+│   └── SUPPORT.txt
+│
+├── family-plan/            ← $79 Family Vault (5 licenses)
+│   ├── README.txt
+│   ├── LICENSE.txt
+│   ├── GETTING_STARTED.txt
+│   ├── QUICK_START.txt
+│   ├── FEATURES.txt
+│   └── SUPPORT.txt
+│
+└── trial-plan/             ← Free 7-Day Trial
+    ├── README.txt
+    ├── LICENSE.txt
+    ├── GETTING_STARTED.txt
+    ├── QUICK_START.txt
+    ├── FEATURES.txt
+    └── SUPPORT.txt
+```
 
 ---
 
-## 📄 Package Contents
+## 📦 Plans Overview
 
-Each license package contains:
+| Plan | Price | Devices | Duration |
+|------|-------|---------|----------|
+| Personal Vault | $49 | 1 | Lifetime |
+| Family Vault | $79 | 5 | Lifetime |
+| Free Trial | $0 | 1 | 7 days |
 
-- **README.txt** — Overview and getting started
-- **LICENSE.txt** — Legal license agreement
-- **GETTING_STARTED.txt** — Detailed setup instructions
-- **QUICK_START.txt** — Fast setup guide
-- **FEATURES.txt** — Complete feature list
-- **SUPPORT.txt** — Support information and resources
+---
+
+## 📄 Document Contents
+
+Each package includes:
+
+| File | Purpose |
+|------|---------|
+| `README.txt` | Overview, what's included, quick start |
+| `LICENSE.txt` | Legal terms and conditions |
+| `GETTING_STARTED.txt` | Detailed step-by-step setup guide |
+| `QUICK_START.txt` | 1-page fast setup reference |
+| `FEATURES.txt` | Complete feature list |
+| `SUPPORT.txt` | Contact info, troubleshooting, FAQ |
+
+---
+
+## 🔧 Bundling with Installers
+
+Include the appropriate plan folder contents with each installer:
+
+**Windows (.exe):**
+- Add documents to installer package
+- Place in installation directory or Start Menu folder
+
+**macOS (.dmg):**
+- Include documents in the DMG alongside the .app
+
+**Linux (.AppImage / .deb):**
+- Include in /usr/share/doc/localpasswordvault/
+- Or bundle alongside the AppImage
 
 ---
 
 ## 🔗 Links
 
-- **Website**: [LocalPasswordVault.com](https://LocalPasswordVault.com)
+- **Website**: https://LocalPasswordVault.com
 - **Support**: support@LocalPasswordVault.com
+- **Priority Support**: priority@LocalPasswordVault.com (Family Plan)

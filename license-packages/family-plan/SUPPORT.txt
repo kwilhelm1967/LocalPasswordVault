@@ -1,0 +1,154 @@
+================================================================================
+                    LOCAL PASSWORD VAULT - SUPPORT
+                         Family Plan (Priority)
+================================================================================
+
+                      ⭐ PRIORITY SUPPORT ACCESS ⭐
+================================================================================
+
+As a Family Plan customer, you receive priority support!
+
+Priority Email:  priority@LocalPasswordVault.com
+Response Time:   Within 24 hours (7 days a week)
+Knowledge Base:  https://LocalPasswordVault.com/kb
+
+When contacting support:
+- Mention you have a Family Plan
+- Include the affected license key
+- Specify which family member needs help
+
+================================================================================
+                         🔧 COMMON FAMILY ISSUES
+================================================================================
+
+ISSUE: "License Key Already in Use"
+-----------------------------------
+Each key can only activate ONE device. Solutions:
+1. Check if the key was used on another device in the family
+2. If the old device is gone, contact priority support to reset the key
+3. Make sure each family member uses THEIR assigned key
+
+ISSUE: Family Member Forgot Master Password
+-------------------------------------------
+Unfortunately, master passwords cannot be recovered. Options:
+1. If they have an encrypted backup, restore from that
+2. Otherwise, they must create a new vault (losing old data)
+
+Prevention tip: Parents might want to securely store children's master 
+passwords in their own vault.
+
+ISSUE: Child Needs Help But Parent Can't Access
+-----------------------------------------------
+Vaults are private by design. Options:
+1. Have the child unlock while you watch
+2. Help them verbally without seeing their password
+3. For young children, consider storing their master password securely
+
+ISSUE: Device Replacement
+-------------------------
+To move a license to a new device:
+1. On OLD device: Settings > License > Deactivate
+2. On NEW device: Enter the same license key
+3. If old device is lost: Contact priority support to reset
+
+ISSUE: Need More Than 5 Licenses
+--------------------------------
+Contact us for additional licenses or to discuss larger family needs.
+Email: priority@LocalPasswordVault.com
+
+================================================================================
+                    💡 FAMILY-SPECIFIC TIPS
+================================================================================
+
+Setting Up Children
+-------------------
+- Help them choose a memorable master password
+- Store their master password in YOUR vault (for emergencies)
+- Explain the password generator
+- Set up categories for their accounts
+- Enable auto-lock for younger children
+
+Shared Family Accounts
+----------------------
+Since vaults don't sync, for shared accounts (Netflix, WiFi, etc.):
+- Each person can add the same accounts to their vault
+- One person can be the "keeper" of shared accounts
+- Share verbally rather than through the app
+
+Backup Strategy
+---------------
+Set up family backup practices:
+- Weekly backups for everyone
+- Central storage location (family NAS, external drive)
+- Label backups by person and date
+
+Teaching Password Security
+--------------------------
+Use Local Password Vault to teach good habits:
+- Use the generator, don't create passwords manually
+- Never reuse passwords
+- Keep the vault locked when away
+- Regular backup routine
+
+================================================================================
+                         📚 SELF-HELP RESOURCES
+================================================================================
+
+Knowledge Base
+--------------
+https://LocalPasswordVault.com/kb
+- Installation guides
+- Feature tutorials
+- Troubleshooting
+
+Video Tutorials
+---------------
+https://LocalPasswordVault.com/tutorials
+- Family setup guide
+- Per-person setup
+- Best practices
+
+================================================================================
+                         📝 BEFORE CONTACTING SUPPORT
+================================================================================
+
+Please include:
+1. Your license key (the affected one)
+2. Which family member is having the issue
+3. Device type and operating system
+4. Application version (Settings > About)
+5. Description of the problem
+6. Steps to reproduce
+7. Screenshots if applicable
+
+================================================================================
+                         🔒 SECURITY REMINDERS
+================================================================================
+
+We will NEVER ask for:
+- Anyone's master password
+- Access to computers
+- Payment for support
+
+If someone asks for these, it's a scam. Report it to us.
+
+================================================================================
+                         📋 LICENSE KEY MANAGEMENT
+================================================================================
+
+Track your 5 keys:
+
+Key 1: _________________ → Assigned to: _________________
+Key 2: _________________ → Assigned to: _________________
+Key 3: _________________ → Assigned to: _________________
+Key 4: _________________ → Assigned to: _________________
+Key 5: _________________ → Assigned to: _________________
+
+Keep this list updated! It helps when contacting support.
+
+================================================================================
+
+© 2025 Local Password Vault | https://LocalPasswordVault.com
+
+================================================================================
+

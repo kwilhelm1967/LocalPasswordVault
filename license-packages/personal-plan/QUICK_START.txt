@@ -1,0 +1,41 @@
+================================================================================
+                    LOCAL PASSWORD VAULT - QUICK START
+                           Get Secured in 5 Minutes
+================================================================================
+
+1. INSTALL    → Run LocalPasswordVault-Setup.exe
+
+2. ACTIVATE   → Enter your license key: PERS-XXXX-XXXX-XXXX
+
+3. PASSWORD   → Create a strong master password (WRITE IT DOWN!)
+
+4. ADD        → Click "+ Add Account" to store your first password
+
+5. DONE!      → Your passwords are now encrypted and secure
+
+================================================================================
+                              DAILY USE
+================================================================================
+
+🔍 SEARCH     → Type in the search box to find accounts instantly
+
+📋 COPY       → Click the copy icon to copy password to clipboard
+
+🔒 LOCK       → Click "Lock Vault" when stepping away
+
+🎲 GENERATE   → Use the password generator for strong passwords
+
+================================================================================
+                              REMEMBER
+================================================================================
+
+⚠️  Master password cannot be recovered - don't forget it!
+⚠️  Create regular backups (Settings > Export)
+⚠️  Your data never leaves this device
+
+================================================================================
+
+Need more help? See GETTING_STARTED.txt or visit LocalPasswordVault.com/kb
+
+================================================================================
+

@@ -1,0 +1,120 @@
+================================================================================
+                    LOCAL PASSWORD VAULT - LICENSE AGREEMENT
+                              Free Trial License
+================================================================================
+
+END USER LICENSE AGREEMENT (EULA)
+
+Last Updated: December 2024
+
+BY INSTALLING OR USING LOCAL PASSWORD VAULT, YOU AGREE TO BE BOUND BY THE 
+TERMS OF THIS LICENSE AGREEMENT.
+
+================================================================================
+                              1. GRANT OF LICENSE
+================================================================================
+
+Local Password Vault grants you a non-exclusive, non-transferable, LIMITED 
+license to use the Software on ONE (1) device for a period of SEVEN (7) DAYS 
+from the date of activation, subject to the terms of this Agreement.
+
+This is a TRIAL LICENSE. After 7 days, the license expires and access to the 
+Software will be restricted until a paid license is purchased.
+
+================================================================================
+                              2. TRIAL LIMITATIONS
+================================================================================
+
+The Free Trial:
+- Is limited to 7 days from activation
+- Can only be used on one (1) device
+- Cannot be extended or renewed
+- Is limited to one trial per person/household
+- Provides access to all features during the trial period
+
+================================================================================
+                              3. PERMITTED USES
+================================================================================
+
+During the trial period, you MAY:
+- Install and use the Software on one (1) device
+- Use all features of the Software
+- Create encrypted backups of your data
+- Export your data at any time
+
+================================================================================
+                              4. RESTRICTIONS
+================================================================================
+
+You MAY NOT:
+- Use the Software after the trial period without purchasing a license
+- Start multiple trials using different email addresses
+- Share your trial key with others
+- Reverse engineer, decompile, or disassemble the Software
+- Use the Software for commercial purposes during trial
+
+================================================================================
+                              5. TRIAL EXPIRATION
+================================================================================
+
+When the 7-day trial expires:
+- Access to the vault will be locked
+- Your data remains stored and encrypted on your device
+- You may purchase a license to restore access
+- You may export your data before the trial ends
+
+We recommend exporting your data before the trial expires as a precaution.
+
+================================================================================
+                              6. DATA PRIVACY
+================================================================================
+
+Local Password Vault:
+- Stores ALL data locally on your device only
+- Does NOT transmit passwords to external servers
+- Collects ONLY your email (for trial key delivery)
+- Does NOT have access to your passwords or master password
+- Cannot recover your data if you lose your master password
+
+================================================================================
+                              7. NO WARRANTY
+================================================================================
+
+THE SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
+FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT.
+
+================================================================================
+                              8. LIMITATION OF LIABILITY
+================================================================================
+
+IN NO EVENT SHALL LOCAL PASSWORD VAULT BE LIABLE FOR ANY INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES ARISING OUT OF OR IN CONNECTION 
+WITH THIS LICENSE OR THE USE OF THE SOFTWARE.
+
+================================================================================
+                              9. CONVERSION TO PAID LICENSE
+================================================================================
+
+To continue using Local Password Vault after the trial:
+1. Purchase a Personal ($49) or Family ($79) license
+2. Enter your new license key
+3. Your existing data will be preserved
+4. Enjoy lifetime access
+
+================================================================================
+                              10. GOVERNING LAW
+================================================================================
+
+This Agreement shall be governed by and construed in accordance with the laws 
+of the United States of America.
+
+================================================================================
+
+By installing Local Password Vault, you acknowledge that you have read this 
+Agreement, understand it, and agree to be bound by its terms.
+
+© 2025 Local Password Vault | https://LocalPasswordVault.com
+
+================================================================================
+

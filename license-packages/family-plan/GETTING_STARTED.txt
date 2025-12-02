@@ -1,0 +1,161 @@
+================================================================================
+                    LOCAL PASSWORD VAULT - GETTING STARTED
+                              Family Plan Guide
+================================================================================
+
+This guide is for the family organizer setting up Local Password Vault for 
+the household. Share this guide with family members or walk them through it.
+
+================================================================================
+                    STEP 1: DISTRIBUTE LICENSE KEYS
+================================================================================
+
+Your Family Plan includes 5 unique license keys. Assign one to each person:
+
+Key 1 (FMLY-XXXX-XXXX-XXXX) → ________________________
+Key 2 (FMLY-XXXX-XXXX-XXXX) → ________________________
+Key 3 (FMLY-XXXX-XXXX-XXXX) → ________________________
+Key 4 (FMLY-XXXX-XXXX-XXXX) → ________________________
+Key 5 (FMLY-XXXX-XXXX-XXXX) → ________________________
+
+Write down who has which key! Each person uses ONLY their assigned key.
+
+================================================================================
+                    STEP 2: SHARE THE INSTALLER
+================================================================================
+
+Option A - Share the installer file directly:
+- Copy LocalPasswordVault-Setup.exe to a USB drive
+- Share via home network
+- AirDrop (Mac)
+
+Option B - Each person downloads:
+- Visit: https://LocalPasswordVault.com/download
+- Download the version for their operating system
+
+================================================================================
+                    STEP 3: EACH FAMILY MEMBER SETS UP
+================================================================================
+
+Each person follows these steps on THEIR device:
+
+Installation:
+1. Run the installer
+2. Follow prompts to install
+3. Launch Local Password Vault
+
+Activation:
+1. Enter THEIR license key (assigned to them)
+2. Click "Activate License"
+
+Master Password:
+1. Create a strong, unique master password
+2. This is PRIVATE - don't share with other family members
+3. WRITE IT DOWN - it cannot be recovered
+
+⚠️  Each person should have their OWN master password!
+
+================================================================================
+                    FOR PARENTS: HELPING CHILDREN SET UP
+================================================================================
+
+For younger children:
+1. Help them install and activate
+2. Help them create a master password
+3. Consider writing down their master password in YOUR secure location
+4. Explain that this is their private vault
+5. Show them how to add and find passwords
+
+For teenagers:
+1. Let them set up independently if capable
+2. Explain the importance of the master password
+3. Suggest they write it down somewhere safe
+4. Trust their privacy - their vault is theirs
+
+================================================================================
+                    FAMILY SETUP TIPS
+================================================================================
+
+1. Set Up Together
+   Schedule family time to set everyone up at once. Makes troubleshooting easier.
+
+2. Choose a Backup Strategy
+   Decide where each person will store their encrypted backups:
+   - Family NAS
+   - External hard drive
+   - USB drives (labeled by person)
+
+3. Establish Password Practices
+   - Everyone uses the password generator
+   - No reusing passwords
+   - Regular backups (weekly suggested)
+
+4. Don't Share Master Passwords
+   Even in a family, keep master passwords private. If you need access to a 
+   child's vault, help them unlock it - don't ask for their password.
+
+================================================================================
+                    WHAT'S NOT SHARED
+================================================================================
+
+Each family member's vault is 100% independent:
+
+✗ Passwords are NOT synced between family members
+✗ Vaults are NOT shared or visible to others
+✗ Master passwords are NOT stored anywhere
+✗ We have NO access to anyone's data
+
+This is intentional for maximum security and privacy.
+
+================================================================================
+                    IF SOMEONE NEEDS SHARED PASSWORDS
+================================================================================
+
+Sometimes families need to share passwords (Netflix, WiFi, etc.):
+
+Option 1: Each person stores shared passwords in their own vault
+- Everyone adds the same passwords manually
+- No sync means no single point of failure
+
+Option 2: Designated "family passwords" manager
+- One person maintains shared accounts
+- Share credentials verbally when needed
+
+================================================================================
+                    TROUBLESHOOTING
+================================================================================
+
+"Key Already in Use"
+- Each key can only activate ONE device
+- Check if that key was used on another device
+- Contact priority support to reset if needed
+
+"Wrong Key Type"
+- Ensure you're using a FMLY-XXXX-XXXX-XXXX key
+- Personal (PERS) keys won't work with Family licenses
+
+"Forgot Master Password"
+- Unfortunately cannot be recovered
+- If they have a backup, restore from that
+- Otherwise, must start fresh with new vault
+
+================================================================================
+                    PRIORITY SUPPORT
+================================================================================
+
+Family Plan includes priority support:
+
+Email: priority@LocalPasswordVault.com
+Response: Within 24 hours, 7 days a week
+
+When contacting, include:
+- The affected license key
+- Which family member is having issues
+- Device type and operating system
+
+================================================================================
+
+© 2025 Local Password Vault | https://LocalPasswordVault.com
+
+================================================================================
+

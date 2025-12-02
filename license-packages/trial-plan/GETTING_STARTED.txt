@@ -1,0 +1,178 @@
+================================================================================
+                    LOCAL PASSWORD VAULT - GETTING STARTED
+                              Free Trial Guide
+================================================================================
+
+Welcome! This guide will help you make the most of your 7-day free trial.
+
+================================================================================
+                         STEP 1: INSTALLATION
+================================================================================
+
+Windows:
+--------
+1. Double-click LocalPasswordVault-Setup.exe
+2. Follow the installation wizard
+3. Click "Install" and wait for completion
+4. Launch from desktop shortcut or Start Menu
+
+macOS:
+------
+1. Open LocalPasswordVault.dmg
+2. Drag Local Password Vault to Applications folder
+3. Open from Applications
+4. If prompted, click "Open" to confirm
+
+Linux:
+------
+1. Make executable: chmod +x LocalPasswordVault.AppImage
+2. Run: ./LocalPasswordVault.AppImage
+
+================================================================================
+                         STEP 2: START YOUR TRIAL
+================================================================================
+
+1. Launch Local Password Vault
+2. Click "Start Free Trial"
+3. Enter your email address
+4. Check your email for your trial key
+5. Enter the trial key (TRIA-XXXX-XXXX-XXXX)
+6. Your 7-day trial begins!
+
+Didn't receive the email? Check spam/junk folder.
+
+================================================================================
+                         STEP 3: CREATE MASTER PASSWORD
+================================================================================
+
+Your master password is the ONLY way to access your vault.
+
+Requirements:
+- Minimum 12 characters
+- Mix of uppercase, lowercase, numbers, symbols
+- Something memorable to you
+
+⚠️  CRITICAL: Your master password CANNOT be recovered!
+    Write it down and store it safely.
+
+================================================================================
+                         STEP 4: EXPLORE THE FEATURES
+================================================================================
+
+During your trial, you have access to EVERYTHING:
+
+Day 1-2: Basic Setup
+--------------------
+□ Add 5-10 of your most important passwords
+□ Try the password generator
+□ Explore categories
+
+Day 3-4: Import & Organize
+--------------------------
+□ Import passwords from your browser or old manager
+□ Organize into categories
+□ Mark favorites for quick access
+
+Day 5-6: Advanced Features
+--------------------------
+□ Set up 2FA/TOTP for accounts that support it
+□ Add custom fields to entries
+□ Try secure notes
+
+Day 7: Decision Time
+--------------------
+□ Export a backup (just in case)
+□ Decide if you want to continue
+□ Purchase a license if you love it!
+
+================================================================================
+                         STEP 5: USING DAILY
+================================================================================
+
+Quick Access
+------------
+Use the floating Mini Vault for quick password lookups while browsing.
+
+Search
+------
+Type any part of account name, username, or website to find instantly.
+
+Copy Passwords
+--------------
+Click the copy icon. Password is copied and auto-cleared after timeout.
+
+Generate Passwords
+------------------
+When creating accounts, use the generator for strong, unique passwords.
+
+================================================================================
+                         BEFORE YOUR TRIAL ENDS
+================================================================================
+
+⚠️  IMPORTANT: Export your data before the trial expires!
+
+1. Go to Settings > Export
+2. Choose "Encrypted Backup"
+3. Set a backup password
+4. Save the file safely
+
+This ensures you don't lose any passwords if you decide not to purchase.
+
+================================================================================
+                         READY TO PURCHASE?
+================================================================================
+
+Love Local Password Vault? Here are your options:
+
+Personal Plan - $49
+-------------------
+- 1 device, lifetime license
+- All features forever
+- Perfect for individuals
+- https://LocalPasswordVault.com/buy/personal
+
+Family Plan - $79
+-----------------
+- 5 devices, lifetime license
+- All features forever
+- Priority support
+- Perfect for households
+- https://LocalPasswordVault.com/buy/family
+
+After purchase:
+1. Enter your new license key in Settings > License
+2. Your trial data is preserved
+3. Enjoy lifetime access!
+
+================================================================================
+                         TRIAL FAQ
+================================================================================
+
+Q: Can I extend my trial?
+A: No, the 7-day trial cannot be extended.
+
+Q: What happens to my data when trial ends?
+A: It stays encrypted on your device. Purchase to restore access.
+
+Q: Do I need a credit card for the trial?
+A: No! The trial is completely free with no payment info required.
+
+Q: Can I start another trial with a different email?
+A: No, trials are limited to one per person/household.
+
+Q: Is my data sent to your servers?
+A: No! All data stays 100% on your device.
+
+================================================================================
+                              SUPPORT
+================================================================================
+
+Email: support@LocalPasswordVault.com
+Website: https://LocalPasswordVault.com/kb
+
+================================================================================
+
+© 2025 Local Password Vault | https://LocalPasswordVault.com
+
+================================================================================
+

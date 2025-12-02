@@ -1,0 +1,52 @@
+================================================================================
+                    LOCAL PASSWORD VAULT - QUICK START
+                           7-Day Free Trial
+================================================================================
+
+1. INSTALL    → Run LocalPasswordVault-Setup.exe
+
+2. TRIAL      → Click "Start Free Trial" & enter your email
+
+3. KEY        → Check email for trial key: TRIA-XXXX-XXXX-XXXX
+
+4. PASSWORD   → Create a strong master password (WRITE IT DOWN!)
+
+5. ADD        → Click "+ Add Account" to store your first password
+
+6. ENJOY      → Full access for 7 days!
+
+================================================================================
+                              DAILY USE
+================================================================================
+
+🔍 SEARCH     → Type in the search box to find accounts instantly
+
+📋 COPY       → Click the copy icon to copy password to clipboard
+
+🔒 LOCK       → Click "Lock Vault" when stepping away
+
+🎲 GENERATE   → Use the password generator for strong passwords
+
+================================================================================
+                           BEFORE TRIAL ENDS
+================================================================================
+
+⚠️  Export your data: Settings > Export > Encrypted Backup
+
+This protects your passwords if you don't purchase before trial ends.
+
+================================================================================
+                           READY TO BUY?
+================================================================================
+
+Personal Plan: $49 (1 device, lifetime)
+Family Plan:   $79 (5 devices, lifetime)
+
+Visit: https://LocalPasswordVault.com/pricing
+
+================================================================================
+
+Need help? See GETTING_STARTED.txt or visit LocalPasswordVault.com/kb
+
+================================================================================
+

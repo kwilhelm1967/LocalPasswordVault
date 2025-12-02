@@ -1,0 +1,139 @@
+================================================================================
+                    LOCAL PASSWORD VAULT - SUPPORT
+                              Personal Plan
+================================================================================
+
+                         📧 CONTACT SUPPORT
+================================================================================
+
+Email:          support@LocalPasswordVault.com
+Response Time:  Within 48 hours (business days)
+Website:        https://LocalPasswordVault.com
+Knowledge Base: https://LocalPasswordVault.com/kb
+
+================================================================================
+                         🔧 COMMON ISSUES & SOLUTIONS
+================================================================================
+
+ISSUE: Forgot Master Password
+-----------------------------
+Unfortunately, your master password cannot be recovered. We don't store it
+anywhere for your security. If you have an encrypted backup, you can restore
+from that using the backup password.
+
+Prevention: Write down your master password and store it safely.
+
+ISSUE: License Won't Activate
+-----------------------------
+1. Check that you entered the key correctly (no extra spaces)
+2. Ensure your license key starts with "PERS-"
+3. Check your internet connection (needed for first activation only)
+4. Try restarting the application
+
+Still not working? Email support with your license key.
+
+ISSUE: Application Won't Start
+------------------------------
+Windows:
+1. Right-click and "Run as Administrator"
+2. Check Windows Defender isn't blocking it
+3. Reinstall the application
+
+macOS:
+1. Go to System Preferences > Security & Privacy
+2. Click "Open Anyway" for Local Password Vault
+3. Try reinstalling if issue persists
+
+Linux:
+1. Check file permissions: chmod +x LocalPasswordVault.AppImage
+2. Ensure required dependencies are installed
+3. Try running from terminal to see error messages
+
+ISSUE: Import Failed
+--------------------
+1. Check the file format matches what you selected
+2. Ensure CSV files are UTF-8 encoded
+3. Check for special characters in fields
+4. Try exporting from your old manager again
+
+ISSUE: Passwords Not Showing
+----------------------------
+1. Check if you're in the correct category
+2. Clear the search filter
+3. Check if "Favorites Only" filter is on
+4. Try locking and unlocking the vault
+
+ISSUE: Floating Panel Not Appearing
+-----------------------------------
+1. Check if it's minimized to taskbar/dock
+2. Try the keyboard shortcut to toggle it
+3. Restart the application
+4. Check display settings if using multiple monitors
+
+================================================================================
+                         📚 SELF-HELP RESOURCES
+================================================================================
+
+Knowledge Base
+--------------
+Searchable articles covering:
+- Installation guides
+- Feature tutorials
+- Troubleshooting steps
+- Best practices
+
+Visit: https://LocalPasswordVault.com/kb
+
+Video Tutorials
+---------------
+Step-by-step video guides for:
+- Getting started
+- Importing passwords
+- Using advanced features
+- Security best practices
+
+Visit: https://LocalPasswordVault.com/tutorials
+
+================================================================================
+                         📝 BEFORE CONTACTING SUPPORT
+================================================================================
+
+Please include:
+1. Your license key
+2. Operating system and version
+3. Application version (found in Settings > About)
+4. Detailed description of the issue
+5. Steps to reproduce the problem
+6. Screenshots if applicable
+7. Any error messages you see
+
+This helps us resolve your issue faster!
+
+================================================================================
+                         🔒 SECURITY REMINDERS
+================================================================================
+
+We will NEVER ask for:
+- Your master password
+- Access to your computer
+- Payment for support
+
+If someone asks for these, it's a scam. Report it to us immediately.
+
+================================================================================
+                         📋 UPGRADE OPTIONS
+================================================================================
+
+Need more devices? Upgrade to Family Plan:
+- 5 device licenses
+- Same lifetime pricing model
+- Priority support
+
+Visit: https://LocalPasswordVault.com/upgrade
+
+================================================================================
+
+© 2025 Local Password Vault | https://LocalPasswordVault.com
+
+================================================================================
+

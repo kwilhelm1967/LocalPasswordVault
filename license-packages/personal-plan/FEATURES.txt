@@ -1,0 +1,173 @@
+================================================================================
+                    LOCAL PASSWORD VAULT - FEATURES
+                              Personal Plan
+================================================================================
+
+                         🔒 SECURITY FEATURES
+================================================================================
+
+AES-256-GCM Encryption
+----------------------
+Military-grade encryption protects all your data. Even if someone gets your 
+vault file, they cannot read it without your master password.
+
+100% Offline Operation
+----------------------
+Your passwords NEVER leave your device. No cloud servers. No sync. No risk 
+of online breaches. Works without internet.
+
+Zero-Knowledge Architecture
+---------------------------
+We don't know your master password. We can't access your data. True privacy.
+
+PBKDF2 Key Derivation
+---------------------
+Your master password is processed through 100,000+ iterations making brute 
+force attacks practically impossible.
+
+Secure Memory Handling
+----------------------
+Sensitive data is cleared from memory when not in use, protecting against 
+memory-scanning attacks.
+
+Auto-Lock Protection
+--------------------
+Automatically locks your vault after a period of inactivity. Configurable 
+from 1-60 minutes.
+
+================================================================================
+                         📱 CORE FEATURES
+================================================================================
+
+Unlimited Password Storage
+--------------------------
+Store as many passwords as you need. No limits.
+
+Password Generator
+------------------
+Create strong, unique passwords instantly:
+- Adjustable length (8-128 characters)
+- Include/exclude uppercase, lowercase, numbers, symbols
+- Visual strength meter
+- One-click generation
+
+Floating Mini Vault
+-------------------
+Compact floating panel for quick access while browsing:
+- Always-on-top option
+- Quick search
+- One-click copy
+- Minimal footprint
+
+Categories & Organization
+-------------------------
+Organize passwords by category:
+- Banking
+- Shopping
+- Entertainment
+- Email
+- Work
+- Business
+- Custom categories
+
+Search & Filter
+---------------
+Find any password instantly:
+- Real-time search
+- Filter by category
+- Sort by name, date, or category
+- Favorites for quick access
+
+================================================================================
+                         🔐 ADVANCED FEATURES
+================================================================================
+
+2FA/TOTP Authenticator
+----------------------
+Built-in two-factor authentication:
+- Store TOTP secrets with your accounts
+- Generate 6-digit codes automatically
+- No separate authenticator app needed
+- Time-synced codes
+
+Password History
+----------------
+Track all previous passwords:
+- See when passwords were changed
+- Restore old passwords if needed
+- Up to 10 previous passwords stored
+
+Custom Fields
+-------------
+Add any information to entries:
+- PINs
+- Security questions
+- Account numbers
+- Notes
+- Secret fields (hidden by default)
+
+Secure Notes
+------------
+Store sensitive text that isn't passwords:
+- Software licenses
+- Recovery codes
+- Confidential notes
+- Encrypted just like passwords
+
+================================================================================
+                         📤 IMPORT & EXPORT
+================================================================================
+
+Import From
+-----------
+- Chrome/Firefox CSV export
+- LastPass export
+- 1Password export
+- Bitwarden export
+- Generic CSV
+- Encrypted backups
+
+Export To
+---------
+- Encrypted backup (recommended)
+- Plain CSV (use with caution)
+- JSON format
+
+================================================================================
+                         🎨 USER EXPERIENCE
+================================================================================
+
+Dark Theme
+----------
+Easy on the eyes, designed for extended use.
+
+Keyboard Shortcuts
+------------------
+- Ctrl/Cmd + N: New account
+- Ctrl/Cmd + F: Search
+- Ctrl/Cmd + L: Lock vault
+- Escape: Close dialogs
+
+Undo Delete
+-----------
+Accidentally delete something? 5-second undo option to restore it.
+
+Offline Indicator
+-----------------
+Visual indicator when you lose internet connection. Your vault works 
+perfectly offline - the indicator is just informational.
+
+================================================================================
+                         💻 PLATFORM SUPPORT
+================================================================================
+
+- Windows 10/11 (64-bit)
+- macOS 10.15+ (Intel & Apple Silicon)
+- Linux (Ubuntu 20.04+, Debian 10+, Fedora 35+)
+
+================================================================================
+
+© 2025 Local Password Vault | https://LocalPasswordVault.com
+
+================================================================================
+
