@@ -19,7 +19,7 @@ import {
   Sparkles,
   Database,
   RefreshCw,
-  Smartphone,
+  CalendarClock,
   Monitor,
   Apple,
   Terminal,
@@ -799,9 +799,9 @@ export const LandingPage: React.FC = () => {
               description="Create encrypted backups. Restore on any device with your master password."
             />
             <FeatureCard
-              icon={<Smartphone className="w-6 h-6" />}
-              title="Works Offline Always"
-              description="Visual indicator when offline. Full access to all passwords without internet."
+              icon={<CalendarClock className="w-6 h-6" />}
+              title="Password Age Alerts"
+              description="Dashboard warns when passwords are over 90 days old. Stay ahead of security risks."
             />
             <FeatureCard
               icon={<Key className="w-6 h-6" />}
