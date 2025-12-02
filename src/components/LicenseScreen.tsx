@@ -82,7 +82,7 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
     useState(false);
   const [pendingLicenseKey, setPendingLicenseKey] = useState("");
   const [showDownloadPage, setShowDownloadPage] = useState(false);
-  const [showLicenseInput, setShowLicenseInput] = useState(false);
+  const [showLicenseInput] = useState(false);
 
   // Get trial information from localStorage
   const getTrialInfoFromLocalStorage = useCallback(() => {

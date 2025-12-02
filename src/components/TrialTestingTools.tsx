@@ -5,9 +5,18 @@ interface TrialTestingToolsProps {
   onShowWarning: (type: 'expiring' | 'final') => void;
 }
 
+interface TrialInfo {
+  isActive: boolean;
+  endDate?: Date | string | null;
+  daysRemaining?: number;
+  hoursRemaining?: number;
+  minutesRemaining?: number;
+  secondsRemaining?: number;
+}
+
 export const TrialTestingTools: React.FC<TrialTestingToolsProps> = ({ onShowWarning }) => {
-  const [currentTime, setCurrentTime] = React.useState(new Date());
-  const [trialInfo, setTrialInfo] = React.useState<any>(null);
+  const [, setCurrentTime] = React.useState(new Date());
+  const [trialInfo, setTrialInfo] = React.useState<TrialInfo | null>(null);
 
   // Update time every second
   React.useEffect(() => {

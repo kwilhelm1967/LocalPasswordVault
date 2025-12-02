@@ -43,6 +43,7 @@ export function sanitizeTextField(
     // Remove null bytes (security)
     .replace(/\0/g, '')
     // Remove control characters except newlines and tabs
+    // eslint-disable-next-line no-control-regex
     .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
     // Trim whitespace
     .trim()
@@ -116,6 +117,7 @@ export function sanitizeNotes(input: string, maxLength: number = 5000): string {
     // Remove null bytes
     .replace(/\0/g, '')
     // Remove control characters except newlines, carriage returns, and tabs
+    // eslint-disable-next-line no-control-regex
     .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
     // Trim whitespace
     .trim()

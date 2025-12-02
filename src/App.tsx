@@ -154,7 +154,7 @@ const useDarkTheme = () => {
 };
 
 // Custom hook for vault data management
-const useVaultData = (isLocked: boolean, isElectron: boolean, loadSharedEntries?: () => Promise<any[]>, saveSharedEntries?: (entries: PasswordEntry[]) => Promise<boolean>) => {
+const useVaultData = (isLocked: boolean, isElectron: boolean, loadSharedEntries?: () => Promise<RawPasswordEntry[]>, saveSharedEntries?: (entries: PasswordEntry[]) => Promise<boolean>) => {
   const [entries, setEntries] = useState<PasswordEntry[]>([]);
   const [isInitialized, setIsInitialized] = useState(false);
 
@@ -499,6 +499,17 @@ function App() {
   const isFloatingMode = useFloatingMode(isElectron);
   useVaultStatusSync(isElectron, setIsLocked);
 
+  // What's New modal state (moved here to comply with React hook rules)
+  const { shouldShow: showWhatsNew, dismiss: dismissWhatsNew } = useWhatsNew();
+  const [whatsNewOpen, setWhatsNewOpen] = useState(showWhatsNew);
+
+  // Listen for "What's New" open event from Settings
+  useEffect(() => {
+    const handleOpenWhatsNew = () => setWhatsNewOpen(true);
+    window.addEventListener('open-whats-new', handleOpenWhatsNew);
+    return () => window.removeEventListener('open-whats-new', handleOpenWhatsNew);
+  }, []);
+
   // Warning popup callback
   const handleWarningPopup = useCallback((state: WarningPopupState) => {
     setWarningPopupState(state);
@@ -822,7 +833,7 @@ function App() {
       if (window.electronAPI) {
         if (showMainVault) {
           window.electronAPI.showFloatingPanel();
-          window.electronAPI.hideMainWindow?.() ?? window.electronAPI.minimizeMainWindow?.();
+          void (window.electronAPI.hideMainWindow?.() ?? window.electronAPI.minimizeMainWindow?.());
         } else {
           window.electronAPI.restoreMainWindow();
           window.electronAPI.hideFloatingPanel();
@@ -1046,17 +1057,6 @@ function App() {
 
     return <LoginScreen onLogin={handleLogin} />;
   }
-
-  // What's New modal state
-  const { shouldShow: showWhatsNew, dismiss: dismissWhatsNew } = useWhatsNew();
-  const [whatsNewOpen, setWhatsNewOpen] = useState(showWhatsNew);
-
-  // Listen for "What's New" open event from Settings
-  useEffect(() => {
-    const handleOpenWhatsNew = () => setWhatsNewOpen(true);
-    window.addEventListener('open-whats-new', handleOpenWhatsNew);
-    return () => window.removeEventListener('open-whats-new', handleOpenWhatsNew);
-  }, []);
 
   // Main app
   return (

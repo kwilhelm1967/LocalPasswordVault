@@ -130,7 +130,7 @@ export const PurchaseSuccessPage: React.FC = () => {
       await navigator.clipboard.writeText(key);
       setCopiedIndex(index);
       setTimeout(() => setCopiedIndex(null), 2000);
-    } catch (err) {
+    } catch {
       // Fallback for older browsers
       const textArea = document.createElement("textarea");
       textArea.value = key;
@@ -149,7 +149,7 @@ export const PurchaseSuccessPage: React.FC = () => {
       await navigator.clipboard.writeText(allKeys);
       setCopiedIndex(-1); // -1 indicates "all copied"
       setTimeout(() => setCopiedIndex(null), 2000);
-    } catch (err) {
+    } catch {
       const textArea = document.createElement("textarea");
       textArea.value = allKeys;
       document.body.appendChild(textArea);

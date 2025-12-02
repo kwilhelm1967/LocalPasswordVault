@@ -225,7 +225,11 @@ export const MainVault: React.FC<MainVaultProps> = ({
   const toggleSelectEntry = (entryId: string) => {
     setSelectedEntries((prev) => {
       const next = new Set(prev);
-      next.has(entryId) ? next.delete(entryId) : next.add(entryId);
+      if (next.has(entryId)) {
+        next.delete(entryId);
+      } else {
+        next.add(entryId);
+      }
       return next;
     });
   };
@@ -251,7 +255,11 @@ export const MainVault: React.FC<MainVaultProps> = ({
     try {
       setExpandedEntries((prev) => {
         const next = new Set(prev);
-        next.has(entryId) ? next.delete(entryId) : next.add(entryId);
+        if (next.has(entryId)) {
+          next.delete(entryId);
+        } else {
+          next.add(entryId);
+        }
         return next;
       });
     } catch (error) {
@@ -283,7 +291,7 @@ export const MainVault: React.FC<MainVaultProps> = ({
     };
 
     // Filter entries (includes search in notes)
-    let filtered = entries.filter((entry) => {
+    const filtered = entries.filter((entry) => {
       const searchLower = searchTerm.toLowerCase().trim();
       const matchesSearch =
         !searchLower ||
@@ -327,7 +335,11 @@ export const MainVault: React.FC<MainVaultProps> = ({
   const togglePasswordVisibility = (entryId: string) => {
     setVisiblePasswords((prev) => {
       const next = new Set(prev);
-      next.has(entryId) ? next.delete(entryId) : next.add(entryId);
+      if (next.has(entryId)) {
+        next.delete(entryId);
+      } else {
+        next.add(entryId);
+      }
       return next;
     });
   };
@@ -1433,7 +1445,11 @@ export const MainVault: React.FC<MainVaultProps> = ({
                                   const key = `history-${index}`;
                                   setVisiblePasswords(prev => {
                                     const next = new Set(prev);
-                                    next.has(key) ? next.delete(key) : next.add(key);
+                                    if (next.has(key)) {
+                                      next.delete(key);
+                                    } else {
+                                      next.add(key);
+                                    }
                                     return next;
                                   });
                                 }}

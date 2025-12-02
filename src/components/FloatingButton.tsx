@@ -75,7 +75,7 @@ export const FloatingButton: React.FC = () => {
           window.electronAPI.hideFloatingPanel();
         } else {
           window.electronAPI.showFloatingPanel();
-          window.electronAPI.hideMainWindow?.() ?? window.electronAPI.minimizeMainWindow?.();
+          void (window.electronAPI.hideMainWindow?.() ?? window.electronAPI.minimizeMainWindow?.());
         }
       } else if (!isUnlocked && window.electronAPI?.showMainWindow) {
         window.electronAPI.showMainWindow();

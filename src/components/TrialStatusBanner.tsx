@@ -85,7 +85,7 @@ export const TrialStatusBanner: React.FC<TrialStatusBannerProps> = ({
       }
     };
 
-    const updateTimeRemaining = (trialInfo: any) => {
+    const updateTimeRemaining = (trialInfo: { endDate?: Date | string | null }) => {
       if (!trialInfo.endDate) {
         setTimeRemaining(null);
         return;

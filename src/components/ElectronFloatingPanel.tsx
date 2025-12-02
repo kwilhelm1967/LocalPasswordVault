@@ -280,7 +280,7 @@ export const ElectronFloatingPanel: React.FC<ElectronFloatingPanelProps> = ({
         if (window.electronAPI && window.electronAPI.setAlwaysOnTop) {
           window.electronAPI.setAlwaysOnTop(true);
         }
-      } catch (e) {
+      } catch {
         // Silent error handling
       }
     }, 500); // Check more frequently (every 500ms)

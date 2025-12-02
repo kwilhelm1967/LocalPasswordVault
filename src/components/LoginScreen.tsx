@@ -50,14 +50,15 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
   
   // Rate limiting states
   const [lockoutSeconds, setLockoutSeconds] = useState(0);
-  const [remainingAttempts, setRemainingAttempts] = useState(5);
+  const [, setRemainingAttempts] = useState(5);
   
   // Password hint states
   const [passwordHint, setPasswordHint] = useState("");
   const [showHintInput, setShowHintInput] = useState(false);
   const [savedHint, setSavedHint] = useState<string | null>(null);
   const [showSavedHint, setShowSavedHint] = useState(false);
-  const [isLoadingHint, setIsLoadingHint] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [_isLoadingHint, setIsLoadingHint] = useState(false);
 
   const strength = useMemo(() => calculateStrength(password), [password]);
 
@@ -412,7 +413,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
             <button
               onClick={() => {
                 const url = "https://localpasswordvault.com";
-                window.electronAPI?.openExternal?.(url) ?? window.open(url, "_blank");
+                void (window.electronAPI?.openExternal?.(url) ?? window.open(url, "_blank"));
               }}
               className="text-slate-400 hover:text-white transition-colors"
             >

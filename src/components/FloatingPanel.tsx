@@ -14,23 +14,22 @@ import {
   Star,
   StarOff,
   Clock,
-  FileDown,
 } from "lucide-react";
 import { PasswordEntry, Category } from "../types";
 import { CategoryIcon } from "./CategoryIcon";
 import { EntryForm } from "./EntryForm";
 
 // Define constant for floating panel styles
-const FLOATING_PANEL_STYLES: React.CSSProperties = {
+const FLOATING_PANEL_STYLES = {
   zIndex: 9999,
-  position: "fixed" as "fixed",
+  position: "fixed",
   boxShadow: "0 10px 25px rgba(0, 0, 0, 0.5)",
   willChange: "transform",
   transform: "translateZ(0)",
-  backfaceVisibility: "hidden" as "hidden",
+  backfaceVisibility: "hidden",
   perspective: 1000,
-  isolation: "isolate" as "isolate",
-};
+  isolation: "isolate",
+} as const;
 
 interface FloatingPanelProps {
   entries: PasswordEntry[];
@@ -167,7 +166,7 @@ export const FloatingPanel: React.FC<FloatingPanelProps> = ({
         setLastPosition(validatedPosition);
         setPositionLoaded(true);
         setIsInitialized(true);
-      } catch (error) {
+      } catch {
         // Silent error handling to prevent console noise
         setIsInitialized(true);
       }
@@ -238,7 +237,7 @@ export const FloatingPanel: React.FC<FloatingPanelProps> = ({
         if (newX !== position.x || newY !== position.y) {
           setPosition({ x: newX, y: newY });
         }
-      } catch (error) {
+      } catch {
         // Silent error handling to prevent crashes
       }
     }

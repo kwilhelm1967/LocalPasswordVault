@@ -277,9 +277,9 @@ function constantTimeCompare(a: string, b: string): boolean {
   if (a.length !== b.length) {
     // Still do comparison to maintain constant time
     // but we know result will be false
-    let result = 1;
+    let _result = 1;
     for (let i = 0; i < a.length; i++) {
-      result |= a.charCodeAt(i) ^ a.charCodeAt(i);
+      _result |= a.charCodeAt(i) ^ a.charCodeAt(i);
     }
     return false;
   }

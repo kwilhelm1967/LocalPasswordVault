@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { PasswordEntry } from "../types";
 
 // Using the global ElectronAPI type from vite-env.d.ts
 
@@ -33,7 +34,7 @@ export const useElectron = () => {
   useEffect(() => {
     if (!window.electronAPI?.onVaultStatusChange) return;
 
-    const handleVaultStatusChange = (_event: any, unlocked: boolean) => {
+    const handleVaultStatusChange = (_event: unknown, unlocked: boolean) => {
       setIsVaultUnlocked(unlocked);
     };
 
@@ -49,7 +50,7 @@ export const useElectron = () => {
   }, []);
 
   // Shared data methods
-  const saveSharedEntries = async (entries: any[]) => {
+  const saveSharedEntries = async (entries: PasswordEntry[]) => {
     if (!window.electronAPI?.saveSharedEntries) return false;
     return await window.electronAPI.saveSharedEntries(entries);
   };

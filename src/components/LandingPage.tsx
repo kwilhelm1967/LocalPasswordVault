@@ -4,15 +4,11 @@ import {
   Lock,
   Key,
   Fingerprint,
-  Wifi,
   WifiOff,
   Eye,
   EyeOff,
   Zap,
   Clock,
-  Users,
-  Download,
-  ChevronRight,
   Check,
   Star,
   ArrowRight,
@@ -25,7 +21,6 @@ import {
   Terminal,
   Quote,
   Mail,
-  ExternalLink,
 } from "lucide-react";
 
 // Distinctive color palette - deep, trustworthy, premium feel
