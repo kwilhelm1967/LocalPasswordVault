@@ -287,22 +287,37 @@ let floatingWindow = new BrowserWindow({
 
 ## 📦 Build & Distribution
 
-### Installers (NOT zipped)
-- **Windows:** `.exe` (NSIS installer)
-- **macOS:** `.dmg` (disk image)
-- **Linux:** `.AppImage` (portable)
+### Download Packages (ZIP files)
+
+Users download a **ZIP package** containing the installer PLUS documentation:
+
+```
+LocalPasswordVault-Windows-v1.2.0.zip
+├── Local Password Vault Setup.exe    # Installer
+├── README.txt                         # Quick start
+├── User Manual.pdf                    # Full documentation
+├── Quick Start Guide.pdf              # 1-page guide
+├── Privacy Policy.pdf                 # Legal
+├── Terms of Service.pdf               # Legal
+└── License.txt                        # Software license
+```
 
 ### Build Commands
 ```bash
-# Windows
-npm run build:win
+# Build installers
+npm run dist:win    # Windows .exe
+npm run dist:mac    # macOS .dmg
+npm run dist:linux  # Linux .AppImage
 
-# macOS
-npm run build:mac
-
-# Linux
-npm run build:linux
+# Then create ZIP packages (see DOWNLOAD_PACKAGE_GUIDE.md)
+./scripts/create-packages.sh
 ```
+
+### Hosting Downloads
+- **Recommended:** GitHub Releases (free, reliable)
+- **Alternative:** Your web server or cloud storage (S3, Linode Object Storage)
+
+See `DOWNLOAD_PACKAGE_GUIDE.md` for complete packaging instructions.
 
 ### Auto-Updates
 Using `electron-updater` with GitHub Releases:

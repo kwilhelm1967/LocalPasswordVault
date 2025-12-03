@@ -246,6 +246,37 @@ npm run build
 
 ---
 
+### STEP 9: Create Download Packages - 30 minutes
+
+Users need a **ZIP package** with installer + documentation.
+
+1. Build the installers:
+
+```bash
+npm run dist:win    # Windows
+npm run dist:mac    # macOS  
+npm run dist:linux  # Linux
+```
+
+2. Convert docs to PDF (User Manual, Privacy Policy, Terms of Service)
+
+3. Create ZIP packages for each platform containing:
+   - Installer (.exe / .dmg / .AppImage)
+   - README.txt
+   - User Manual.pdf
+   - Quick Start Guide.pdf
+   - Privacy Policy.pdf
+   - Terms of Service.pdf
+   - License.txt
+
+4. Upload packages to GitHub Releases or your web server
+
+See `DOWNLOAD_PACKAGE_GUIDE.md` for detailed instructions and scripts.
+
+✅ **Done when:** ZIP packages are downloadable from your website
+
+---
+
 ## Complete User Flow Verification
 
 ### Test 1: Trial Flow

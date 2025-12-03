@@ -83,13 +83,14 @@ These are the polished email templates to use in your Brevo transactional email 
             </td>
           </tr>
           
-          <!-- Download Section -->
+                <!-- Download Section -->
           <tr>
             <td style="padding:0 40px 32px;">
               <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background:#1e293b;border-radius:12px;">
                 <tr>
                   <td style="padding:28px;">
-                    <h2 style="color:#ffffff;font-size:18px;margin:0 0 20px;font-weight:600;">📥 Download Your App</h2>
+                    <h2 style="color:#ffffff;font-size:18px;margin:0 0 12px;font-weight:600;">📥 Download Your Complete Package</h2>
+                    <p style="color:#94a3b8;font-size:14px;margin:0 0 20px;">Includes installer + User Manual + Quick Start Guide</p>
                     
                     <!-- Download Buttons -->
                     <table role="presentation" cellspacing="0" cellpadding="0" border="0">
@@ -105,6 +106,10 @@ These are the polished email templates to use in your Brevo transactional email 
                         </td>
                       </tr>
                     </table>
+                    
+                    <p style="color:#64748b;font-size:13px;margin:20px 0 0;">
+                      📦 <strong style="color:#94a3b8;">Package includes:</strong> Installer, User Manual (PDF), Quick Start Guide, Privacy Policy, Terms of Service
+                    </p>
                   </td>
                 </tr>
               </table>
