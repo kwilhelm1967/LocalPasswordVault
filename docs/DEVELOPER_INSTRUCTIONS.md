@@ -270,6 +270,67 @@ Test the TRIAL flow:
 
 ---
 
+### ✅ TASK 11: Set Up Code Signing (IMPORTANT - Do Before Public Release)
+
+**Why this matters:** Without code signing:
+- Windows shows scary "Unknown Publisher" warning
+- Mac might completely BLOCK the app from opening
+- Users won't trust the software
+
+**What you need:**
+
+**For Windows:**
+- Buy a code signing certificate (~$100-500/year)
+- Recommended providers: DigiCert, Sectigo, SSL.com
+- EV certificates ($400+) = instant trust, no warnings
+- Standard certificates ($100) = takes time to build trust
+
+**For Mac:**
+- Apple Developer Account ($99/year) - https://developer.apple.com
+- Create "Developer ID Application" certificate
+- Set up notarization (Apple scans app for malware)
+
+**What to do:**
+
+1. **Windows Signing:**
+   - Purchase certificate from DigiCert, Sectigo, or SSL.com
+   - Complete identity verification (they'll ask for documents)
+   - Add to `.env` file:
+     ```
+     CSC_LINK=path/to/certificate.pfx
+     CSC_KEY_PASSWORD=your_password
+     ```
+   - Rebuild: `npm run dist:win`
+
+2. **Mac Signing:**
+   - Enroll in Apple Developer Program ($99/year)
+   - Create Developer ID certificate in Apple's portal
+   - Generate app-specific password at appleid.apple.com
+   - Add to `.env` file:
+     ```
+     APPLE_ID=your@email.com
+     APPLE_ID_PASSWORD=app-specific-password
+     APPLE_TEAM_ID=YOUR_TEAM_ID
+     ```
+   - Rebuild: `npm run dist:mac`
+
+**Full details:** See `docs/CODE_SIGNING_GUIDE.md`
+
+**How I know it's done:** 
+- Windows: Right-click the .exe → Properties → Digital Signatures tab shows our company name
+- Mac: App opens without "unidentified developer" warning
+
+**Cost Summary:**
+| What | Cost | Notes |
+|------|------|-------|
+| Windows EV Certificate | ~$400/year | Best - instant trust |
+| Windows Standard Certificate | ~$100/year | Cheaper but takes time |
+| Apple Developer Account | $99/year | Required for Mac |
+
+**NOTE:** We can release WITHOUT code signing for initial testing, but users will see warnings. For public release, we MUST have code signing.
+
+---
+
 ## CREDENTIALS I NEED TO GIVE YOU
 
 Before you start, I'll send you:
@@ -320,7 +381,10 @@ If something is unclear:
 | Task 8: Website links | 30 min |
 | Task 9: Test everything | 1 hour |
 | Task 10: Floating icon | 30 min |
-| **TOTAL** | **~6 hours** |
+| Task 11: Code signing | 2-3 hours* |
+| **TOTAL** | **~8-9 hours** |
+
+*Task 11 time varies - certificate purchase/verification can take 1-3 business days
 
 ---
 
@@ -335,6 +399,8 @@ Send me:
 6. ✅ Video of the complete purchase flow working
 7. ✅ Video of the trial flow working
 8. ✅ Confirmation floating icon works
+9. ✅ Screenshot of Windows installer showing "Digital Signatures" tab with our name (after code signing)
+10. ✅ Confirmation Mac app opens without security warnings (after code signing)
 
 ---
 
