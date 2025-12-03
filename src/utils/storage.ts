@@ -7,9 +7,9 @@ const FIXED_CATEGORIES: Category[] = [
   { id: "all", name: "All", color: "#3b82f6", icon: "Grid3X3" },
   { id: "banking", name: "Banking", color: "#10b981", icon: "CircleDollarSign" },
   { id: "shopping", name: "Shopping", color: "#f59e0b", icon: "ShoppingCart" },
-  { id: "entertainment", name: "Entertainment", color: "#ef4444", icon: "Ticket" },
+  { id: "entertainment", name: "Entertainment", color: "#a855f7", icon: "Ticket" },
   { id: "email", name: "Email", color: "#f43f5e", icon: "Mail" },
-  { id: "work", name: "Work", color: "#f43f5e", icon: "Briefcase" },
+  { id: "work", name: "Work", color: "#3b82f6", icon: "Briefcase" },
   { id: "business", name: "Business", color: "#8b5cf6", icon: "TrendingUp" },
   { id: "other", name: "Other", color: "#6b7280", icon: "FileText" },
 ];

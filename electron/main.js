@@ -7,7 +7,7 @@ const fs = require("fs");
 const { screen, powerMonitor, globalShortcut } = require("electron");
 const SecureFileStorage = require("./secure-storage");
 const Positioner = require("electron-positioner");
-const isDev = process.env.NODE_ENV === "development" || !app.isPackaged;
+const isDev = process.env.NODE_ENV === "development" || (app && !app.isPackaged);
 
 // Auto-updater (only in production)
 let autoUpdaterModule = null;

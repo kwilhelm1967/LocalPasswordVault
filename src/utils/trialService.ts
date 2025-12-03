@@ -248,12 +248,21 @@ export class TrialService {
 
     // Fallback: If we have trial data but no license token, check if trial should be expired
     const trialStartDate = localStorage.getItem(TrialService.TRIAL_START_KEY);
-    if (trialStartDate) {
-      const startDate = new Date(trialStartDate);
-      // In development mode, trials expire after minutes instead of days
-      const isDevMode = import.meta.env.DEV;
-      const trialDurationMs = isDevMode ? 5 * 60 * 1000 : 7 * 24 * 60 * 60 * 1000; // 5 min dev vs 7 days prod
-      const expiryDate = new Date(startDate.getTime() + trialDurationMs);
+    const storedExpiryTime = localStorage.getItem('trial_expiry_time');
+    if (trialStartDate || storedExpiryTime) {
+      const startDate = trialStartDate ? new Date(trialStartDate) : new Date();
+      
+      // Use stored expiry time if available, otherwise calculate
+      let expiryDate: Date;
+      if (storedExpiryTime) {
+        expiryDate = new Date(storedExpiryTime);
+      } else {
+        // In development mode, trials expire after 1 hour instead of 7 days
+        const isDevMode = import.meta.env.DEV;
+        const trialDurationMs = isDevMode ? 60 * 60 * 1000 : 7 * 24 * 60 * 60 * 1000; // 1 hour dev vs 7 days prod
+        expiryDate = new Date(startDate.getTime() + trialDurationMs);
+      }
+      
       const now = new Date();
       const isExpired = now >= expiryDate;
 
@@ -269,7 +278,7 @@ export class TrialService {
         endDate: expiryDate,
         hasTrialBeenUsed: true,
         timeRemaining: isExpired ? 'Trial expired' : `Checking trial status...`,
-        trialDurationDisplay: isDevMode ? '5 minutes' : '7 days',
+        trialDurationDisplay: storedExpiryTime ? 'Custom' : (import.meta.env.DEV ? '1 hour' : '7 days'),
         licenseKey: licenseKey,
         securityHash: null,
         activationTime: startDate,

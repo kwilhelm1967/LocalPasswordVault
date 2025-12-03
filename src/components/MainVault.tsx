@@ -34,6 +34,15 @@ import {
   Square,
   FileText,
   Check,
+  // Category icons
+  Grid3X3,
+  CircleDollarSign,
+  ShoppingCart,
+  Ticket,
+  Mail,
+  Briefcase,
+  TrendingUp,
+  LucideIcon,
 } from "lucide-react";
 
 // Import from vault components
@@ -49,6 +58,24 @@ const findDuplicates = (entries: PasswordEntry[], currentEntry: PasswordEntry): 
   return entries.filter(
     e => e.id !== currentEntry.id && e.password === currentEntry.password
   );
+};
+
+// Map category icon names to Lucide components
+const categoryIconMap: Record<string, LucideIcon> = {
+  Grid3X3,
+  CircleDollarSign,
+  ShoppingCart,
+  Ticket,
+  Mail,
+  Briefcase,
+  TrendingUp,
+  FileText,
+  Key, // fallback
+};
+
+// Get the icon component for a category
+const getCategoryIcon = (iconName: string): LucideIcon => {
+  return categoryIconMap[iconName] || Key;
 };
 
 // Custom Field Display Component
@@ -657,7 +684,7 @@ export const MainVault: React.FC<MainVaultProps> = ({
         </div>
 
         {currentView === "dashboard" ? (
-          <div key="dashboard" className="page-transition-enter">
+          <div key="dashboard" className="page-transition-enter flex-1 overflow-hidden">
             <Dashboard
               entries={entries}
               categories={categories}
@@ -684,7 +711,7 @@ export const MainVault: React.FC<MainVaultProps> = ({
             />
           </div>
         ) : currentView === "settings" ? (
-          <div key="settings" className="page-transition-enter">
+          <div key="settings" className="page-transition-enter flex-1 overflow-hidden">
             <Settings
               onExport={onExport}
               onExportEncrypted={onExportEncrypted}
@@ -906,27 +933,51 @@ export const MainVault: React.FC<MainVaultProps> = ({
             {/* Password Grid */}
             <div className="flex-1 overflow-y-auto p-6">
           {filteredEntries.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-center pb-24">
-              <div className="w-16 h-16 bg-slate-800/50 border border-slate-700/50 rounded-2xl flex items-center justify-center mb-4">
-                <Key className="w-8 h-8 text-slate-600" strokeWidth={1.5} />
-              </div>
-              <h3 style={{ color: colors.warmIvory }} className="font-medium mb-1">No accounts found</h3>
-              <p className="text-slate-500 text-sm mb-4">
-                {searchTerm ? "Try a different search term" : "Add your first account to get started"}
-              </p>
-              {!searchTerm && (
-                <button
-                  onClick={() => setShowAddForm(true)}
-                  className="px-4 py-2 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2"
-                  style={{ backgroundColor: colors.steelBlue600 }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.steelBlue500}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = colors.steelBlue600}
-                >
-                  <Plus className="w-4 h-4" strokeWidth={1.5} />
-                  Add Account
-                </button>
-              )}
-            </div>
+            (() => {
+              // Get the current category's icon
+              const currentCategory = categories.find(c => c.id === selectedCategory);
+              const CategoryIcon = currentCategory?.icon 
+                ? getCategoryIcon(currentCategory.icon) 
+                : (selectedCategory === "all" ? Grid3X3 : Key);
+              // Use yellow/gold for "Other" category, otherwise use category color
+              const categoryColor = selectedCategory === "other" 
+                ? "#EAB308" 
+                : (currentCategory?.color || "#64748B");
+              
+              return (
+                <div className="flex flex-col items-center justify-center h-full text-center pb-24">
+                  <div 
+                    className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4"
+                    style={{ 
+                      backgroundColor: `${categoryColor}15`,
+                      border: `1px solid ${categoryColor}30`
+                    }}
+                  >
+                    <CategoryIcon 
+                      className="w-8 h-8" 
+                      strokeWidth={1.5} 
+                      style={{ color: categoryColor }}
+                    />
+                  </div>
+                  <h3 style={{ color: colors.warmIvory }} className="font-medium mb-1">No accounts found</h3>
+                  <p className="text-slate-500 text-sm mb-4">
+                    {searchTerm ? "Try a different search term" : "Add your first account to get started"}
+                  </p>
+                  {!searchTerm && (
+                    <button
+                      onClick={() => setShowAddForm(true)}
+                      className="px-4 py-2 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2"
+                      style={{ backgroundColor: colors.steelBlue600 }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.steelBlue500}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = colors.steelBlue600}
+                    >
+                      <Plus className="w-4 h-4" strokeWidth={1.5} />
+                      Add Account
+                    </button>
+                  )}
+                </div>
+              );
+            })()
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               {filteredEntries.map((entry) => {

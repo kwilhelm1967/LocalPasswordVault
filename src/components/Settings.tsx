@@ -109,13 +109,11 @@ const BouncyCard: React.FC<{
       onClick={onClick}
       className={`
         relative rounded-xl p-5 cursor-pointer
-        transition-all duration-300 ease-out
-        hover:scale-[1.02] hover:-translate-y-1
-        active:scale-[0.98] active:translate-y-0
+        transition-colors duration-200
         ${className}
       `}
       style={{
-        backgroundColor: "rgba(30, 41, 59, 0.6)",
+        backgroundColor: "#1e293b",
         border: `1px solid ${getBorderColor()}`,
         boxShadow: `0 4px 20px rgba(0,0,0,0.2)`,
       }}
@@ -167,19 +165,19 @@ const BlueSelect: React.FC<{
           e.stopPropagation();
           setIsOpen(!isOpen);
         }}
-        className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200"
+        className="flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors duration-150"
         style={{
-          backgroundColor: "#1e293b",
+          backgroundColor: "#334155",
           color: colors.steelBlue400,
-          border: "1px solid #475569",
+          border: "1px solid #64748b",
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.backgroundColor = "#334155";
-          e.currentTarget.style.borderColor = "#64748b";
+          e.currentTarget.style.backgroundColor = "#475569";
+          e.currentTarget.style.borderColor = "#94a3b8";
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.backgroundColor = "#1e293b";
-          e.currentTarget.style.borderColor = "#475569";
+          e.currentTarget.style.backgroundColor = "#334155";
+          e.currentTarget.style.borderColor = "#64748b";
         }}
       >
         <span>{selectedLabel}</span>
@@ -934,8 +932,8 @@ export const Settings: React.FC<SettingsProps> = ({
       <SectionTitle>Danger Zone</SectionTitle>
       <BouncyCard onClick={() => setShowClearConfirm(true)} variant="danger">
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-red-500/10">
-            <Trash2 className="w-6 h-6 text-red-400" strokeWidth={1.5} />
+          <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-slate-700/50">
+            <Trash2 className="w-6 h-6 text-slate-400" strokeWidth={1.5} />
           </div>
           <div className="flex-1">
             <h3 className="text-red-400 font-semibold mb-1">Clear All Data</h3>

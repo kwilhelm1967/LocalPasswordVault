@@ -161,28 +161,39 @@ export const TrialStatusBanner: React.FC<TrialStatusBannerProps> = ({
   const isUrgent = timeRemaining.days <= 1;
   const isVeryUrgent = timeRemaining.days === 0 && timeRemaining.hours <= 4;
 
-  // Handle purchase click
+  // Handle purchase click - always open the purchase URL
   const handlePurchase = () => {
+    const url = "https://localpasswordvault.com/#plans";
+    if (window.electronAPI?.openExternal) {
+      window.electronAPI.openExternal(url);
+    } else {
+      window.open(url, "_blank");
+    }
+    // Also call onPurchase callback if provided (for analytics, etc.)
     if (onPurchase) {
       onPurchase();
-    } else {
-      const url = "https://localpasswordvault.com/#plans";
-      if (window.electronAPI?.openExternal) {
-        window.electronAPI.openExternal(url);
-      } else {
-        window.open(url, "_blank");
-      }
     }
+  };
+
+  // DEV ONLY: Add 1 hour to trial
+  const handleAddHour = () => {
+    // Get current expiry and add 1 hour to it
+    const currentExpiry = localStorage.getItem('trial_expiry_time');
+    const baseTime = currentExpiry ? new Date(currentExpiry).getTime() : Date.now();
+    const newExpiry = new Date(baseTime + 60 * 60 * 1000); // Add 1 hour
+    localStorage.setItem('trial_expiry_time', newExpiry.toISOString());
+    console.log('Trial extended to:', newExpiry.toISOString());
+    window.location.reload();
   };
 
   // Alert palette for warning/expired states - refined, premium styling
   const alertColors = {
     background: 'linear-gradient(90deg, rgba(255, 85, 85, 0.12) 0%, rgba(255, 85, 85, 0.06) 100%)',
-    border: 'rgba(255, 85, 85, 0.22)',
+    border: 'rgba(255, 85, 85, 0.4)',
     text: '#FF6E6E',
     textMuted: 'rgba(255, 110, 110, 0.75)',
     iconBg: 'rgba(255, 85, 85, 0.15)',
-    iconBorder: 'rgba(255, 85, 85, 0.25)',
+    iconBorder: 'rgba(255, 85, 85, 0.35)',
   };
 
   // Expired state
@@ -243,9 +254,9 @@ export const TrialStatusBanner: React.FC<TrialStatusBannerProps> = ({
     
     // Gold gradient for regular urgent state
     const goldGradient = `linear-gradient(90deg, rgba(201, 174, 102, 0.12) 0%, rgba(201, 174, 102, 0.06) 100%)`;
-    const goldBorder = 'rgba(201, 174, 102, 0.25)';
+    const goldBorder = 'rgba(201, 174, 102, 0.4)';
     const goldIconBg = 'rgba(201, 174, 102, 0.15)';
-    const goldIconBorder = 'rgba(201, 174, 102, 0.25)';
+    const goldIconBorder = 'rgba(201, 174, 102, 0.3)';
     
     return (
       <div 
@@ -289,6 +300,14 @@ export const TrialStatusBanner: React.FC<TrialStatusBannerProps> = ({
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {/* DEV: Add 1 Hour Button */}
+            <button
+              onClick={handleAddHour}
+              className="px-3 py-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 text-xs font-medium rounded-lg transition-all flex items-center gap-1.5 border border-emerald-500/30"
+              title="Add 1 hour to trial (dev only)"
+            >
+              +1 Hour
+            </button>
             {onExport && (
               <button
                 onClick={onExport}
@@ -320,7 +339,7 @@ export const TrialStatusBanner: React.FC<TrialStatusBannerProps> = ({
       className="rounded-xl px-4 py-2.5 mb-4 border"
       style={{ 
         backgroundColor: `${colors.steelBlue500}10`,
-        borderColor: `${colors.steelBlue500}30`,
+        borderColor: '#3b82f6', // Light blue border
       }}
     >
       <div className="flex items-center justify-between gap-4">

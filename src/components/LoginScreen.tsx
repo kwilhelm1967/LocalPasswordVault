@@ -5,7 +5,7 @@
  * Features AES-256 encryption indicator and secure password entry.
  */
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { Lock, Eye, EyeOff, Key, AlertCircle, Info, Shield, Loader2, HelpCircle } from "lucide-react";
 import { storageService } from "../utils/storage";
 import { generateRecoveryPhrase, storeRecoveryPhrase } from "../utils/recoveryPhrase";
@@ -46,7 +46,9 @@ const calculateStrength = (pwd: string): { score: number; label: string; color: 
 
 export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [isFirstTime, setIsFirstTime] = useState(false);
@@ -69,6 +71,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
   const [isLoadingHint, setIsLoadingHint] = useState(false);
 
   const strength = useMemo(() => calculateStrength(password), [password]);
+  const passwordsMatch = password === confirmPassword;
 
   useEffect(() => {
     const vaultExists = storageService.vaultExists();
@@ -115,6 +118,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
     // Validate password meets minimum requirements
     if (isFirstTime && password.length < 12) {
       setError("Password must be at least 12 characters long");
+      return;
+    }
+
+    // Validate passwords match for first-time setup
+    if (isFirstTime && password !== confirmPassword) {
+      setError("Passwords do not match");
       return;
     }
     
@@ -225,7 +234,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
     );
   }
 
-  const isSubmitDisabled = isLoading || !password.trim() || (isFirstTime && !strength.isValid) || lockoutSeconds > 0;
+  const isSubmitDisabled = isLoading || !password.trim() || (isFirstTime && !strength.isValid) || (isFirstTime && !passwordsMatch) || lockoutSeconds > 0;
 
   return (
     <div
@@ -323,15 +332,16 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-3 py-2.5 bg-slate-900/50 border border-slate-600/50 rounded-lg text-white text-sm placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all pr-10"
+                  className="w-full px-3 py-2.5 bg-slate-900/50 border border-slate-600/50 rounded-lg text-white text-sm placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 pr-10"
                   placeholder={isFirstTime ? "Min 12 chars with upper, lower, number, symbol" : "Enter your password"}
                   required
                   autoFocus
                   disabled={isLoading || lockoutSeconds > 0}
                   minLength={isFirstTime ? 12 : 1}
                   autoComplete={isFirstTime ? "new-password" : "current-password"}
-                  aria-describedby={error ? "login-error" : strength.isValid ? "password-strength" : "password-requirements"}
-                  aria-invalid={isFirstTime && !strength.isValid && password.length > 0}
+                  spellCheck={false}
+                  autoCapitalize="off"
+                  autoCorrect="off"
                 />
                 <button
                   type="button"
@@ -390,7 +400,63 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
                   Password must be at least 12 characters long and contain uppercase letters, lowercase letters, and numbers.
                 </div>
               )}
+            </div>
 
+            {/* Confirm Password Field (First Time Only) */}
+            {isFirstTime && (
+              <div>
+                <label
+                  htmlFor="confirm-password"
+                  className="block text-xs font-medium text-slate-300 mb-1.5"
+                >
+                  Confirm Master Password
+                </label>
+                <div className="relative">
+                  <input
+                    id="confirm-password"
+                    type={showConfirmPassword ? "text" : "password"}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className={`w-full px-3 py-2.5 bg-slate-900/50 border rounded-lg text-white text-sm placeholder-slate-500 focus:outline-none focus:ring-2 pr-10 ${
+                      confirmPassword && !passwordsMatch 
+                        ? "border-red-500/50 focus:border-red-500 focus:ring-red-500/20" 
+                        : confirmPassword && passwordsMatch 
+                          ? "border-emerald-500/50 focus:border-emerald-500 focus:ring-emerald-500/20"
+                          : "border-slate-600/50 focus:border-blue-500 focus:ring-blue-500/20"
+                    }`}
+                    placeholder="Re-enter your password"
+                    required
+                    disabled={isLoading || lockoutSeconds > 0}
+                    autoComplete="new-password"
+                    spellCheck={false}
+                    autoCapitalize="off"
+                    autoCorrect="off"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-white rounded transition-all"
+                    disabled={isLoading}
+                    tabIndex={-1}
+                    aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                  >
+                    {showConfirmPassword ? <EyeOff className="w-4 h-4" aria-hidden="true" /> : <Eye className="w-4 h-4" aria-hidden="true" />}
+                  </button>
+                </div>
+                {/* Password Match Status */}
+                {confirmPassword && (
+                  <p 
+                    id="confirm-password-status"
+                    className={`text-[10px] mt-1 ${passwordsMatch ? "text-emerald-400" : "text-red-400"}`}
+                    aria-live="polite"
+                  >
+                    {passwordsMatch ? "✓ Passwords match" : "✗ Passwords do not match"}
+                  </p>
+                )}
+              </div>
+            )}
+
+            <div>
               {/* Show Hint Button (Existing Vault Only) */}
               {!isFirstTime && savedHint && (
                 <div className="mt-2">
@@ -501,9 +567,18 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
           )}
 
           {/* Security Badge */}
-          <div className="mt-4 pt-4 border-t border-slate-700/50 flex items-center gap-2">
-            <Shield className="w-4 h-4 text-emerald-400" />
-            <p className="text-xs text-slate-400">AES-256 encrypted • Data stays local</p>
+          <div className="mt-4 pt-4 border-t border-slate-700/50">
+            <div className="flex items-center gap-2 mb-2">
+              <Shield className="w-4 h-4 text-emerald-400" />
+              <p className="text-xs text-slate-400">AES-256 encrypted • Data Always Stays Local</p>
+            </div>
+            {/* Lockout policy info - only show for existing vaults */}
+            {!isFirstTime && (
+              <p className="text-[10px] text-slate-500 leading-relaxed">
+                <Lock className="w-3 h-3 inline mr-1 opacity-60" />
+                5 password attempts allowed. After 5 failed attempts, access is locked for 30 seconds.
+              </p>
+            )}
           </div>
         </div>
 

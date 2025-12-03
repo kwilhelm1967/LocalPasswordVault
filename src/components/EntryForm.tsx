@@ -17,6 +17,8 @@ import {
   User,
   Key,
   Settings2,
+  LockKeyhole,
+  StickyNote,
 } from "lucide-react";
 import { PasswordEntry, Category, CustomField } from "../types";
 import { storageService } from "../utils/storage";
@@ -181,6 +183,13 @@ export const EntryForm: React.FC<EntryFormProps> = ({
   }>({});
   const dropdownRef = useRef<HTMLDivElement>(null);
   
+  // Refs for scrolling to error fields
+  const accountNameRef = useRef<HTMLInputElement>(null);
+  const categoryRef = useRef<HTMLButtonElement>(null);
+  const usernameRef = useRef<HTMLInputElement>(null);
+  const passwordRef = useRef<HTMLInputElement>(null);
+  const formContainerRef = useRef<HTMLDivElement>(null);
+  
   // Apply a template
   const applyTemplate = (template: EntryTemplate) => {
     setFormData(prev => ({
@@ -262,6 +271,27 @@ export const EntryForm: React.FC<EntryFormProps> = ({
 
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
+      
+      // Scroll to the first error field
+      setTimeout(() => {
+        let targetRef: React.RefObject<HTMLElement> | null = null;
+        
+        if (errors.accountName) {
+          targetRef = accountNameRef as React.RefObject<HTMLElement>;
+        } else if (errors.category) {
+          targetRef = categoryRef as React.RefObject<HTMLElement>;
+        } else if (errors.username) {
+          targetRef = usernameRef as React.RefObject<HTMLElement>;
+        } else if (errors.password) {
+          targetRef = passwordRef as React.RefObject<HTMLElement>;
+        }
+        
+        if (targetRef?.current) {
+          targetRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          targetRef.current.focus();
+        }
+      }, 100);
+      
       return;
     }
 
@@ -388,7 +418,7 @@ export const EntryForm: React.FC<EntryFormProps> = ({
                     : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/50"
                 }`}
               >
-                <span className="text-base">🔐</span>
+                <LockKeyhole className="w-5 h-5 text-amber-400" strokeWidth={2} />
                 <span>Password Entry</span>
               </button>
               <button
@@ -400,7 +430,7 @@ export const EntryForm: React.FC<EntryFormProps> = ({
                     : "text-slate-400 hover:text-slate-200 hover:bg-slate-800/50"
                 }`}
               >
-                <span className="text-base">📝</span>
+                <StickyNote className="w-5 h-5 text-amber-300" strokeWidth={2} />
                 <span>Secure Note</span>
               </button>
             </div>
@@ -457,6 +487,7 @@ export const EntryForm: React.FC<EntryFormProps> = ({
                 {isSecureNote ? "Title" : "Account Name"} <span className="text-red-400">*</span>
               </label>
               <input
+                ref={accountNameRef}
                 type="text"
                 value={formData.accountName}
                 onChange={(e) => {
@@ -468,15 +499,15 @@ export const EntryForm: React.FC<EntryFormProps> = ({
                     setFieldErrors(prev => ({ ...prev, accountName: undefined }));
                   }
                 }}
-                className={`w-full px-4 py-2.5 rounded-xl text-white placeholder-slate-500 focus:outline-none transition-all text-sm ${
+                className={`w-full px-4 py-2.5 text-white focus:outline-none transition-all text-sm ${
                   fieldErrors.accountName
-                    ? "bg-red-900/20 border-2 border-red-500/50 focus:border-red-500/70 focus:ring-2 focus:ring-red-500/20"
-                    : "bg-slate-700/50 border border-slate-600/50 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20"
+                    ? "input-error"
+                    : "bg-slate-700/50 border border-slate-600/50 rounded-xl focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20"
                 }`}
                 placeholder="e.g., Gmail, Bank of America"
               />
               {fieldErrors.accountName && (
-                <p className="mt-1 text-xs text-red-400 font-medium">{fieldErrors.accountName}</p>
+                <p className="error-text">{fieldErrors.accountName}</p>
               )}
             </div>
 
@@ -487,12 +518,13 @@ export const EntryForm: React.FC<EntryFormProps> = ({
               </label>
               <div ref={dropdownRef} className="relative">
                 <button
+                  ref={categoryRef}
                   type="button"
                   onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}
-                  className={`w-full px-4 py-2.5 rounded-xl text-white focus:outline-none transition-all text-sm flex items-center justify-between text-left ${
+                  className={`w-full px-4 py-2.5 text-white focus:outline-none transition-all text-sm flex items-center justify-between text-left ${
                     fieldErrors.category
-                      ? "bg-red-900/20 border-2 border-red-500/50 focus:border-red-500/70 focus:ring-2 focus:ring-red-500/20"
-                      : "bg-slate-700/50 border border-slate-600/50 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20"
+                      ? "input-error"
+                      : "bg-slate-700/50 border border-slate-600/50 rounded-xl focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20"
                   }`}
                 >
                   <span
@@ -570,7 +602,7 @@ export const EntryForm: React.FC<EntryFormProps> = ({
                 )}
 
                 {fieldErrors.category && (
-                  <p className="mt-1 text-xs text-red-400 font-medium">{fieldErrors.category}</p>
+                  <p className="error-text">{fieldErrors.category}</p>
                 )}
               </div>
             </div>
@@ -594,6 +626,7 @@ export const EntryForm: React.FC<EntryFormProps> = ({
                   </Tooltip>
                 </label>
                 <input
+                  ref={usernameRef}
                   type="text"
                   value={formData.username}
                   onChange={(e) => {
@@ -602,15 +635,15 @@ export const EntryForm: React.FC<EntryFormProps> = ({
                       setFieldErrors(prev => ({ ...prev, username: undefined }));
                     }
                   }}
-                  className={`w-full px-4 py-2.5 rounded-xl text-white placeholder-slate-500 focus:outline-none transition-all text-sm ${
+                  className={`w-full px-4 py-2.5 text-white focus:outline-none transition-all text-sm ${
                     fieldErrors.username
-                      ? "bg-red-900/20 border-2 border-red-500/50 focus:border-red-500/70 focus:ring-2 focus:ring-red-500/20"
-                      : "bg-slate-700/50 border border-slate-600/50 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20"
+                      ? "input-error"
+                      : "bg-slate-700/50 border border-slate-600/50 rounded-xl focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20"
                   }`}
                   placeholder="username@example.com"
                 />
                 {fieldErrors.username && (
-                  <p className="mt-1 text-xs text-red-400 font-medium">{fieldErrors.username}</p>
+                  <p className="error-text">{fieldErrors.username}</p>
                 )}
               </div>
 
@@ -651,6 +684,7 @@ export const EntryForm: React.FC<EntryFormProps> = ({
                   <div className="space-y-2">
                     <div className="relative">
                       <input
+                        ref={passwordRef}
                         type={showPassword ? "text" : "password"}
                         value={formData.password}
                         onChange={(e) => {
@@ -662,10 +696,10 @@ export const EntryForm: React.FC<EntryFormProps> = ({
                             setFieldErrors(prev => ({ ...prev, password: undefined }));
                           }
                         }}
-                        className={`w-full px-4 py-2.5 pr-12 rounded-xl text-white placeholder-slate-500 focus:outline-none transition-all text-sm ${
+                        className={`w-full px-4 py-2.5 pr-12 text-white focus:outline-none transition-all text-sm ${
                           fieldErrors.password
-                            ? "bg-red-900/20 border-2 border-red-500/50 focus:border-red-500/70 focus:ring-2 focus:ring-red-500/20"
-                            : "bg-slate-700/50 border border-slate-600/50 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20"
+                            ? "input-error"
+                            : "bg-slate-700/50 border border-slate-600/50 rounded-xl focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20"
                         }`}
                         placeholder="Enter password or use generator"
                       />
@@ -709,7 +743,7 @@ export const EntryForm: React.FC<EntryFormProps> = ({
                 )}
 
                 {fieldErrors.password && (
-                  <p className="mt-1 text-xs text-red-400 font-medium">{fieldErrors.password}</p>
+                  <p className="error-text">{fieldErrors.password}</p>
                 )}
                 
                 {/* Duplicate Password Warning */}
@@ -801,7 +835,7 @@ export const EntryForm: React.FC<EntryFormProps> = ({
                 <label className="block text-sm font-medium text-slate-300 mb-1.5">
                   <span className="flex items-center gap-1.5">
                     <Shield className="w-3.5 h-3.5 text-slate-400" />
-                    2FA Secret (TOTP)
+                    Two-Factor Authentication (2FA)
                   </span>
                 </label>
                 <input
@@ -811,10 +845,15 @@ export const EntryForm: React.FC<EntryFormProps> = ({
                     const value = e.target.value.toUpperCase().replace(/[^A-Z2-7]/g, '');
                     setFormData((prev) => ({ ...prev, totpSecret: value }));
                   }}
-                  className="w-full px-4 py-2.5 rounded-xl text-white placeholder-slate-500 focus:outline-none transition-all text-sm bg-slate-700/50 border border-slate-600/50 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 font-mono"
-                  placeholder="Enter Base32 secret (e.g., JBSWY3DPEHPK3PXP)"
+                  className="w-full px-4 py-2.5 rounded-xl text-white placeholder-slate-500 focus:outline-none transition-all text-sm bg-slate-700/50 border border-slate-600/50 focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20"
+                  style={{ fontFamily: 'Arial, sans-serif' }}
+                  placeholder="Paste your 2FA setup key here..."
                 />
-                <p className="mt-1 text-xs text-slate-500">Paste the secret key from your authenticator setup</p>
+                <p className="mt-1.5 text-xs text-slate-500 leading-relaxed">
+                  <strong className="text-slate-400">How to find this:</strong> When setting up 2FA on a website, look for 
+                  "Can't scan the QR code?" or "Manual entry" — copy that secret key and paste it here. 
+                  We'll generate your 6-digit codes automatically!
+                </p>
               </div>
             )}
 
@@ -846,7 +885,7 @@ export const EntryForm: React.FC<EntryFormProps> = ({
                           value={field.label}
                           onChange={(e) => updateCustomField(field.id, { label: e.target.value })}
                           placeholder="Field name"
-                          className="flex-1 px-3 py-1.5 rounded-lg text-xs text-white placeholder-slate-500 bg-slate-800/50 border border-slate-600/50 focus:outline-none focus:border-blue-500/50"
+                          className="flex-1 px-3 py-2 rounded-lg text-sm text-white placeholder-slate-500 bg-slate-700/50 border border-slate-600/50 focus:outline-none focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20"
                         />
                         <button
                           type="button"
@@ -875,7 +914,7 @@ export const EntryForm: React.FC<EntryFormProps> = ({
                           value={field.value}
                           onChange={(e) => updateCustomField(field.id, { value: e.target.value })}
                           placeholder="Field value"
-                          className="w-full px-3 py-1.5 pr-10 rounded-lg text-sm text-white placeholder-slate-500 bg-slate-800/50 border border-slate-600/50 focus:outline-none focus:border-blue-500/50"
+                          className="w-full px-3 py-2 pr-10 rounded-lg text-sm text-white placeholder-slate-500 bg-slate-700/50 border border-slate-600/50 focus:outline-none focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20"
                         />
                         {field.isSecret && (
                           <button
@@ -909,14 +948,6 @@ export const EntryForm: React.FC<EntryFormProps> = ({
           >
             <Save className="w-4 h-4" strokeWidth={2} />
             <span>{entry ? "Save Changes" : (isSecureNote ? "Save Note" : "Add Account")}</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={onCancel}
-            className="px-5 py-2.5 bg-slate-700/50 hover:bg-slate-700 text-slate-300 hover:text-white rounded-xl font-medium transition-all text-sm"
-          >
-            Cancel
           </button>
 
           {onDelete && (

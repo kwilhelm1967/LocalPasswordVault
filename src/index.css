@@ -5,17 +5,101 @@
 @tailwind utilities;
 
 :root {
-  /* Brand Colors - Password Vault Premium Palette */
+  /* ============================================
+     GLOBAL THEME CONFIGURATION
+     All colors, fonts, and spacing in one place
+     ============================================ */
+  
+  /* Brand Colors */
+  --color-brand-gold: #C9AE66;
+  --color-brand-gold-light: #D4BE7E;
+  --color-brand-gold-dark: #B89D55;
+  
+  /* Primary Blues (Steel tones) */
+  --color-primary-600: #4A6FA5;
+  --color-primary-500: #5B82B8;
+  --color-primary-400: #7A9DC7;
+  
+  /* Legacy aliases */
   --color-deep-navy: #0F172A;
   --color-soft-steel: #334155;
   --color-muted-sky: #93B4D1;
   --color-warm-ivory: #F3F4F6;
-  --color-brand-gold: #C9AE66;
-  
-  /* Refined Blues (desaturated steel tones) */
   --color-steel-blue-600: #4A6FA5;
   --color-steel-blue-500: #5B82B8;
   --color-steel-blue-400: #7A9DC7;
+  
+  /* Backgrounds */
+  --color-bg-primary: #0F172A;
+  --color-bg-secondary: #1E293B;
+  --color-bg-tertiary: #334155;
+  --color-bg-card: rgba(30, 41, 59, 0.5);
+  --color-bg-modal: rgba(15, 23, 42, 0.95);
+  
+  /* Text Colors */
+  --color-text-primary: #FFFFFF;
+  --color-text-secondary: #94A3B8;
+  --color-text-muted: #64748B;
+  --color-text-placeholder: #94A3B8;
+  --color-text-label: #C4CFD6;
+  
+  /* Border Colors */
+  --color-border-default: rgba(71, 85, 105, 0.5);
+  --color-border-light: rgba(71, 85, 105, 0.3);
+  --color-border-focus: rgba(91, 130, 184, 0.5);
+  
+  /* Status Colors */
+  --color-success: #10B981;
+  --color-success-light: #34D399;
+  --color-error: #EF4444;
+  --color-error-light: #FCA5A5;
+  --color-warning: #F59E0B;
+  --color-warning-light: #FBBF24;
+  
+  /* Typography */
+  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', monospace;
+  
+  /* Font Sizes - Consistent across app */
+  --font-size-xs: 0.625rem;     /* 10px */
+  --font-size-sm: 0.75rem;      /* 12px */
+  --font-size-base: 0.875rem;   /* 14px */
+  --font-size-lg: 1rem;         /* 16px */
+  --font-size-xl: 1.125rem;     /* 18px */
+  --font-size-2xl: 1.25rem;     /* 20px */
+  --font-size-3xl: 1.5rem;      /* 24px */
+  
+  /* Spacing */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 0.75rem;
+  --spacing-lg: 1rem;
+  --spacing-xl: 1.25rem;
+  --spacing-2xl: 1.5rem;
+  
+  /* Border Radius */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.625rem;
+  --radius-xl: 0.75rem;
+  --radius-2xl: 1rem;
+  
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
+  --shadow-modal: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+  
+  /* Transitions */
+  --transition-fast: 150ms ease;
+  --transition-normal: 200ms ease;
+  --transition-slow: 300ms ease;
+  
+  /* Z-Index Scale */
+  --z-dropdown: 50;
+  --z-modal: 100;
+  --z-tooltip: 150;
+  --z-toast: 200;
 }
 
 html {
@@ -675,4 +759,405 @@ body {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* ============================================
+   PREMIUM ERROR STATE STYLING
+   Calm, polished error treatment for inputs
+   ============================================ */
+
+/* Error state for input fields */
+input.input-error,
+textarea.input-error,
+select.input-error,
+.input-error {
+  border: 1px solid #FCA5A5 !important;
+  background-color: rgba(254, 242, 242, 0.05) !important;
+  border-radius: 10px !important;
+  padding-left: 12px !important;
+  padding-right: 12px !important;
+}
+
+/* Focus state for error inputs - maintain error styling but add focus ring */
+input.input-error:focus,
+textarea.input-error:focus,
+select.input-error:focus,
+.input-error:focus {
+  border: 1px solid #FCA5A5 !important;
+  box-shadow: 0 0 0 2px rgba(252, 165, 165, 0.15) !important;
+  outline: none !important;
+}
+
+/* Error text styling */
+.error-text {
+  color: #FCA5A5 !important;
+  font-size: 0.75rem !important;
+  font-weight: 400 !important;
+  margin-top: 6px !important;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Error wrapper - adds spacing between input and error message */
+.input-error-wrapper {
+  margin-bottom: 4px;
+}
+
+/* Global placeholder styling - calm gray */
+input::placeholder,
+textarea::placeholder,
+select::placeholder {
+  color: #94A3B8 !important;
+  opacity: 1 !important;
+}
+
+/* Input with error icon (optional premium feature) */
+.input-with-error-icon {
+  position: relative;
+}
+
+.input-with-error-icon input,
+.input-with-error-icon textarea,
+.input-with-error-icon select {
+  padding-left: 36px !important;
+}
+
+.input-with-error-icon::before {
+  content: '⚠';
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #FCA5A5;
+  font-size: 14px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* For textarea, position icon at top */
+.input-with-error-icon.textarea-error::before {
+  top: 14px;
+  transform: none;
+}
+
+/* Default input styling - ensure consistency */
+input:not([type="checkbox"]):not([type="radio"]),
+textarea,
+select {
+  border-radius: 8px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+/* Normal focus state */
+input:not([type="checkbox"]):not([type="radio"]):focus:not(.input-error),
+textarea:focus:not(.input-error),
+select:focus:not(.input-error) {
+  border-color: var(--color-steel-blue-500);
+  box-shadow: 0 0 0 2px rgba(91, 130, 184, 0.2);
+  outline: none;
+}
+
+/* ============================================
+   GLOBAL MODAL STYLES
+   Consistent modals across all components
+   ============================================ */
+
+/* Modal Overlay */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal, 100);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  padding: var(--spacing-lg, 1rem);
+}
+
+/* Modal Container */
+.modal-container {
+  background-color: var(--color-bg-secondary, #1E293B);
+  border: 1px solid var(--color-border-default, rgba(71, 85, 105, 0.5));
+  border-radius: var(--radius-xl, 0.75rem);
+  box-shadow: var(--shadow-modal, 0 25px 50px -12px rgba(0, 0, 0, 0.6));
+  max-width: 28rem;
+  width: 100%;
+  max-height: 90vh;
+  overflow: hidden;
+  animation: modalSlideUp 0.2s ease-out;
+}
+
+.modal-container-sm { max-width: 20rem; }
+.modal-container-md { max-width: 28rem; }
+.modal-container-lg { max-width: 36rem; }
+.modal-container-xl { max-width: 48rem; }
+
+/* Modal Header */
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-lg, 1rem) var(--spacing-xl, 1.25rem);
+  border-bottom: 1px solid var(--color-border-light, rgba(71, 85, 105, 0.3));
+}
+
+/* Modal Title */
+.modal-title {
+  font-size: var(--font-size-lg, 1rem);
+  font-weight: 600;
+  color: var(--color-text-primary, #FFFFFF);
+  margin: 0;
+}
+
+/* Modal Close Button */
+.modal-close {
+  padding: 0.375rem;
+  color: var(--color-text-secondary, #94A3B8);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-md, 0.5rem);
+  cursor: pointer;
+  transition: all var(--transition-fast, 150ms ease);
+}
+
+.modal-close:hover {
+  color: var(--color-text-primary, #FFFFFF);
+  background-color: rgba(71, 85, 105, 0.5);
+}
+
+/* Modal Body */
+.modal-body {
+  padding: var(--spacing-xl, 1.25rem);
+  overflow-y: auto;
+}
+
+/* Modal Footer */
+.modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--spacing-md, 0.75rem);
+  padding: var(--spacing-lg, 1rem) var(--spacing-xl, 1.25rem);
+  border-top: 1px solid var(--color-border-light, rgba(71, 85, 105, 0.3));
+  background-color: rgba(30, 41, 59, 0.5);
+}
+
+/* ============================================
+   GLOBAL BUTTON STYLES
+   Consistent buttons across all components
+   ============================================ */
+
+/* Button Base */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-family: var(--font-family);
+  font-size: var(--font-size-base, 0.875rem);
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-lg, 0.625rem);
+  border: none;
+  cursor: pointer;
+  transition: all var(--transition-fast, 150ms ease);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Button Sizes */
+.btn-sm {
+  font-size: var(--font-size-sm, 0.75rem);
+  padding: 0.375rem 0.75rem;
+}
+
+.btn-lg {
+  font-size: var(--font-size-base, 0.875rem);
+  padding: 0.625rem 1.25rem;
+}
+
+/* Button Variants */
+.btn-primary {
+  background-color: var(--color-primary-500, #5B82B8);
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: var(--color-primary-600, #4A6FA5);
+}
+
+.btn-secondary {
+  background-color: var(--color-bg-tertiary, #334155);
+  color: var(--color-text-primary, #FFFFFF);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background-color: rgba(51, 65, 85, 0.8);
+}
+
+.btn-success {
+  background-color: var(--color-success, #10B981);
+  color: white;
+}
+
+.btn-success:hover:not(:disabled) {
+  background-color: #059669;
+}
+
+.btn-danger {
+  background-color: var(--color-error, #EF4444);
+  color: white;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background-color: #DC2626;
+}
+
+.btn-ghost {
+  background-color: transparent;
+  color: var(--color-text-secondary, #94A3B8);
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background-color: rgba(71, 85, 105, 0.5);
+  color: var(--color-text-primary, #FFFFFF);
+}
+
+.btn-gold {
+  background-color: var(--color-brand-gold, #C9AE66);
+  color: var(--color-bg-primary, #0F172A);
+  font-weight: 600;
+}
+
+.btn-gold:hover:not(:disabled) {
+  background-color: var(--color-brand-gold-dark, #B89D55);
+}
+
+/* ============================================
+   GLOBAL CARD STYLES
+   ============================================ */
+
+.card {
+  background-color: var(--color-bg-card, rgba(30, 41, 59, 0.5));
+  border: 1px solid var(--color-border-default, rgba(71, 85, 105, 0.5));
+  border-radius: var(--radius-xl, 0.75rem);
+}
+
+.card-hover:hover {
+  border-color: var(--color-border-focus, rgba(91, 130, 184, 0.5));
+}
+
+/* ============================================
+   GLOBAL FORM STYLES
+   ============================================ */
+
+/* Form Label */
+.form-label {
+  display: block;
+  font-size: var(--font-size-base, 0.875rem);
+  font-weight: 500;
+  color: var(--color-text-label, #C4CFD6);
+  margin-bottom: 0.375rem;
+}
+
+/* Form Input */
+.form-input {
+  width: 100%;
+  padding: 0.625rem 0.75rem;
+  background-color: rgba(51, 65, 85, 0.5);
+  border: 1px solid var(--color-border-default, rgba(71, 85, 105, 0.5));
+  border-radius: var(--radius-lg, 0.625rem);
+  color: var(--color-text-primary, #FFFFFF);
+  font-size: var(--font-size-base, 0.875rem);
+  transition: all var(--transition-fast, 150ms ease);
+}
+
+.form-input::placeholder {
+  color: var(--color-text-placeholder, #94A3B8);
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--color-border-focus, rgba(91, 130, 184, 0.5));
+  box-shadow: 0 0 0 2px rgba(91, 130, 184, 0.2);
+}
+
+/* ============================================
+   GLOBAL BADGE STYLES
+   ============================================ */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.125rem 0.5rem;
+  border-radius: var(--radius-full, 9999px);
+  font-size: var(--font-size-sm, 0.75rem);
+  font-weight: 500;
+}
+
+.badge-default {
+  background-color: var(--color-bg-tertiary, #334155);
+  color: var(--color-text-secondary, #94A3B8);
+}
+
+.badge-success {
+  background-color: rgba(16, 185, 129, 0.2);
+  color: var(--color-success-light, #34D399);
+}
+
+.badge-warning {
+  background-color: rgba(245, 158, 11, 0.2);
+  color: var(--color-warning-light, #FBBF24);
+}
+
+.badge-error {
+  background-color: rgba(239, 68, 68, 0.2);
+  color: var(--color-error-light, #FCA5A5);
+}
+
+.badge-info {
+  background-color: rgba(91, 130, 184, 0.2);
+  color: var(--color-primary-400, #7A9DC7);
+}
+
+/* ============================================
+   GLOBAL MESSAGE STYLES
+   ============================================ */
+
+.message {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.625rem 0.75rem;
+  border-radius: var(--radius-lg, 0.625rem);
+  font-size: var(--font-size-sm, 0.75rem);
+}
+
+.message-error {
+  background-color: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  color: var(--color-error-light, #FCA5A5);
+}
+
+.message-success {
+  background-color: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  color: var(--color-success-light, #34D399);
+}
+
+.message-warning {
+  background-color: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  color: var(--color-warning-light, #FBBF24);
+}
+
+.message-info {
+  background-color: rgba(91, 130, 184, 0.1);
+  border: 1px solid rgba(91, 130, 184, 0.2);
+  color: var(--color-primary-400, #7A9DC7);
 }

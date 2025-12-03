@@ -29,11 +29,11 @@ const steps: OnboardingStep[] = [
     description:
       "Your passwords are encrypted and stored 100% locally on your device. No cloud, no servers, no tracking. Just you and your secure vault.",
     icon: <Shield className="w-12 h-12 text-emerald-400" />,
-    tip: "Your master password is the only key. Choose something memorable but strong!",
+    tip: "Your vault is now secured with AES-256 encryption. Let's take a quick tour!",
   },
   {
     id: 2,
-    title: "Add Your First Password",
+    title: "Add Your First Account",
     description:
       "Click the + button to add a new account. Fill in the account name, username, and password. You can also add notes and custom fields.",
     icon: <Plus className="w-12 h-12 text-blue-400" />,
@@ -41,7 +41,7 @@ const steps: OnboardingStep[] = [
   },
   {
     id: 3,
-    title: "Find Passwords Quickly",
+    title: "Find Accounts Quickly",
     description:
       "Use the search bar to instantly find any account. Search works across account names, usernames, and notes.",
     icon: <Search className="w-12 h-12 text-purple-400" />,
@@ -76,7 +76,7 @@ const steps: OnboardingStep[] = [
     title: "Customize Your Experience",
     description:
       "Visit Settings to customize auto-lock timeout, export/import your data, and manage your vault preferences.",
-    icon: <Settings className="w-12 h-12 text-slate-400" />,
+    icon: <Settings className="w-12 h-12 text-orange-400" />,
     tip: "Export your vault regularly as a backup!",
   },
   {
@@ -85,7 +85,7 @@ const steps: OnboardingStep[] = [
     description:
       "You're ready to start using Local Password Vault. Your digital life is now more secure than ever. Happy vaulting!",
     icon: <Sparkles className="w-12 h-12 text-brand-gold" />,
-    tip: "Press ? at any time to see keyboard shortcuts.",
+    tip: "Press Shift + / (the ? key) to view all keyboard shortcuts.",
   },
 ];
 
