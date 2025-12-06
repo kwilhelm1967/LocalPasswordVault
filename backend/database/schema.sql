@@ -40,6 +40,15 @@ CREATE TABLE IF NOT EXISTS licenses (
     hardware_hash TEXT,
     activated_at DATETIME,
     
+    -- Current device binding (for LPV single-device model)
+    current_device_id TEXT,
+    
+    -- Activation and transfer tracking
+    activation_count INTEGER DEFAULT 0,
+    transfer_count INTEGER DEFAULT 0,
+    last_activated_at DATETIME,
+    last_transfer_at DATETIME,
+    
     -- For family plans: track device count (max 5)
     max_devices INTEGER DEFAULT 1,
     activated_devices INTEGER DEFAULT 0,

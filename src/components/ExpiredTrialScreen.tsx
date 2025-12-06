@@ -19,7 +19,7 @@ export const ExpiredTrialScreen: React.FC<ExpiredTrialScreenProps> = ({
   onAlreadyPurchased,
 }) => {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4">
       <div className="max-w-md w-full">
         <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-600/50 rounded-2xl p-8 shadow-2xl text-center">
           {/* Icon */}

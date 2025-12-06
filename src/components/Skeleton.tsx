@@ -143,7 +143,7 @@ export const SidebarSkeleton: React.FC = () => (
 
 // Full page loading skeleton
 export const PageSkeleton: React.FC = () => (
-  <div className="h-screen flex overflow-hidden bg-slate-900">
+  <div className="h-screen flex overflow-hidden">
     <SidebarSkeleton />
     <div className="flex-1">
       <DashboardSkeleton />

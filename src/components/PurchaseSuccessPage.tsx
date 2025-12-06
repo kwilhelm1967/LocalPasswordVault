@@ -175,7 +175,6 @@ export const PurchaseSuccessPage: React.FC = () => {
   return (
     <div
       className="min-h-screen flex flex-col"
-      style={{ background: `linear-gradient(135deg, ${colors.deepNavy} 0%, #1a2744 50%, ${colors.deepNavy} 100%)` }}
     >
       {/* Header */}
       <header className="border-b border-slate-700/50 py-4 px-6">

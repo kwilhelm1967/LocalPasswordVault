@@ -17,6 +17,7 @@ const rateLimit = require('express-rate-limit');
 
 // Import routes
 const licensesRouter = require('./routes/licenses');
+const lpvLicensesRouter = require('./routes/lpv-licenses');
 const trialRouter = require('./routes/trial');
 const webhooksRouter = require('./routes/webhooks');
 const checkoutRouter = require('./routes/checkout');
@@ -89,6 +90,7 @@ app.get('/health', (req, res) => {
 
 // API Routes
 app.use('/api/licenses', licensesRouter);
+app.use('/api/lpv/license', lpvLicensesRouter);  // New LPV license transfer API
 app.use('/api/trial', trialRouter);
 app.use('/api/webhooks', webhooksRouter);
 app.use('/api/checkout', checkoutRouter);
@@ -128,10 +130,12 @@ app.listen(PORT, () => {
 ║   Environment: ${process.env.NODE_ENV || 'development'}                              ║
 ║                                                               ║
 ║   Endpoints:                                                  ║
-║   • POST /api/licenses/validate  - Activate license key       ║
-║   • POST /api/trial/signup       - Start free trial           ║
-║   • POST /api/checkout/session   - Create Stripe checkout     ║
-║   • POST /api/webhooks/stripe    - Stripe webhook handler     ║
+   ║   • POST /api/licenses/validate  - Activate license key       ║
+   ║   • POST /api/lpv/license/activate - LPV license activation   ║
+   ║   • POST /api/lpv/license/transfer - LPV license transfer     ║
+   ║   • POST /api/trial/signup       - Start free trial           ║
+   ║   • POST /api/checkout/session   - Create Stripe checkout     ║
+   ║   • POST /api/webhooks/stripe    - Stripe webhook handler     ║
 ║                                                               ║
 ╚═══════════════════════════════════════════════════════════════╝
   `);

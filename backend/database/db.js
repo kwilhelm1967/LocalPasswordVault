@@ -204,9 +204,24 @@ const webhookEvents = {
   `),
 };
 
+/**
+ * Execute a raw SQL query with parameters
+ * Used for dynamic queries that can't be prepared
+ */
+function run(sql, params = []) {
+  try {
+    const stmt = db.prepare(sql);
+    return stmt.run(...params);
+  } catch (error) {
+    console.error('SQL execution error:', error);
+    throw error;
+  }
+}
+
 module.exports = {
   db,
   initialize,
+  run,
   customers,
   licenses,
   trials,

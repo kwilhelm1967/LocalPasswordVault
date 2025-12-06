@@ -647,8 +647,8 @@ export const FloatingPanel: React.FC<FloatingPanelProps> = ({
 
       {/* Add/Edit Form Modal */}
       {(showAddForm || editingEntry) && (
-        <div className="fixed inset-0 bg-black bg-opacity-80 flex items-start justify-center pt-[10vh] p-4 z-[10000]">
-          <div className="bg-slate-800 rounded-xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
+        <div className="form-modal-backdrop" style={{ zIndex: 10000 }}>
+          <div className="form-modal-content">
             <EntryForm
               entry={editingEntry}
               categories={categories}

@@ -619,8 +619,8 @@ export const ElectronFloatingPanel: React.FC<ElectronFloatingPanelProps> = ({
 
       {/* Enhanced Add/Edit Form Modal */}
       {(showAddForm || editingEntry) && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-start justify-center pt-[10vh] p-4 z-50">
-          <div className="bg-gradient-to-br from-slate-800 via-slate-800 to-slate-900 rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto border border-slate-600/50 shadow-2xl">
+        <div className="form-modal-backdrop">
+          <div className="form-modal-content">
             <EntryForm
               entry={editingEntry}
               categories={categories}

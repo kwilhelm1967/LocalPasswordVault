@@ -27,7 +27,7 @@ import {
   Edit3,
   Volume2,
   VolumeX,
-  Gift,
+  Lightbulb,
   BookOpen,
   Keyboard,
   Smartphone,
@@ -81,7 +81,7 @@ interface SettingsProps {
   totalEntries: number;
 }
 
-// Bouncy Card Component
+// Bouncy Card Component - with visible border and bounce animation
 const BouncyCard: React.FC<{
   children: React.ReactNode;
   onClick?: () => void;
@@ -90,17 +90,17 @@ const BouncyCard: React.FC<{
 }> = ({ children, onClick, variant = "default", className = "" }) => {
   const getBorderColor = () => {
     switch (variant) {
-      case "danger": return "rgba(239, 68, 68, 0.3)";
-      case "accent": return `${colors.steelBlue500}60`;
-      default: return `${colors.steelBlue500}25`;
+      case "danger": return "rgba(239, 68, 68, 0.4)";
+      case "accent": return `${colors.steelBlue500}50`;
+      default: return `${colors.steelBlue500}30`;
     }
   };
 
   const getHoverBorderColor = () => {
     switch (variant) {
-      case "danger": return "rgba(239, 68, 68, 0.5)";
+      case "danger": return "rgba(239, 68, 68, 0.7)";
       case "accent": return colors.steelBlue400;
-      default: return `${colors.steelBlue500}60`;
+      default: return colors.steelBlue500;
     }
   };
 
@@ -109,40 +109,28 @@ const BouncyCard: React.FC<{
       onClick={onClick}
       className={`
         relative rounded-xl p-5 cursor-pointer
-        transition-colors duration-200
+        transition-all duration-200 ease-out
         ${className}
       `}
       style={{
-        backgroundColor: "#1e293b",
+        backgroundColor: "rgba(30, 41, 59, 0.6)",
         border: `1px solid ${getBorderColor()}`,
-        boxShadow: `0 4px 20px rgba(0,0,0,0.2)`,
+        boxShadow: `0 4px 20px rgba(0,0,0,0.15)`,
+        transform: 'translateY(0) scale(1)',
       }}
       onMouseEnter={(e) => {
         e.currentTarget.style.borderColor = getHoverBorderColor();
-        e.currentTarget.style.boxShadow = `0 8px 30px rgba(0,0,0,0.3), 0 0 20px ${variant === "danger" ? "rgba(239, 68, 68, 0.1)" : `${colors.steelBlue500}15`}`;
+        e.currentTarget.style.boxShadow = `0 8px 30px rgba(0,0,0,0.25), 0 0 25px ${variant === "danger" ? "rgba(239, 68, 68, 0.15)" : `${colors.steelBlue500}20`}`;
+        e.currentTarget.style.transform = 'translateY(-3px) scale(1.01)';
+        e.currentTarget.style.backgroundColor = "rgba(30, 41, 59, 0.8)";
       }}
       onMouseLeave={(e) => {
         e.currentTarget.style.borderColor = getBorderColor();
-        e.currentTarget.style.boxShadow = `0 4px 20px rgba(0,0,0,0.2)`;
+        e.currentTarget.style.boxShadow = `0 4px 20px rgba(0,0,0,0.15)`;
+        e.currentTarget.style.transform = 'translateY(0) scale(1)';
+        e.currentTarget.style.backgroundColor = "rgba(30, 41, 59, 0.6)";
       }}
     >
-      {/* Corner accent */}
-      <div 
-        className="absolute top-0 left-0 w-8 h-8 rounded-tl-xl overflow-hidden pointer-events-none"
-        style={{
-          background: variant === "danger" 
-            ? "linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, transparent 50%)"
-            : `linear-gradient(135deg, ${colors.steelBlue500}20 0%, transparent 50%)`,
-        }}
-      />
-      <div 
-        className="absolute bottom-0 right-0 w-8 h-8 rounded-br-xl overflow-hidden pointer-events-none"
-        style={{
-          background: variant === "danger"
-            ? "linear-gradient(-45deg, rgba(239, 68, 68, 0.2) 0%, transparent 50%)"
-            : `linear-gradient(-45deg, ${colors.steelBlue500}20 0%, transparent 50%)`,
-        }}
-      />
       {children}
     </div>
   );
@@ -222,7 +210,7 @@ const BlueSelect: React.FC<{
                 >
                   <span>{opt.label}</span>
                   {isSelected && (
-                    <Check className="w-4 h-4" strokeWidth={2} style={{ color: colors.steelBlue400 }} />
+                    <Check className="w-4 h-4" strokeWidth={2} style={{ color: colors.brandGold }} />
                   )}
                 </button>
               );
@@ -273,7 +261,7 @@ const BlueToggle: React.FC<{
           }}
         >
           {checked && (
-            <Check className="w-2.5 h-2.5" strokeWidth={3} style={{ color: colors.steelBlue400 }} />
+            <Check className="w-2.5 h-2.5" strokeWidth={3} style={{ color: colors.brandGold }} />
           )}
         </div>
       </button>
@@ -545,22 +533,19 @@ export const Settings: React.FC<SettingsProps> = ({
         </div>
         <h1 className="text-xl font-bold mb-1" style={{ color: colors.warmIvory }}>Settings</h1>
         <p className="text-slate-500 text-xs flex items-center justify-center gap-1.5">
-          <Lock className="w-3 h-3" strokeWidth={1.5} style={{ color: colors.steelBlue400 }} />
+          <Lock className="w-3 h-3" strokeWidth={1.5} style={{ color: colors.brandGold }} />
           <span>AES-256 encrypted • Data never leaves your device</span>
         </p>
       </div>
 
       {/* Security Settings */}
       <SectionTitle>Security</SectionTitle>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
         <BouncyCard variant="accent">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-4">
-              <div 
-                className="w-12 h-12 rounded-xl flex items-center justify-center"
-                style={{ backgroundColor: `${colors.steelBlue500}15` }}
-              >
-                <Clock className="w-6 h-6" strokeWidth={1.5} style={{ color: colors.steelBlue400 }} />
+              <div className="w-10 h-10 flex items-center justify-center">
+                <Clock className="w-6 h-6" strokeWidth={1.5} style={{ color: colors.brandGold }} />
               </div>
               <div>
                 <h3 style={{ color: colors.warmIvory }} className="font-semibold mb-1">Auto-Lock</h3>
@@ -579,11 +564,8 @@ export const Settings: React.FC<SettingsProps> = ({
         <BouncyCard variant="accent">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-4">
-              <div 
-                className="w-12 h-12 rounded-xl flex items-center justify-center"
-                style={{ backgroundColor: `${colors.steelBlue500}15` }}
-              >
-                <Clipboard className="w-6 h-6" strokeWidth={1.5} style={{ color: colors.steelBlue400 }} />
+              <div className="w-10 h-10 flex items-center justify-center">
+                <Clipboard className="w-6 h-6" strokeWidth={1.5} style={{ color: colors.brandGold }} />
               </div>
               <div>
                 <h3 style={{ color: colors.warmIvory }} className="font-semibold mb-1">Clipboard</h3>
@@ -602,13 +584,10 @@ export const Settings: React.FC<SettingsProps> = ({
         <BouncyCard variant="accent">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-4">
-              <div 
-                className="w-12 h-12 rounded-xl flex items-center justify-center"
-                style={{ backgroundColor: `${colors.steelBlue500}15` }}
-              >
+              <div className="w-10 h-10 flex items-center justify-center">
                 {settings.showPasswordsDefault 
-                  ? <Eye className="w-6 h-6" strokeWidth={1.5} style={{ color: colors.steelBlue400 }} />
-                  : <EyeOff className="w-6 h-6" strokeWidth={1.5} style={{ color: colors.steelBlue400 }} />
+                  ? <Eye className="w-6 h-6" strokeWidth={1.5} style={{ color: colors.brandGold }} />
+                  : <EyeOff className="w-6 h-6" strokeWidth={1.5} style={{ color: colors.brandGold }} />
                 }
               </div>
               <div>
@@ -627,13 +606,10 @@ export const Settings: React.FC<SettingsProps> = ({
         <BouncyCard variant="accent">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-4">
-              <div 
-                className="w-12 h-12 rounded-xl flex items-center justify-center"
-                style={{ backgroundColor: `${colors.steelBlue500}15` }}
-              >
+              <div className="w-10 h-10 flex items-center justify-center">
                 {settings.soundEffectsEnabled 
-                  ? <Volume2 className="w-6 h-6" strokeWidth={1.5} style={{ color: colors.steelBlue400 }} />
-                  : <VolumeX className="w-6 h-6" strokeWidth={1.5} style={{ color: colors.steelBlue400 }} />
+                  ? <Volume2 className="w-6 h-6" strokeWidth={1.5} style={{ color: colors.brandGold }} />
+                  : <VolumeX className="w-6 h-6" strokeWidth={1.5} style={{ color: colors.brandGold }} />
                 }
               </div>
               <div>
@@ -651,55 +627,36 @@ export const Settings: React.FC<SettingsProps> = ({
 
         <BouncyCard variant="accent" onClick={onChangePassword}>
           <div className="flex items-center gap-4">
-            <div 
-              className="w-12 h-12 rounded-xl flex items-center justify-center"
-              style={{ backgroundColor: `${colors.steelBlue500}15` }}
-            >
-              <Key className="w-6 h-6" strokeWidth={1.5} style={{ color: colors.steelBlue400 }} />
+            <div className="w-10 h-10 flex items-center justify-center">
+              <Key className="w-6 h-6" strokeWidth={1.5} style={{ color: colors.brandGold }} />
             </div>
             <div className="flex-1">
               <h3 style={{ color: colors.warmIvory }} className="font-semibold mb-1">Master Password</h3>
               <p className="text-slate-500 text-xs">Change encryption key</p>
             </div>
-            <div 
-              className="w-8 h-8 rounded-lg flex items-center justify-center"
-              style={{ backgroundColor: `${colors.steelBlue500}10` }}
-            >
-              <span style={{ color: colors.steelBlue400 }}>→</span>
-            </div>
+            <span style={{ color: colors.brandGold }}>→</span>
           </div>
         </BouncyCard>
 
         {/* Recovery Phrase */}
         <BouncyCard onClick={handleStartRegenerate} variant="accent">
           <div className="flex items-center gap-4">
-            <div 
-              className="w-12 h-12 rounded-xl flex items-center justify-center"
-              style={{ backgroundColor: `${colors.steelBlue500}15` }}
-            >
-              <RefreshCw className="w-6 h-6" strokeWidth={1.5} style={{ color: colors.steelBlue400 }} />
+            <div className="w-10 h-10 flex items-center justify-center">
+              <RefreshCw className="w-6 h-6" strokeWidth={1.5} style={{ color: colors.brandGold }} />
             </div>
             <div className="flex-1">
               <h3 style={{ color: colors.warmIvory }} className="font-semibold mb-1">Recovery Phrase</h3>
               <p className="text-slate-500 text-xs">Generate new 12-word phrase</p>
             </div>
-            <div 
-              className="w-8 h-8 rounded-lg flex items-center justify-center"
-              style={{ backgroundColor: `${colors.steelBlue500}10` }}
-            >
-              <span style={{ color: colors.steelBlue400 }}>→</span>
-            </div>
+            <span style={{ color: colors.brandGold }}>→</span>
           </div>
         </BouncyCard>
 
         {/* Password Hint */}
         <BouncyCard onClick={() => setShowHintModal(true)} variant="accent">
           <div className="flex items-center gap-4">
-            <div 
-              className="w-12 h-12 rounded-xl flex items-center justify-center"
-              style={{ backgroundColor: `${colors.steelBlue500}15` }}
-            >
-              <HelpCircle className="w-6 h-6" strokeWidth={1.5} style={{ color: colors.steelBlue400 }} />
+            <div className="w-10 h-10 flex items-center justify-center">
+              <HelpCircle className="w-6 h-6" strokeWidth={1.5} style={{ color: colors.brandGold }} />
             </div>
             <div className="flex-1">
               <h3 style={{ color: colors.warmIvory }} className="font-semibold mb-1">Password Hint</h3>
@@ -707,47 +664,60 @@ export const Settings: React.FC<SettingsProps> = ({
                 {currentHint ? "Hint is set" : "No hint configured"}
               </p>
             </div>
-            <div 
-              className="w-8 h-8 rounded-lg flex items-center justify-center"
-              style={{ backgroundColor: `${colors.steelBlue500}10` }}
-            >
-              <Edit3 className="w-4 h-4" style={{ color: colors.steelBlue400 }} />
-            </div>
+            <Edit3 className="w-5 h-5" style={{ color: colors.brandGold }} />
           </div>
         </BouncyCard>
       </div>
 
       {/* Quick Actions */}
       <SectionTitle>Quick Actions</SectionTitle>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
         <BouncyCard onClick={onExport} variant="accent">
-          <div className="flex items-center gap-4">
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 flex items-center justify-center">
+                <Download className="w-6 h-6" strokeWidth={1.5} style={{ color: colors.brandGold }} />
+              </div>
+              <div className="flex-1">
+                <h3 style={{ color: colors.warmIvory }} className="font-semibold mb-1">Export to Excel</h3>
+                <p className="text-slate-500 text-xs">Opens in Excel or Google Sheets</p>
+              </div>
+              <span 
+                className="px-3 py-1.5 rounded-full text-xs font-bold"
+                style={{ backgroundColor: `${colors.steelBlue500}20`, color: colors.steelBlue400 }}
+              >
+                {totalEntries}
+              </span>
+            </div>
             <div 
-              className="w-12 h-12 rounded-xl flex items-center justify-center"
-              style={{ backgroundColor: `${colors.steelBlue500}15` }}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg"
+              style={{ backgroundColor: 'rgba(201, 174, 102, 0.1)', border: '1px solid rgba(201, 174, 102, 0.2)' }}
             >
-              <Download className="w-6 h-6" strokeWidth={1.5} style={{ color: colors.steelBlue400 }} />
+              <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" strokeWidth={1.5} style={{ color: colors.brandGold }} />
+              <span className="text-[11px]" style={{ color: '#9CA3AF' }}>
+                Contains sensitive data. Store securely.
+              </span>
+            </div>
+          </div>
+        </BouncyCard>
+
+        <BouncyCard onClick={onImport} variant="accent">
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 flex items-center justify-center">
+              <Upload className="w-6 h-6" strokeWidth={1.5} style={{ color: colors.brandGold }} />
             </div>
             <div className="flex-1">
-              <h3 style={{ color: colors.warmIvory }} className="font-semibold mb-1">Export to Excel</h3>
-              <p className="text-slate-500 text-xs">Opens in Excel or Google Sheets</p>
+              <h3 style={{ color: colors.warmIvory }} className="font-semibold mb-1">Import from File</h3>
+              <p className="text-slate-500 text-xs">Restore from backup</p>
             </div>
-            <span 
-              className="px-3 py-1.5 rounded-full text-xs font-bold"
-              style={{ backgroundColor: `${colors.steelBlue500}20`, color: colors.steelBlue400 }}
-            >
-              {totalEntries}
-            </span>
+            <span style={{ color: colors.brandGold }}>→</span>
           </div>
         </BouncyCard>
 
         <BouncyCard onClick={() => setShowEncryptedExportModal(true)} variant="accent">
           <div className="flex items-center gap-4">
-            <div 
-              className="w-12 h-12 rounded-xl flex items-center justify-center"
-              style={{ backgroundColor: `${colors.steelBlue500}15` }}
-            >
-              <Shield className="w-6 h-6" strokeWidth={1.5} style={{ color: colors.steelBlue400 }} />
+            <div className="w-10 h-10 flex items-center justify-center">
+              <Shield className="w-6 h-6" strokeWidth={1.5} style={{ color: colors.brandGold }} />
             </div>
             <div className="flex-1">
               <h3 style={{ color: colors.warmIvory }} className="font-semibold mb-1">Secure Backup</h3>
@@ -762,38 +732,14 @@ export const Settings: React.FC<SettingsProps> = ({
           </div>
         </BouncyCard>
 
-        <BouncyCard onClick={onImport} variant="accent">
-          <div className="flex items-center gap-4">
-            <div 
-              className="w-12 h-12 rounded-xl flex items-center justify-center"
-              style={{ backgroundColor: `${colors.steelBlue500}15` }}
-            >
-              <Upload className="w-6 h-6" strokeWidth={1.5} style={{ color: colors.steelBlue400 }} />
-            </div>
-            <div className="flex-1">
-              <h3 style={{ color: colors.warmIvory }} className="font-semibold mb-1">Import from File</h3>
-              <p className="text-slate-500 text-xs">Restore from backup</p>
-            </div>
-            <div 
-              className="w-8 h-8 rounded-lg flex items-center justify-center"
-              style={{ backgroundColor: `${colors.steelBlue500}10` }}
-            >
-              <span style={{ color: colors.steelBlue400 }}>→</span>
-            </div>
-          </div>
-        </BouncyCard>
-
         <BouncyCard onClick={() => setShowEncryptedImportModal(true)} variant="accent">
           <div className="flex items-center gap-4">
-            <div 
-              className="w-12 h-12 rounded-xl flex items-center justify-center"
-              style={{ backgroundColor: `${colors.steelBlue500}15` }}
-            >
-              <Lock className="w-6 h-6" strokeWidth={1.5} style={{ color: colors.steelBlue400 }} />
+            <div className="w-10 h-10 flex items-center justify-center">
+              <Lock className="w-6 h-6" strokeWidth={1.5} style={{ color: colors.brandGold }} />
             </div>
             <div className="flex-1">
               <h3 style={{ color: colors.warmIvory }} className="font-semibold mb-1">Restore Secure Backup</h3>
-              <p className="text-slate-500 text-xs">Password-protected file</p>
+              <p className="text-slate-500 text-xs">Upload .csv file</p>
             </div>
             <span 
               className="px-2 py-1 rounded text-xs font-bold"
@@ -806,22 +752,14 @@ export const Settings: React.FC<SettingsProps> = ({
 
         <BouncyCard onClick={() => setShowMobileAccess(true)} variant="accent">
           <div className="flex items-center gap-4">
-            <div 
-              className="w-12 h-12 rounded-xl flex items-center justify-center"
-              style={{ backgroundColor: `${colors.steelBlue500}15` }}
-            >
-              <Smartphone className="w-6 h-6" strokeWidth={1.5} style={{ color: colors.steelBlue400 }} />
+            <div className="w-10 h-10 flex items-center justify-center">
+              <Smartphone className="w-6 h-6" strokeWidth={1.5} style={{ color: colors.brandGold }} />
             </div>
             <div className="flex-1">
               <h3 style={{ color: colors.warmIvory }} className="font-semibold mb-1">Mobile Access</h3>
               <p className="text-slate-500 text-xs">View vault on your phone</p>
             </div>
-            <div 
-              className="w-8 h-8 rounded-lg flex items-center justify-center"
-              style={{ backgroundColor: `${colors.steelBlue500}10` }}
-            >
-              <span style={{ color: colors.steelBlue400 }}>→</span>
-            </div>
+            <span style={{ color: colors.brandGold }}>→</span>
           </div>
         </BouncyCard>
       </div>
@@ -841,7 +779,7 @@ export const Settings: React.FC<SettingsProps> = ({
                 className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
                 style={{ backgroundColor: `${colors.steelBlue500}10` }}
               >
-                <item.icon className="w-3.5 h-3.5" strokeWidth={1.5} style={{ color: colors.steelBlue400 }} />
+                <item.icon className="w-3.5 h-3.5" strokeWidth={1.5} style={{ color: colors.brandGold }} />
               </div>
               <p className="text-slate-400 text-xs">{item.label}</p>
               <p style={{ color: colors.warmIvory }} className="font-medium text-xs">{item.value}</p>
@@ -864,7 +802,7 @@ export const Settings: React.FC<SettingsProps> = ({
             className="w-10 h-10 rounded-xl flex items-center justify-center"
             style={{ background: `linear-gradient(135deg, ${colors.brandGold}30, ${colors.brandGold}10)` }}
           >
-            <Gift className="w-5 h-5" strokeWidth={1.5} style={{ color: colors.brandGold }} />
+            <Lightbulb className="w-5 h-5" strokeWidth={1.5} style={{ color: colors.brandGold }} />
           </div>
           <div className="flex-1">
             <h3 style={{ color: colors.warmIvory }} className="font-semibold mb-0.5">What's New in v{APP_VERSION}</h3>
@@ -891,13 +829,13 @@ export const Settings: React.FC<SettingsProps> = ({
               className="w-10 h-10 rounded-xl flex items-center justify-center"
               style={{ background: `linear-gradient(135deg, ${colors.steelBlue500}30, ${colors.steelBlue500}10)` }}
             >
-              <BookOpen className="w-5 h-5" strokeWidth={1.5} style={{ color: colors.steelBlue400 }} />
+              <BookOpen className="w-5 h-5" strokeWidth={1.5} style={{ color: colors.brandGold }} />
             </div>
             <div className="flex-1 min-w-0">
               <h3 style={{ color: colors.warmIvory }} className="font-semibold mb-0.5 text-sm">Replay Tutorial</h3>
               <p className="text-slate-500 text-xs truncate">Learn how to use the app</p>
             </div>
-            <span style={{ color: colors.steelBlue400 }}>→</span>
+            <span style={{ color: colors.brandGold }}>→</span>
           </div>
         </BouncyCard>
 
@@ -917,7 +855,7 @@ export const Settings: React.FC<SettingsProps> = ({
               className="w-10 h-10 rounded-xl flex items-center justify-center"
               style={{ background: `linear-gradient(135deg, ${colors.steelBlue500}30, ${colors.steelBlue500}10)` }}
             >
-              <Keyboard className="w-5 h-5" strokeWidth={1.5} style={{ color: colors.steelBlue400 }} />
+              <Keyboard className="w-5 h-5" strokeWidth={1.5} style={{ color: colors.brandGold }} />
             </div>
             <div className="flex-1 min-w-0">
               <h3 style={{ color: colors.warmIvory }} className="font-semibold mb-0.5 text-sm">Keyboard Shortcuts</h3>
@@ -939,9 +877,7 @@ export const Settings: React.FC<SettingsProps> = ({
             <h3 className="text-red-400 font-semibold mb-1">Clear All Data</h3>
             <p className="text-slate-500 text-xs">Permanently delete everything</p>
           </div>
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-red-500/10">
-            <span className="text-red-400">→</span>
-          </div>
+          <span className="text-red-400">→</span>
         </div>
       </BouncyCard>
 
@@ -1008,11 +944,8 @@ export const Settings: React.FC<SettingsProps> = ({
             }}
           >
             <div className="flex items-center gap-3 mb-6">
-              <div 
-                className="w-12 h-12 rounded-xl flex items-center justify-center"
-                style={{ backgroundColor: `${colors.steelBlue500}15` }}
-              >
-                <Shield className="w-6 h-6" strokeWidth={1.5} style={{ color: colors.steelBlue400 }} />
+              <div className="w-10 h-10 flex items-center justify-center">
+                <Shield className="w-6 h-6" strokeWidth={1.5} style={{ color: colors.brandGold }} />
               </div>
               <div>
                 <h3 style={{ color: colors.warmIvory }} className="text-lg font-bold">Encrypted Export</h3>
@@ -1085,15 +1018,12 @@ export const Settings: React.FC<SettingsProps> = ({
             }}
           >
             <div className="flex items-center gap-3 mb-6">
-              <div 
-                className="w-12 h-12 rounded-xl flex items-center justify-center"
-                style={{ backgroundColor: `${colors.steelBlue500}15` }}
-              >
-                <Lock className="w-6 h-6" strokeWidth={1.5} style={{ color: colors.steelBlue400 }} />
+              <div className="w-10 h-10 flex items-center justify-center">
+                <Lock className="w-6 h-6" strokeWidth={1.5} style={{ color: colors.brandGold }} />
               </div>
               <div>
                 <h3 style={{ color: colors.warmIvory }} className="text-lg font-bold">Restore Secure Backup</h3>
-                <p className="text-slate-400 text-xs">Import your password-protected backup file</p>
+                <p className="text-slate-400 text-xs">Upload your .csv backup file</p>
               </div>
             </div>
             
@@ -1170,7 +1100,7 @@ export const Settings: React.FC<SettingsProps> = ({
                   border: `2px solid ${colors.steelBlue500}30`,
                 }}
               >
-                <RefreshCw className="w-8 h-8" strokeWidth={1.5} style={{ color: colors.steelBlue400 }} />
+                <RefreshCw className="w-8 h-8" strokeWidth={1.5} style={{ color: colors.brandGold }} />
               </div>
               <h3 style={{ color: colors.warmIvory }} className="text-xl font-bold mb-2">New Recovery Phrase</h3>
               <p className="text-slate-400 text-sm">
@@ -1290,11 +1220,8 @@ export const Settings: React.FC<SettingsProps> = ({
             }}
           >
             <div className="flex items-center gap-4 mb-6">
-              <div 
-                className="w-12 h-12 rounded-xl flex items-center justify-center"
-                style={{ backgroundColor: `${colors.steelBlue500}15` }}
-              >
-                <HelpCircle className="w-6 h-6" strokeWidth={1.5} style={{ color: colors.steelBlue400 }} />
+              <div className="w-10 h-10 flex items-center justify-center">
+                <HelpCircle className="w-6 h-6" strokeWidth={1.5} style={{ color: colors.brandGold }} />
               </div>
               <div>
                 <h3 style={{ color: colors.warmIvory }} className="text-lg font-bold">Password Hint</h3>

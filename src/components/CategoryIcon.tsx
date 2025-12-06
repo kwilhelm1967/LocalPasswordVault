@@ -16,6 +16,7 @@ interface CategoryIconProps {
   size?: number;
   className?: string;
   strokeWidth?: number;
+  style?: React.CSSProperties;
 }
 
 export const CategoryIcon: React.FC<CategoryIconProps> = ({
@@ -23,8 +24,9 @@ export const CategoryIcon: React.FC<CategoryIconProps> = ({
   size = 16,
   className = "",
   strokeWidth = 1.5,
+  style,
 }) => {
-  const props = { size, className, strokeWidth };
+  const props = { size, className, strokeWidth, style };
   
   switch (name) {
     case "Grid3X3":

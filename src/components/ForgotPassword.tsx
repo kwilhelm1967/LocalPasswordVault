@@ -91,7 +91,7 @@ export const ForgotPassword: React.FC<ForgotPasswordProps> = ({
 
   if (!hasRecovery) {
     return (
-      <div className="h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center p-4">
+      <div className="h-screen flex items-center justify-center p-4">
         <div className="w-full max-w-md text-center">
           <div 
             className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6"

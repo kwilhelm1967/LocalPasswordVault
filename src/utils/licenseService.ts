@@ -1,6 +1,21 @@
+/**
+ * License Service for Local Password Vault
+ * 
+ * Implements the LPV licensing model:
+ * - Single-device activation with transfer capability
+ * - Fully offline after initial activation
+ * - No user data transmitted, only license key + device hash
+ * - Local license file for offline validation
+ * 
+ * Security Philosophy:
+ * - Offline-first, single-device activation
+ * - No cloud storage, no telemetry, no shared keys
+ * - Zero user data on the internet
+ */
+
 import environment from "../config/environment";
 import { trialService, TrialInfo } from "./trialService";
-import { generateHardwareFingerprint } from "./hardwareFingerprint";
+import { getLPVDeviceFingerprint, isValidDeviceId } from "./deviceFingerprint";
 
 export type LicenseType = "personal" | "family" | "trial";
 
@@ -19,25 +34,54 @@ export interface AppLicenseStatus {
   requiresPurchase: boolean;
 }
 
+/**
+ * Local license file structure
+ * Written after successful activation for offline validation
+ */
+export interface LocalLicenseFile {
+  license_key: string;
+  device_id: string;
+  activated_at: string;
+  plan_type?: LicenseType;
+}
+
+/**
+ * Activation API response types
+ */
+export type ActivationStatus = 
+  | "activated" 
+  | "device_mismatch" 
+  | "invalid" 
+  | "revoked"
+  | "transfer_limit_reached";
+
+export type ActivationMode = "first_activation" | "same_device" | "requires_transfer";
+
+export interface ActivationResponse {
+  status: ActivationStatus;
+  mode?: ActivationMode;
+  requires_transfer?: boolean;
+  plan_type?: LicenseType;
+  error?: string;
+}
+
+export interface TransferResponse {
+  status: "transferred" | "transfer_limit_reached" | "invalid" | "error";
+  error?: string;
+}
+
 export class LicenseService {
   private static instance: LicenseService;
+  
+  // LocalStorage keys
   private static readonly LICENSE_KEY_STORAGE = "app_license_key";
   private static readonly LICENSE_TYPE_STORAGE = "app_license_type";
   private static readonly LICENSE_ACTIVATED_STORAGE = "app_license_activated";
-  private static readonly LAST_VALIDATION_STORAGE = "app_last_validation"; // retained for backward compatibility
-  private static readonly HARDWARE_ID_STORAGE = "app_hardware_id";
-
-  // LIFETIME MODE: Only a single API call is ever made (first activation). After that, no
-  // background / periodic / critical validations or refresh calls will hit the network.
-  // Set to false to re-enable legacy periodic validation behaviour.
-  private static readonly LIFETIME_ONE_TIME_ACTIVATION = true;
-
-  // Validate once every 24 hours
-  private static readonly VALIDATION_INTERVAL = 24 * 60 * 60 * 1000; // 24 hours
-
-  // For critical operations, validate more frequently (1 hour)
-  // Legacy constant retained for reference; unused in lifetime mode
-  // private static readonly CRITICAL_VALIDATION_INTERVAL = 60 * 60 * 1000; // 1 hour
+  private static readonly DEVICE_ID_STORAGE = "app_device_id";
+  private static readonly LOCAL_LICENSE_FILE = "lpv_license_file";
+  
+  // Cached device fingerprint
+  private cachedDeviceId: string | null = null;
 
   static getInstance(): LicenseService {
     if (!LicenseService.instance) {
@@ -47,79 +91,108 @@ export class LicenseService {
   }
 
   /**
-   * Development-only: Activate license locally without server validation
+   * Get current device fingerprint (cached for performance)
    */
-  private async activateLocalLicense(
-    licenseKey: string
-  ): Promise<{ success: boolean; error?: string; licenseType?: LicenseType }> {
-    const hardwareId = await generateHardwareFingerprint();
-    
-    localStorage.setItem(LicenseService.LICENSE_KEY_STORAGE, licenseKey);
-    localStorage.setItem(LicenseService.LICENSE_TYPE_STORAGE, 'personal');
-    localStorage.setItem(LicenseService.LICENSE_ACTIVATED_STORAGE, new Date().toISOString());
-    localStorage.setItem(LicenseService.LAST_VALIDATION_STORAGE, Date.now().toString());
-    localStorage.setItem(LicenseService.HARDWARE_ID_STORAGE, hardwareId);
-    
-    trialService.endTrial();
-    
-    return { success: true, licenseType: 'personal' };
+  async getDeviceId(): Promise<string> {
+    if (this.cachedDeviceId) {
+      return this.cachedDeviceId;
+    }
+    this.cachedDeviceId = await getLPVDeviceFingerprint();
+    return this.cachedDeviceId;
   }
 
   /**
    * Get the current license and trial status
    */
   async getAppStatus(): Promise<AppLicenseStatus> {
-    const licenseInfo = this.getLicenseInfo();
-    const trialInfo = await trialService.getTrialInfo(); 
+    const licenseInfo = await this.getLicenseInfo();
+    const trialInfo = await trialService.getTrialInfo();
 
-    // Check if user can use the app based on license or trial status
     let canUseApp = false;
     let requiresPurchase = false;
 
     if (licenseInfo.isValid) {
-      // Valid license (non-trial or trial that hasn't expired)
       canUseApp = true;
       requiresPurchase = false;
     } else if (trialInfo.hasTrialBeenUsed && !trialInfo.isExpired && trialInfo.isTrialActive) {
-      // Active trial (not expired)
       canUseApp = true;
       requiresPurchase = false;
     } else if (trialInfo.hasTrialBeenUsed && trialInfo.isExpired) {
-      // Expired trial - user must purchase
       canUseApp = false;
       requiresPurchase = true;
     } else {
-      // No license and no trial used - user can start trial or purchase
       canUseApp = false;
       requiresPurchase = true;
     }
 
-    const status = {
+    return {
       isLicensed: licenseInfo.isValid,
       licenseInfo,
       trialInfo,
       canUseApp,
       requiresPurchase,
     };
-
-
-    return status;
   }
 
   /**
-   * Get current license information with periodic validation
+   * Get local license file data
    */
-  getLicenseInfo(): LicenseInfo {
+  getLocalLicenseFile(): LocalLicenseFile | null {
+    try {
+      const stored = localStorage.getItem(LicenseService.LOCAL_LICENSE_FILE);
+      if (stored) {
+        return JSON.parse(stored);
+      }
+    } catch {
+      // Invalid or missing file
+    }
+    return null;
+  }
+
+  /**
+   * Save local license file
+   */
+  private saveLocalLicenseFile(data: LocalLicenseFile): void {
+    localStorage.setItem(LicenseService.LOCAL_LICENSE_FILE, JSON.stringify(data));
+  }
+
+  /**
+   * Clear local license file
+   */
+  private clearLocalLicenseFile(): void {
+    localStorage.removeItem(LicenseService.LOCAL_LICENSE_FILE);
+  }
+
+  /**
+   * Validate license locally (offline check)
+   * Returns true if local license matches current device
+   */
+  async validateLocalLicense(): Promise<{ valid: boolean; requiresTransfer: boolean }> {
+    const localLicense = this.getLocalLicenseFile();
+    
+    if (!localLicense) {
+      return { valid: false, requiresTransfer: false };
+    }
+
+    const currentDeviceId = await this.getDeviceId();
+    
+    // Check if device IDs match
+    if (localLicense.device_id === currentDeviceId) {
+      return { valid: true, requiresTransfer: false };
+    }
+    
+    // Device mismatch - transfer required
+    return { valid: false, requiresTransfer: true };
+  }
+
+  /**
+   * Get current license information
+   * Performs offline validation first
+   */
+  async getLicenseInfo(): Promise<LicenseInfo> {
     const key = localStorage.getItem(LicenseService.LICENSE_KEY_STORAGE);
-    const type = localStorage.getItem(
-      LicenseService.LICENSE_TYPE_STORAGE
-    ) as LicenseType;
-    const activatedDateStr = localStorage.getItem(
-      LicenseService.LICENSE_ACTIVATED_STORAGE
-    );
-    const lastValidation = localStorage.getItem(
-      LicenseService.LAST_VALIDATION_STORAGE
-    ); // legacy leftover (ignored in lifetime mode)
+    const type = localStorage.getItem(LicenseService.LICENSE_TYPE_STORAGE) as LicenseType;
+    const activatedDateStr = localStorage.getItem(LicenseService.LICENSE_ACTIVATED_STORAGE);
 
     if (!key || !type) {
       return {
@@ -130,21 +203,16 @@ export class LicenseService {
       };
     }
 
-    // For trial licenses, check if they have expired locally
+    // For trial licenses, check expiration
     if (type === 'trial') {
-      // Try to get trial expiry from the stored license token
       try {
         const storedData = localStorage.getItem('license_token');
         if (storedData) {
-          const tokenData = JSON.parse(atob(storedData.split('.')[1])); // Decode JWT payload
+          const tokenData = JSON.parse(atob(storedData.split('.')[1]));
           if (tokenData.trialExpiryDate) {
             const trialExpiryDate = new Date(tokenData.trialExpiryDate);
-            const now = new Date();
-            if (now > trialExpiryDate) {
-              // Trial has expired, remove license and mark trial as expired
-              // Trial expired
+            if (new Date() > trialExpiryDate) {
               this.removeLicense();
-              // Ensure trial service knows the trial has expired
               trialService.endTrial();
               return {
                 isValid: false,
@@ -155,19 +223,22 @@ export class LicenseService {
             }
           }
         }
-      } catch (error) {
-        console.error('Error checking trial expiration:', error);
+      } catch {
+        // Token parsing error
       }
     }
 
-    // In lifetime mode we NEVER schedule or perform background validation after first activation.
-    if (!LicenseService.LIFETIME_ONE_TIME_ACTIVATION) {
-      const shouldValidate =
-        !lastValidation ||
-        Date.now() - parseInt(lastValidation) >
-          LicenseService.VALIDATION_INTERVAL;
-      if (shouldValidate) {
-        this.validateLicenseInBackground(key);
+    // For non-trial licenses, validate device binding locally
+    if (type !== 'trial') {
+      const localValidation = await this.validateLocalLicense();
+      if (!localValidation.valid && !localValidation.requiresTransfer) {
+        // No local license file - might need re-activation
+        return {
+          isValid: false,
+          type: null,
+          key: null,
+          activatedDate: null,
+        };
       }
     }
 
@@ -180,35 +251,44 @@ export class LicenseService {
   }
 
   /**
-   * Activate a license key with enhanced security
+   * Activate a license key
+   * 
+   * Flow:
+   * 1. Validate key format
+   * 2. Get device fingerprint
+   * 3. Call activation API
+   * 4. Handle response (activated, device_mismatch, invalid)
+   * 5. On success, save local license file
    */
-  async activateLicense(
-    licenseKey: string
-  ): Promise<{ success: boolean; error?: string; licenseType?: LicenseType }> {
+  async activateLicense(licenseKey: string): Promise<{ 
+    success: boolean; 
+    error?: string; 
+    licenseType?: LicenseType;
+    requiresTransfer?: boolean;
+    status?: ActivationStatus;
+  }> {
     const isDevMode = import.meta.env.DEV;
 
     try {
-      // Sanitize and validate license key format (XXXX-XXXX-XXXX-XXXX or XXXX-XXXX-XXXX-XXXXX)
+      // Sanitize and validate license key format
       const cleanKey = licenseKey.replace(/[^A-Z0-9-]/g, "");
       const isValidFormat = /^[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4,5}$/.test(cleanKey);
       
       if (!isValidFormat) {
-        return { success: false, error: "This is not a valid lifetime key." };
+        return { success: false, error: "This is not a valid license key." };
       }
 
-      /**
-       * Development Mode: Bypass server validation for local testing.
-       * Any properly formatted key activates immediately.
-       * Production builds require server-side validation.
-       */
+      // Get device fingerprint
+      const deviceId = await this.getDeviceId();
+
+      // Development mode: bypass server
       if (isDevMode) {
-        return this.activateLocalLicense(cleanKey);
+        return this.activateLocalLicense(cleanKey, deviceId);
       }
 
-      // Check if this is the same trial key being reactivated
-      const existingLicenseInfo = this.getLicenseInfo();
+      // Check if trial key being reused
+      const existingLicenseInfo = await this.getLicenseInfo();
       if (existingLicenseInfo.type === 'trial' && existingLicenseInfo.key === cleanKey) {
-        // Check if the trial has expired
         const trialInfo = await trialService.getTrialInfo();
         if (trialInfo.isExpired) {
           return {
@@ -218,157 +298,82 @@ export class LicenseService {
         }
       }
 
-      // Generate hardware fingerprint for activation
-      const hardwareId = await generateHardwareFingerprint();
-
-      let licenseType: LicenseType | undefined;
-
-      // Only perform the activation network call the very first time (no existing license stored)
-      if (!LicenseService.LIFETIME_ONE_TIME_ACTIVATION ||
-          !localStorage.getItem(LicenseService.LICENSE_KEY_STORAGE)) {
-        const response = await fetch(
-          `${environment.environment.licenseServerUrl}/api/licenses/validate`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              licenseKey: cleanKey,
-              hardwareHash: hardwareId,
-            }),
-          }
-        );
-
-        const result = await response.json();
-
-        if (!response.ok) {
-          if (response.status === 404) {
-            return { success: false, error: "This is not a valid lifetime key." };
-          }
-          if (response.status === 409) {
-            return {
-              success: false,
-              error: "This key is already activated on another device. You need to purchase an additional key.",
-            };
-          }
-          // Handle trial expiration from backend
-          if (result.error?.includes("trial") && result.error?.includes("expir")) {
-            return {
-              success: false,
-              error: "This key was for your trial. To continue, purchase a lifetime key."
-            };
-          }
-          return {
-            success: false,
-            error: result.error || "This is not a valid lifetime key.",
-          };
+      // Call activation API
+      const response = await fetch(
+        `${environment.environment.licenseServerUrl}/api/lpv/license/activate`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            license_key: cleanKey,
+            device_id: deviceId,
+          }),
         }
+      );
 
-        if (!result.success) {
-          // Handle trial expiration from backend success response
-          if (result.error?.includes("trial") && result.error?.includes("expir")) {
-            return {
-              success: false,
-              error: "This key was for your trial. To continue, purchase a lifetime key."
-            };
-          }
-          return {
-            success: false,
-            error: result.error || "This is not a valid lifetime key.",
-          };
-        }
+      const result: ActivationResponse = await response.json();
 
-        // Map backend plan type to frontend license type
-        const planTypeMap: Record<string, LicenseType> = {
-          'personal': 'personal',
-          'family': 'family',
-          'trial': 'trial'
-};
-
-        licenseType = planTypeMap[result.data?.planType] || 'personal';
-
-        // Store the license token for offline validation and trial expiration checking
-        if (result.data?.token) {
-                    localStorage.setItem('license_token', result.data.token);
-
-          // If this is a trial license, initialize the local trial service with backend data
-          if (licenseType === 'trial' && result.data) {
-            // Verify backend response matches security requirements
-            if (result.data.isNewActivation) {
-              // Store additional security information
-              localStorage.setItem('trial_activation_time', result.data.activationTime || new Date().toISOString());
-              localStorage.setItem('trial_expiry_time', result.data.expiryTime || '');
-            }
-
-            // For trial licenses, start the backend-dependent trial service
-            // The trial service will fetch status from the backend API
-            try {
-              // Store encrypted trial data for additional security
-              this.storeSecureTrialData(result.data, cleanKey, hardwareId);
-            } catch (error) {
-              console.error('Error starting trial service:', error);
-              throw error;
-            }
-          }
-        }
-      } else {
-        // Already activated earlier and lifetime mode is ON; trust stored type
-        licenseType = (localStorage.getItem(
-          LicenseService.LICENSE_TYPE_STORAGE
-        ) as LicenseType) || undefined;
-
-        // Verify trial integrity if it's a trial license
-        if (licenseType === 'trial') {
-          const integrityCheck = await this.verifyTrialIntegrity(cleanKey);
-          if (!integrityCheck) {
-            return {
-              success: false,
-              error: "Trial integrity check failed. Please contact support."
-            };
-          }
-        }
+      // Handle device mismatch
+      if (result.status === "device_mismatch") {
+        return {
+          success: false,
+          requiresTransfer: true,
+          status: "device_mismatch",
+          error: "This license is active on another device. Transfer required."
+        };
       }
 
-      localStorage.setItem(LicenseService.LICENSE_KEY_STORAGE, cleanKey);
-      if (licenseType) {
+      // Handle invalid/revoked
+      if (result.status === "invalid" || result.status === "revoked") {
+        return {
+          success: false,
+          status: result.status,
+          error: result.error || "This is not a valid license key."
+        };
+      }
+
+      // Handle successful activation
+      if (result.status === "activated") {
+        const licenseType: LicenseType = result.plan_type || 'personal';
+        
+        // Save local license file for offline validation
+        this.saveLocalLicenseFile({
+          license_key: cleanKey,
+          device_id: deviceId,
+          activated_at: new Date().toISOString(),
+          plan_type: licenseType,
+        });
+
+        // Update localStorage
+        localStorage.setItem(LicenseService.LICENSE_KEY_STORAGE, cleanKey);
         localStorage.setItem(LicenseService.LICENSE_TYPE_STORAGE, licenseType);
-      }
-      localStorage.setItem(
-        LicenseService.LICENSE_ACTIVATED_STORAGE,
-        new Date().toISOString()
-      );
-      // Record initial validation timestamp (historical only). No future validations in lifetime mode.
-      localStorage.setItem(
-        LicenseService.LAST_VALIDATION_STORAGE,
-        Date.now().toString()
-      );
+        localStorage.setItem(LicenseService.LICENSE_ACTIVATED_STORAGE, new Date().toISOString());
+        localStorage.setItem(LicenseService.DEVICE_ID_STORAGE, deviceId);
 
-      // Store hardware ID for future validations
-      localStorage.setItem(LicenseService.HARDWARE_ID_STORAGE, hardwareId);
+        // End trial if not a trial license
+        if (licenseType !== 'trial') {
+          trialService.endTrial();
+        }
 
-      // Only end trial for non-trial licenses
-      if (licenseType !== 'trial') {
-        trialService.endTrial();
-
-        // Also clear any remaining trial-related localStorage items
-        localStorage.removeItem('trial_hardware_hash');
-        localStorage.removeItem('trial_activation_time');
-        localStorage.removeItem('trial_expiry_time');
-        sessionStorage.removeItem('trial_session');
-        sessionStorage.removeItem('secure_trial_data');
+        return { 
+          success: true, 
+          licenseType,
+          status: "activated"
+        };
       }
 
-      return { success: true, licenseType };
+      return { 
+        success: false, 
+        error: result.error || "Activation failed" 
+      };
+
     } catch (error) {
       console.error("License activation error:", error);
 
-      // Don't fallback to local validation - server validation is required
       if (error instanceof TypeError && error.message.includes("fetch")) {
         return {
           success: false,
-          error:
-            "Unable to connect to license server. Please check your internet connection and try again.",
+          error: "Unable to connect to license server. Please check your internet connection and try again.",
         };
       }
 
@@ -377,86 +382,149 @@ export class LicenseService {
   }
 
   /**
-   * Store secure trial data
+   * Transfer license to current device
+   * 
+   * Called when user confirms transfer after device_mismatch
    */
-  private storeSecureTrialData(backendData: any, licenseKey: string, hardwareHash: string): void {
+  async transferLicense(licenseKey: string): Promise<{
+    success: boolean;
+    error?: string;
+    status?: string;
+  }> {
     try {
-      const secureData = {
-        licenseKey,
-        hardwareHash,
-        activationTime: backendData.activationTime,
-        expiryTime: backendData.expiryTime,
-        trialDurationMs: backendData.trialDurationMs,
-        securityHash: backendData.token ? this.extractSecurityHash(backendData.token) : null,
-        timestamp: Date.now()
+      const cleanKey = licenseKey.replace(/[^A-Z0-9-]/g, "");
+      const deviceId = await this.getDeviceId();
+
+      // Development mode: simulate transfer
+      if (import.meta.env.DEV) {
+        return this.transferLocalLicense(cleanKey, deviceId);
+      }
+
+      const response = await fetch(
+        `${environment.environment.licenseServerUrl}/api/lpv/license/transfer`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            license_key: cleanKey,
+            new_device_id: deviceId,
+          }),
+        }
+      );
+
+      const result: TransferResponse = await response.json();
+
+      if (result.status === "transferred") {
+        // Update local license file
+        this.saveLocalLicenseFile({
+          license_key: cleanKey,
+          device_id: deviceId,
+          activated_at: new Date().toISOString(),
+        });
+
+        // Update localStorage
+        localStorage.setItem(LicenseService.LICENSE_KEY_STORAGE, cleanKey);
+        localStorage.setItem(LicenseService.LICENSE_ACTIVATED_STORAGE, new Date().toISOString());
+        localStorage.setItem(LicenseService.DEVICE_ID_STORAGE, deviceId);
+
+        return { success: true, status: "transferred" };
+      }
+
+      if (result.status === "transfer_limit_reached") {
+        return {
+          success: false,
+          status: "transfer_limit_reached",
+          error: "Your license has reached its automatic transfer limit. Please contact support so we can help you move it to your new computer."
+        };
+      }
+
+      return {
+        success: false,
+        error: result.error || "Transfer failed"
       };
 
-      // Store in sessionStorage (cleared on browser close)
-      sessionStorage.setItem('secure_trial_data', JSON.stringify(secureData));
     } catch (error) {
-      console.error('Error storing secure trial data:', error);
+      console.error("License transfer error:", error);
+
+      if (error instanceof TypeError && error.message.includes("fetch")) {
+        return {
+          success: false,
+          error: "Unable to connect to license server. Please check your internet connection.",
+        };
+      }
+
+      return { success: false, error: "License transfer failed" };
     }
   }
 
   /**
-   * Verify trial integrity
+   * Development mode: Activate license locally
    */
-  private async verifyTrialIntegrity(licenseKey: string): Promise<boolean> {
-    try {
-      const storedHardwareHash = localStorage.getItem('trial_hardware_hash');
-      const currentHardwareHash = await generateHardwareFingerprint();
+  private async activateLocalLicense(
+    licenseKey: string,
+    deviceId: string
+  ): Promise<{ success: boolean; error?: string; licenseType?: LicenseType }> {
+    // Save local license file
+    this.saveLocalLicenseFile({
+      license_key: licenseKey,
+      device_id: deviceId,
+      activated_at: new Date().toISOString(),
+      plan_type: 'personal',
+    });
 
-      // Verify hardware hash hasn't changed
-      if (storedHardwareHash && storedHardwareHash !== currentHardwareHash) {
-        console.error('Trial integrity check failed: hardware hash mismatch');
-        return false;
-      }
-
-      // Verify license key matches
-      const storedLicenseKey = localStorage.getItem('trial_license_key');
-      if (storedLicenseKey !== licenseKey) {
-        console.error('Trial integrity check failed: license key mismatch');
-        return false;
-      }
-
-      // Verify secure session data if available
-      const secureSession = sessionStorage.getItem('trial_session');
-      if (secureSession) {
-        const sessionData = JSON.parse(secureSession);
-        if (sessionData.hardwareHash !== currentHardwareHash || sessionData.licenseKey !== licenseKey) {
-          console.error('Trial integrity check failed: session data mismatch');
-          return false;
-        }
-      }
-
-      return true;
-    } catch (error) {
-      console.error('Error verifying trial integrity:', error);
-      return false;
-    }
+    localStorage.setItem(LicenseService.LICENSE_KEY_STORAGE, licenseKey);
+    localStorage.setItem(LicenseService.LICENSE_TYPE_STORAGE, 'personal');
+    localStorage.setItem(LicenseService.LICENSE_ACTIVATED_STORAGE, new Date().toISOString());
+    localStorage.setItem(LicenseService.DEVICE_ID_STORAGE, deviceId);
+    
+    trialService.endTrial();
+    
+    return { success: true, licenseType: 'personal' };
   }
 
   /**
-   * Extract security hash from token
+   * Development mode: Transfer license locally
    */
-  private extractSecurityHash(token: string): string | null {
-    try {
-      const tokenData = JSON.parse(atob(token.split('.')[1]));
-      return tokenData.securityHash || null;
-    } catch (error) {
-      console.error('Error extracting security hash:', error);
-      return null;
-    }
+  private async transferLocalLicense(
+    licenseKey: string,
+    deviceId: string
+  ): Promise<{ success: boolean; error?: string; status?: string }> {
+    this.saveLocalLicenseFile({
+      license_key: licenseKey,
+      device_id: deviceId,
+      activated_at: new Date().toISOString(),
+    });
+
+    localStorage.setItem(LicenseService.DEVICE_ID_STORAGE, deviceId);
+    localStorage.setItem(LicenseService.LICENSE_ACTIVATED_STORAGE, new Date().toISOString());
+
+    return { success: true, status: "transferred" };
   }
 
   /**
-   * Validate license in background without blocking UI
+   * Check if device mismatch requires transfer
+   * Used on app startup
    */
-  private async validateLicenseInBackground(_licenseKey: string): Promise<void> {
-    if (!LicenseService.LIFETIME_ONE_TIME_ACTIVATION) {
-      // If legacy behaviour is re-enabled, we could restore previous implementation.
-      return;
+  async checkDeviceMismatch(): Promise<{
+    hasMismatch: boolean;
+    licenseKey: string | null;
+  }> {
+    const localLicense = this.getLocalLicenseFile();
+    
+    if (!localLicense) {
+      return { hasMismatch: false, licenseKey: null };
     }
+
+    const currentDeviceId = await this.getDeviceId();
+    
+    if (localLicense.device_id !== currentDeviceId) {
+      return { 
+        hasMismatch: true, 
+        licenseKey: localLicense.license_key 
+      };
+    }
+
+    return { hasMismatch: false, licenseKey: null };
   }
 
   /**
@@ -474,24 +542,27 @@ export class LicenseService {
   }
 
   /**
-   * Remove license (for testing or license transfer)
+   * Remove license (for testing or manual reset)
    */
   removeLicense(): void {
     localStorage.removeItem(LicenseService.LICENSE_KEY_STORAGE);
     localStorage.removeItem(LicenseService.LICENSE_TYPE_STORAGE);
     localStorage.removeItem(LicenseService.LICENSE_ACTIVATED_STORAGE);
-    localStorage.removeItem(LicenseService.LAST_VALIDATION_STORAGE);
-    localStorage.removeItem(LicenseService.HARDWARE_ID_STORAGE);
+    localStorage.removeItem(LicenseService.DEVICE_ID_STORAGE);
     localStorage.removeItem('license_token');
+    this.clearLocalLicenseFile();
   }
 
   /**
-   * Validate license for critical operations (more frequent validation)
+   * Validate license for critical operations
    */
   async validateForCriticalOperation(): Promise<boolean> {
-    // In lifetime mode critical validation is a simple local presence check.
     const key = localStorage.getItem(LicenseService.LICENSE_KEY_STORAGE);
-    return !!key;
+    if (!key) return false;
+
+    // Validate device binding
+    const localValidation = await this.validateLocalLicense();
+    return localValidation.valid;
   }
 
   /**
@@ -534,16 +605,40 @@ export class LicenseService {
   resetAll(): void {
     this.removeLicense();
     trialService.resetTrial();
+    this.cachedDeviceId = null;
   }
 
   /**
-   * Manually refresh license status (force validation)
+   * Refresh license status (no network call needed in offline mode)
    */
   async refreshLicenseStatus(): Promise<{ success: boolean; error?: string }> {
-    // Lifetime mode: nothing to refresh, license is considered valid if stored.
     const key = localStorage.getItem(LicenseService.LICENSE_KEY_STORAGE);
     if (!key) return { success: false, error: "No license found" };
+
+    const localValidation = await this.validateLocalLicense();
+    if (localValidation.valid) {
+      return { success: true };
+    }
+    
+    if (localValidation.requiresTransfer) {
+      return { success: false, error: "Device mismatch - transfer required" };
+    }
+
     return { success: true };
+  }
+
+  /**
+   * Get stored device ID
+   */
+  getStoredDeviceId(): string | null {
+    return localStorage.getItem(LicenseService.DEVICE_ID_STORAGE);
+  }
+
+  /**
+   * Verify device ID is valid format
+   */
+  isValidDeviceId(deviceId: string): boolean {
+    return isValidDeviceId(deviceId);
   }
 }
 

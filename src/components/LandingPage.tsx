@@ -449,7 +449,6 @@ export const LandingPage: React.FC = () => {
     <div 
       className="min-h-screen"
       style={{ 
-        backgroundColor: colors.obsidian,
         fontFamily: "'Outfit', 'SF Pro Display', -apple-system, sans-serif",
       }}
     >
@@ -458,7 +457,7 @@ export const LandingPage: React.FC = () => {
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap');
         
         .font-mono {
-          font-family: 'JetBrains Mono', monospace;
+          font-family: Arial, Helvetica, sans-serif;
         }
         
         @keyframes gradient {

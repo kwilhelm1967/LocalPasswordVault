@@ -210,7 +210,6 @@ export const DownloadPage: React.FC = () => {
   return (
     <div 
       className="min-h-screen flex flex-col"
-      style={{ background: 'linear-gradient(to bottom right, #0f172a, #1e293b, #0f172a)' }}
     >
       {/* Header */}
       <header className="py-6 px-4 border-b border-slate-800">

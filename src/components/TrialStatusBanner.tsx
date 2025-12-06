@@ -336,59 +336,100 @@ export const TrialStatusBanner: React.FC<TrialStatusBannerProps> = ({
   // Normal active trial state
   return (
     <div 
-      className="rounded-xl px-4 py-2.5 mb-4 border"
+      className="rounded-xl px-5 py-3 mb-4"
       style={{ 
-        backgroundColor: `${colors.steelBlue500}10`,
-        borderColor: '#3b82f6', // Light blue border
+        background: 'linear-gradient(135deg, rgba(201, 174, 102, 0.08) 0%, rgba(91, 130, 184, 0.08) 100%)',
+        border: '1px solid rgba(201, 174, 102, 0.25)',
+        boxShadow: '0 4px 20px -4px rgba(0, 0, 0, 0.3)',
       }}
     >
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
+      <div className="flex items-center justify-between gap-6">
+        {/* Left side - Trial info */}
+        <div className="flex items-center gap-4">
           <div 
-            className="p-2 rounded-lg"
-            style={{ backgroundColor: `${colors.steelBlue500}20` }}
+            className="w-11 h-11 rounded-xl flex items-center justify-center"
+            style={{ 
+              background: 'linear-gradient(135deg, rgba(201, 174, 102, 0.2) 0%, rgba(201, 174, 102, 0.1) 100%)',
+              border: '1px solid rgba(201, 174, 102, 0.3)',
+            }}
           >
-            <Clock className="w-5 h-5" strokeWidth={1.5} style={{ color: colors.steelBlue400 }} />
+            <Clock className="w-5 h-5" strokeWidth={1.5} style={{ color: colors.brandGold }} />
           </div>
-          <div className="flex items-center gap-4">
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="font-semibold text-sm" style={{ color: colors.warmIvory }}>
-                  7-Day Trial
-                </h3>
-                <span 
-                  className="text-xs px-2 py-0.5 rounded-full font-medium"
-                  style={{ backgroundColor: 'rgba(16, 185, 129, 0.15)', color: '#10b981' }}
-                >
-                  Active
-                </span>
-              </div>
-              <div className="flex items-center gap-2 mt-0.5">
-                <span 
-                  className="font-mono font-bold text-lg"
-                  style={{ color: colors.warmIvory }}
-                >
-                  {formatTime()}
-                </span>
-                <span className="text-slate-500 text-xs">remaining</span>
-              </div>
+          <div>
+            <div className="flex items-center gap-2 mb-0.5">
+              <span className="text-xs font-medium" style={{ color: colors.brandGold }}>
+                7-Day Trial
+              </span>
+              <span 
+                className="text-[10px] px-1.5 py-0.5 rounded-full font-semibold"
+                style={{ backgroundColor: 'rgba(16, 185, 129, 0.15)', color: '#10b981' }}
+              >
+                ACTIVE
+              </span>
             </div>
-            <div className="hidden sm:flex items-center gap-1.5 text-slate-500 text-xs">
-              <Shield className="w-3.5 h-3.5" strokeWidth={1.5} />
-              <span>Full functionality available</span>
+            <div className="flex items-baseline gap-1">
+              <span 
+                className="text-lg font-bold tracking-tight"
+                style={{ color: colors.warmIvory }}
+              >
+                {formatTime()}
+              </span>
+              <span className="text-slate-500 text-xs">left</span>
             </div>
           </div>
         </div>
-        <button
-          onClick={handlePurchase}
-          className="px-4 py-2 text-white text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5"
-          style={{ backgroundColor: colors.steelBlue500 }}
-          onMouseOver={(e) => e.currentTarget.style.backgroundColor = colors.steelBlue600}
-          onMouseOut={(e) => e.currentTarget.style.backgroundColor = colors.steelBlue500}
-        >
-          <ShoppingCart className="w-3.5 h-3.5" strokeWidth={1.5} />
-          Purchase License
-        </button>
+
+        {/* Center - Status */}
+        <div className="hidden md:flex items-center gap-2 px-4 py-2 rounded-lg" style={{ backgroundColor: 'rgba(16, 185, 129, 0.08)' }}>
+          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="text-emerald-400 text-xs font-medium">All features unlocked</span>
+        </div>
+
+        {/* Right side - Actions */}
+        <div className="flex items-center gap-2">
+          {onExport && (
+            <button
+              onClick={onExport}
+              className="px-3.5 py-2 text-xs font-medium rounded-lg transition-all flex items-center gap-2 hover:scale-105"
+              style={{ 
+                backgroundColor: 'rgba(91, 130, 184, 0.15)',
+                color: colors.steelBlue400,
+                border: '1px solid rgba(91, 130, 184, 0.25)',
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.backgroundColor = 'rgba(91, 130, 184, 0.25)';
+                e.currentTarget.style.color = colors.warmIvory;
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.backgroundColor = 'rgba(91, 130, 184, 0.15)';
+                e.currentTarget.style.color = colors.steelBlue400;
+              }}
+            >
+              <Download className="w-3.5 h-3.5" strokeWidth={2} />
+              Export
+            </button>
+          )}
+          <button
+            onClick={handlePurchase}
+            className="px-4 py-2 text-xs font-semibold rounded-lg transition-all flex items-center gap-2 hover:scale-105"
+            style={{ 
+              background: 'linear-gradient(135deg, #5B82B8 0%, #4A6FA5 100%)',
+              color: 'white',
+              boxShadow: '0 4px 12px -2px rgba(91, 130, 184, 0.4)',
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.background = 'linear-gradient(135deg, #6B92C8 0%, #5A7FB5 100%)';
+              e.currentTarget.style.boxShadow = '0 6px 16px -2px rgba(91, 130, 184, 0.5)';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.background = 'linear-gradient(135deg, #5B82B8 0%, #4A6FA5 100%)';
+              e.currentTarget.style.boxShadow = '0 4px 12px -2px rgba(91, 130, 184, 0.4)';
+            }}
+          >
+            <ShoppingCart className="w-3.5 h-3.5" strokeWidth={2} />
+            Purchase License
+          </button>
+        </div>
       </div>
     </div>
   );

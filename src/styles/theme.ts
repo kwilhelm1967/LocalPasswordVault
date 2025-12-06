@@ -74,7 +74,7 @@ export const theme = {
   typography: {
     // Font Family
     fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-    fontMono: "'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', monospace",
+    fontMono: "Arial, Helvetica, sans-serif",
     
     // Font Sizes
     fontSize: {
@@ -276,7 +276,7 @@ export const cssVariables = `
   
   /* Typography */
   --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-mono: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', monospace;
+  --font-mono: Arial, Helvetica, sans-serif;
   
   /* Font Sizes */
   --font-size-xs: 0.625rem;

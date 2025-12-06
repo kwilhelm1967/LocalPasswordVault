@@ -12,9 +12,9 @@ html, body, #root {
   color: white;
 }
 
-/* Ensure all components inherit dark background */
+/* Ensure all components inherit brand background */
 .min-h-screen {
-  background-color: #0f172a !important;
+  background-color: #245F73 !important;
 }
 
 /* Ensure no black backgrounds on gradient elements */

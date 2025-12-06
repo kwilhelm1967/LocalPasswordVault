@@ -10,6 +10,9 @@ import {
   CreditCard,
   ArrowLeft,
   Download,
+  Mail,
+  Gift,
+  Loader2,
 } from "lucide-react";
 import { analyticsService } from "../utils/analyticsService";
 import { licenseService, AppLicenseStatus } from "../utils/licenseService";
@@ -20,6 +23,8 @@ import { TrialExpirationBanner } from "./TrialExpirationBanner";
 import { ExpiredTrialScreen } from "./ExpiredTrialScreen";
 import { KeyActivationScreen } from "./KeyActivationScreen";
 import { RecoveryOptionsScreen } from "./RecoveryOptionsScreen";
+import { LicenseTransferDialog } from "./LicenseTransferDialog";
+import environment from "../config/environment";
 
 interface LicenseScreenProps {
   onLicenseValid: () => void;
@@ -44,6 +49,16 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
   const [showExpiredTrialScreen, setShowExpiredTrialScreen] = useState(false);
   const [showKeyActivationScreen, setShowKeyActivationScreen] = useState(false);
   const [showRecoveryOptions, setShowRecoveryOptions] = useState(false);
+  
+  // License transfer state (for device mismatch)
+  const [showTransferDialog, setShowTransferDialog] = useState(false);
+  const [pendingTransferKey, setPendingTransferKey] = useState<string>("");
+  
+  // Trial signup state
+  const [trialEmail, setTrialEmail] = useState("");
+  const [isStartingTrial, setIsStartingTrial] = useState(false);
+  const [trialError, setTrialError] = useState<string | null>(null);
+  const [trialSuccess, setTrialSuccess] = useState<string | null>(null);
 
   // Initialize app status on mount - Removed
   // useEffect(() => {
@@ -139,6 +154,65 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
     setLicenseKey("");
   };
 
+  // Handle trial signup
+  const handleStartTrial = async () => {
+    if (!trialEmail.trim()) {
+      setTrialError("Please enter your email address");
+      return;
+    }
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(trialEmail.trim())) {
+      setTrialError("Please enter a valid email address");
+      return;
+    }
+
+    setIsStartingTrial(true);
+    setTrialError(null);
+    setTrialSuccess(null);
+
+    try {
+      const response = await fetch(
+        `${environment.environment.licenseServerUrl}/api/trial/signup`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: trialEmail.trim().toLowerCase() }),
+        }
+      );
+
+      const result = await response.json();
+
+      if (result.success) {
+        setTrialSuccess("🎉 Check your email! Your trial key has been sent.");
+        analyticsService.trackConversion("trial_started", { source: "license_screen" });
+        
+        // In dev mode, show the trial key directly
+        if (result.trialKey) {
+          setTrialSuccess(`🎉 Trial started! Your key: ${result.trialKey}`);
+        }
+      } else {
+        if (result.expired) {
+          setTrialError("Your trial has expired. Please purchase a license to continue.");
+        } else if (result.hasLicense) {
+          setTrialError("You already have a license! Enter your license key above.");
+        } else {
+          setTrialError(result.error || "Failed to start trial. Please try again.");
+        }
+      }
+    } catch (error) {
+      console.error("Trial signup error:", error);
+      if (error instanceof TypeError && error.message.includes("fetch")) {
+        setTrialError("Unable to connect to server. Please check your internet connection.");
+      } else {
+        setTrialError("Failed to start trial. Please try again.");
+      }
+    } finally {
+      setIsStartingTrial(false);
+    }
+  };
+
   // New flow handlers
   const handleBuyLifetimeAccess = () => {
     const url = "https://localpasswordvault.com/#plans";
@@ -215,9 +289,8 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
     setError(null);
 
     try {
-      const result = await licenseService.activateLicense(
-        licenseKey.trim().toUpperCase()
-      );
+      const cleanKey = licenseKey.trim().toUpperCase();
+      const result = await licenseService.activateLicense(cleanKey);
 
       if (result.success) {
         analyticsService.trackLicenseEvent(
@@ -235,6 +308,16 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
         if (window.electronAPI?.showFloatingButton) {
           window.electronAPI.showFloatingButton();
         }
+      } else if (result.requiresTransfer) {
+        // Device mismatch - show transfer dialog
+        setShowEula(false);
+        setPendingTransferKey(cleanKey);
+        setShowTransferDialog(true);
+        analyticsService.trackLicenseEvent(
+          "device_mismatch_detected",
+          undefined,
+          { status: result.status }
+        );
       } else {
         // Enhanced error messages based on the new flow specifications
         let enhancedError = result.error || "License activation failed";
@@ -296,6 +379,36 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
     }
   };
 
+  // Handle license transfer confirmation
+  const handleConfirmTransfer = async () => {
+    const result = await licenseService.transferLicense(pendingTransferKey);
+    
+    if (result.success) {
+      analyticsService.trackLicenseEvent(
+        "license_transferred",
+        undefined,
+        { status: result.status }
+      );
+      // Refresh app status and close dialogs
+      await updateAppStatus();
+      onLicenseValid();
+      
+      // Show floating button again
+      if (window.electronAPI?.showFloatingButton) {
+        window.electronAPI.showFloatingButton();
+      }
+    }
+    
+    return result;
+  };
+
+  // Handle transfer dialog cancel
+  const handleCancelTransfer = () => {
+    setShowTransferDialog(false);
+    setPendingTransferKey("");
+    setError(null);
+  };
+
   const handleEulaDecline = () => {
     setShowEula(false);
     setPendingLicenseKey("");
@@ -345,12 +458,24 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
   // Show loading state while app status is being determined
   if (!appStatus) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-white text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
           <p className="text-lg">Loading license screen...</p>
         </div>
       </div>
+    );
+  }
+
+  // License Transfer Dialog (shown on device mismatch)
+  if (showTransferDialog) {
+    return (
+      <LicenseTransferDialog
+        isOpen={showTransferDialog}
+        licenseKey={pendingTransferKey}
+        onConfirmTransfer={handleConfirmTransfer}
+        onCancel={handleCancelTransfer}
+      />
     );
   }
 
@@ -403,7 +528,7 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
   }
 
   return (
-    <div className="min-h-screen bg-slate-900 overflow-y-auto">
+    <div className="min-h-screen overflow-y-auto">
       {/* EULA Modal */}
       {showEula && (
         <EulaAgreement
@@ -439,7 +564,7 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
         </div>
       )}
 
-      <div className="min-h-screen flex flex-col bg-slate-900 overflow-y-auto">
+      <div className="min-h-screen flex flex-col overflow-y-auto">
         <div className="flex-1 max-w-4xl w-full mx-auto py-6 px-4 overflow-y-auto">
           {/* Header */}
           <div className="text-center mb-8">
@@ -587,6 +712,77 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
                   </div>
                 </div>
               </div>
+
+              {/* Start Free Trial Section - Only show if trial hasn't been used */}
+              {!localStorageTrialInfo.hasTrialBeenUsed && (
+                <div className="bg-gradient-to-br from-emerald-900/30 to-teal-900/30 backdrop-blur-sm border border-emerald-500/30 rounded-xl p-6 mt-6">
+                  <div className="flex items-center space-x-3 mb-4">
+                    <Gift className="w-6 h-6 text-emerald-400" />
+                    <h2 className="text-xl font-semibold text-white">
+                      Start 7-Day Free Trial
+                    </h2>
+                  </div>
+                  
+                  <p className="text-slate-300 text-sm mb-4">
+                    Try all features free for 7 days. No credit card required.
+                  </p>
+
+                  <div className="space-y-3">
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+                      <input
+                        type="email"
+                        value={trialEmail}
+                        onChange={(e) => {
+                          setTrialEmail(e.target.value);
+                          setTrialError(null);
+                          setTrialSuccess(null);
+                        }}
+                        onKeyPress={(e) => e.key === "Enter" && handleStartTrial()}
+                        placeholder="Enter your email address"
+                        className="w-full pl-10 pr-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+                        disabled={isStartingTrial}
+                      />
+                    </div>
+
+                    {trialError && (
+                      <div className="flex items-center space-x-2 text-red-400 text-sm">
+                        <XCircle className="w-4 h-4" />
+                        <span>{trialError}</span>
+                      </div>
+                    )}
+
+                    {trialSuccess && (
+                      <div className="flex items-center space-x-2 text-emerald-400 text-sm">
+                        <CheckCircle className="w-4 h-4" />
+                        <span>{trialSuccess}</span>
+                      </div>
+                    )}
+
+                    <button
+                      onClick={handleStartTrial}
+                      disabled={isStartingTrial || !trialEmail.trim()}
+                      className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 disabled:from-slate-600 disabled:to-slate-600 text-white py-3 px-4 rounded-lg font-medium transition-all disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+                    >
+                      {isStartingTrial ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span>Starting Trial...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Gift className="w-4 h-4" />
+                          <span>Start Free Trial</span>
+                        </>
+                      )}
+                    </button>
+
+                    <p className="text-xs text-slate-500 text-center">
+                      We'll send your trial license key to your email
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <div className="space-y-6 mb-8">

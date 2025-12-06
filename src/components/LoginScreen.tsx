@@ -238,7 +238,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
 
   return (
     <div
-      className="h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center p-4 overflow-hidden"
+      className="h-screen flex items-center justify-center p-4 overflow-hidden"
       role="main"
       aria-labelledby="login-title"
     >
@@ -281,7 +281,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
 
         {/* Main Card */}
         <div
-          className="bg-slate-800/60 backdrop-blur-xl border border-slate-700/50 rounded-xl p-6 shadow-2xl"
+          className="bg-slate-800/60 backdrop-blur-xl border border-[#5B82B8]/40 rounded-xl p-6 shadow-2xl"
           role="region"
           aria-labelledby="login-form-title"
         >
@@ -332,7 +332,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-3 py-2.5 bg-slate-900/50 border border-slate-600/50 rounded-lg text-white text-sm placeholder-slate-500 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 pr-10"
+                  className="w-full px-3 py-2.5 bg-slate-900/50 border border-slate-700/30 rounded-lg text-white text-sm placeholder-slate-500 focus:outline-none focus:border-slate-500/50 focus:ring-1 focus:ring-slate-500/20 pr-10"
                   placeholder={isFirstTime ? "Min 12 chars with upper, lower, number, symbol" : "Enter your password"}
                   required
                   autoFocus

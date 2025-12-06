@@ -4,17 +4,25 @@
  * Overview page with stats, recent activity, and quick actions.
  */
 
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import {
   Shield,
   Key,
   Lock,
   AlertTriangle,
   TrendingUp,
-  Clock,
   Plus,
+  ChevronDown,
   ChevronRight,
+  Eye,
+  EyeOff,
+  Edit3,
+  Trash2,
+  Copy,
+  ExternalLink,
+  FileText,
   CalendarClock,
+  Clock,
 } from "lucide-react";
 import { PasswordEntry, Category } from "../types";
 import { CategoryIcon } from "./CategoryIcon";
@@ -34,6 +42,8 @@ interface DashboardProps {
   onAddEntry: () => void;
   onViewCategory: (categoryId: string) => void;
   onViewEntry: (entry: PasswordEntry) => void;
+  onEditEntry: (entry: PasswordEntry) => void;
+  onDeleteEntry: (entryId: string) => void;
   onViewWeakPasswords?: () => void;
   onViewReusedPasswords?: () => void;
 }
@@ -44,9 +54,39 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onAddEntry,
   onViewCategory,
   onViewEntry,
+  onEditEntry,
+  onDeleteEntry,
   onViewWeakPasswords,
   onViewReusedPasswords,
 }) => {
+  // State for expanded cards and visible passwords
+  const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
+  const [visiblePasswords, setVisiblePasswords] = useState<Set<string>>(new Set());
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const toggleExpand = (id: string) => {
+    setExpandedCards(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const togglePassword = (id: string) => {
+    setVisiblePasswords(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const copyToClipboard = async (text: string, id: string) => {
+    await navigator.clipboard.writeText(text);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
   // Calculate statistics
   const stats = useMemo(() => {
     const totalAccounts = entries.length;
@@ -176,14 +216,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Total Accounts */}
-        <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl py-3.5 px-4">
+        <div className="bouncy-card py-3.5 px-4">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-slate-400 text-xs font-medium uppercase tracking-wider">Total Accounts</p>
               <p className="text-[1.625rem] font-bold mt-1" style={{ color: colors.warmIvory }}>{stats.totalAccounts}</p>
             </div>
             <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${colors.steelBlue600}15` }}>
-              <Key className="w-6 h-6" strokeWidth={1.5} style={{ color: colors.steelBlue400 }} />
+              <Key className="w-6 h-6" strokeWidth={1.5} style={{ color: colors.brandGold }} />
             </div>
           </div>
           <div className="mt-2 flex items-center gap-1.5 text-xs">
@@ -194,7 +234,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
 
         {/* Security Score */}
-        <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl py-3.5 px-4">
+        <div className="bouncy-card py-3.5 px-4">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-slate-400 text-xs font-medium uppercase tracking-wider">Security Score</p>
@@ -211,7 +251,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
 
         {/* Strong Passwords */}
-        <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl py-3.5 px-4">
+        <div className="bouncy-card py-3.5 px-4">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-slate-400 text-xs font-medium uppercase tracking-wider">Strong Passwords</p>
@@ -232,9 +272,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
         {/* Weak Passwords */}
         <div 
-          className={`bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl py-3.5 px-4 transition-all duration-200 ${
-            stats.weakPasswords > 0 ? "cursor-pointer hover:border-amber-500/50 hover:bg-slate-800/70" : ""
-          }`}
+          className={`bouncy-card py-3.5 px-4 ${stats.weakPasswords > 0 ? "bouncy-card-clickable" : ""}`}
+          style={stats.weakPasswords > 0 ? { borderColor: 'rgba(251, 191, 36, 0.4)' } : {}}
           onClick={stats.weakPasswords > 0 ? onViewWeakPasswords : undefined}
         >
           <div className="flex items-center justify-between">
@@ -256,6 +295,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 Click to view & update
                 <ChevronRight className="w-3 h-3" strokeWidth={2} />
               </span>
+            ) : stats.totalAccounts === 0 ? (
+              <span className="text-slate-500">No passwords yet</span>
             ) : (
               <span className="text-emerald-400">All passwords are secure!</span>
             )}
@@ -264,12 +305,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
         {/* Reused Passwords */}
         <div 
-          className={`bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl py-3.5 px-4 transition-all duration-200 ${
-            stats.reusedPasswords > 0 ? "cursor-pointer hover:bg-slate-800/70" : ""
-          }`}
-          style={stats.reusedPasswords > 0 ? { borderColor: 'rgba(201, 174, 102, 0.3)' } : {}}
-          onMouseEnter={(e) => stats.reusedPasswords > 0 && (e.currentTarget.style.borderColor = 'rgba(201, 174, 102, 0.5)')}
-          onMouseLeave={(e) => stats.reusedPasswords > 0 && (e.currentTarget.style.borderColor = 'rgba(201, 174, 102, 0.3)')}
+          className={`bouncy-card py-3.5 px-4 ${stats.reusedPasswords > 0 ? "bouncy-card-clickable" : ""}`}
+          style={stats.reusedPasswords > 0 ? { borderColor: 'rgba(201, 174, 102, 0.4)' } : {}}
           onClick={stats.reusedPasswords > 0 ? onViewReusedPasswords : undefined}
         >
           <div className="flex items-center justify-between">
@@ -299,6 +336,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 Click to view & update
                 <ChevronRight className="w-3 h-3" strokeWidth={2} />
               </span>
+            ) : stats.totalAccounts === 0 ? (
+              <span className="text-slate-500">No passwords yet</span>
             ) : (
               <span className="text-emerald-400">All passwords are unique!</span>
             )}
@@ -306,7 +345,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         </div>
 
         {/* Old Passwords (>90 days) */}
-        <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl py-3.5 px-4">
+        <div className="bouncy-card py-3.5 px-4">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-slate-400 text-xs font-medium uppercase tracking-wider">Old Passwords</p>
@@ -323,6 +362,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
           <div className="mt-2 flex items-center gap-1.5 text-xs">
             {stats.oldPasswords > 0 ? (
               <span className="text-orange-400">{stats.oldPasswords} over 90 days old</span>
+            ) : stats.totalAccounts === 0 ? (
+              <span className="text-slate-500">No passwords yet</span>
             ) : (
               <span className="text-emerald-400">All passwords are fresh!</span>
             )}
@@ -331,116 +372,145 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
       </div>
 
-      {/* Two Column Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Categories Breakdown */}
-        <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h2 style={{ color: colors.warmIvory }} className="font-semibold">Categories</h2>
-            <button
-              onClick={() => onViewCategory("all")}
-              className="text-xs transition-colors"
-              style={{ color: colors.steelBlue400 }}
-              onMouseEnter={(e) => e.currentTarget.style.color = colors.mutedSky}
-              onMouseLeave={(e) => e.currentTarget.style.color = colors.steelBlue400}
+      {/* Quick Actions Row */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <button
+          onClick={onAddEntry}
+          className="bg-slate-800/30 border border-[#5B82B8]/40 rounded-xl p-5 hover:bg-slate-800/50 hover:border-[#5B82B8]/60 transition-all group text-left"
+        >
+          <div className="flex items-center gap-4">
+            <div 
+              className="w-12 h-12 rounded-xl flex items-center justify-center"
+              style={{ backgroundColor: `${colors.steelBlue500}15` }}
             >
-              View All
+              <Plus className="w-6 h-6" strokeWidth={1.5} style={{ color: colors.brandGold }} />
+            </div>
+            <div>
+              <h3 style={{ color: colors.warmIvory }} className="font-semibold mb-0.5">Add Account</h3>
+              <p className="text-slate-500 text-xs">Store a new password</p>
+            </div>
+          </div>
+        </button>
+
+        <button
+          onClick={() => onViewCategory("all")}
+          className="bg-slate-800/30 border border-[#5B82B8]/40 rounded-xl p-5 hover:bg-slate-800/50 hover:border-[#5B82B8]/60 transition-all group text-left"
+        >
+          <div className="flex items-center gap-4">
+            <div 
+              className="w-12 h-12 rounded-xl flex items-center justify-center"
+              style={{ backgroundColor: `${colors.steelBlue500}15` }}
+            >
+              <Key className="w-6 h-6" strokeWidth={1.5} style={{ color: colors.brandGold }} />
+            </div>
+            <div>
+              <h3 style={{ color: colors.warmIvory }} className="font-semibold mb-0.5">View All Accounts</h3>
+              <p className="text-slate-500 text-xs">{entries.length} {entries.length === 1 ? 'account' : 'accounts'} stored</p>
+            </div>
+          </div>
+        </button>
+
+        <button
+          onClick={onViewWeakPasswords}
+          className="bg-slate-800/30 border border-[#5B82B8]/40 rounded-xl p-5 hover:bg-slate-800/50 hover:border-[#5B82B8]/60 transition-all group text-left"
+        >
+          <div className="flex items-center gap-4">
+            <div 
+              className="w-12 h-12 rounded-xl flex items-center justify-center"
+              style={{ backgroundColor: stats.weakPasswords > 0 ? 'rgba(239, 68, 68, 0.15)' : `${colors.steelBlue500}15` }}
+            >
+              <Shield className="w-6 h-6" strokeWidth={1.5} style={{ color: stats.weakPasswords > 0 ? '#EF4444' : colors.steelBlue400 }} />
+            </div>
+            <div>
+              <h3 style={{ color: colors.warmIvory }} className="font-semibold mb-0.5">Security Check</h3>
+              <p className="text-xs" style={{ color: stats.weakPasswords > 0 ? '#EF4444' : '#64748B' }}>
+                {stats.weakPasswords > 0 ? `${stats.weakPasswords} weak passwords` : 'All passwords secure'}
+              </p>
+            </div>
+          </div>
+        </button>
+      </div>
+
+      {/* Security Alerts */}
+      {(stats.weakPasswords > 0 || stats.reusedPasswords > 0 || stats.oldPasswords > 0) && (
+        <div className="bg-slate-800/30 border border-[#5B82B8]/40 rounded-xl p-5">
+          <h2 style={{ color: colors.warmIvory }} className="font-semibold mb-4">Security Alerts</h2>
+          <div className="space-y-3">
+            {stats.weakPasswords > 0 && (
+              <button
+                onClick={onViewWeakPasswords}
+                className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-slate-700/30 transition-all group"
+                style={{ backgroundColor: 'rgba(239, 68, 68, 0.08)', border: '1px solid rgba(239, 68, 68, 0.2)' }}
+              >
+                <div className="flex items-center gap-3">
+                  <AlertTriangle className="w-5 h-5 text-red-400" strokeWidth={1.5} />
+                  <div className="text-left">
+                    <p className="text-sm text-red-400 font-medium">{stats.weakPasswords} Weak Password{stats.weakPasswords > 1 ? 's' : ''}</p>
+                    <p className="text-xs text-slate-500">These passwords are easy to guess</p>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-red-400/60 group-hover:text-red-400 transition-colors" strokeWidth={1.5} />
+              </button>
+            )}
+            
+            {stats.reusedPasswords > 0 && (
+              <button
+                onClick={onViewReusedPasswords}
+                className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-slate-700/30 transition-all group"
+                style={{ backgroundColor: 'rgba(251, 191, 36, 0.08)', border: '1px solid rgba(251, 191, 36, 0.2)' }}
+              >
+                <div className="flex items-center gap-3">
+                  <Lock className="w-5 h-5 text-amber-400" strokeWidth={1.5} />
+                  <div className="text-left">
+                    <p className="text-sm text-amber-400 font-medium">{stats.reusedPasswords} Reused Password{stats.reusedPasswords > 1 ? 's' : ''}</p>
+                    <p className="text-xs text-slate-500">Using same password on multiple sites</p>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-amber-400/60 group-hover:text-amber-400 transition-colors" strokeWidth={1.5} />
+              </button>
+            )}
+            
+            {stats.oldPasswords > 0 && (
+              <div
+                className="flex items-center justify-between p-3 rounded-lg"
+                style={{ backgroundColor: 'rgba(251, 146, 60, 0.08)', border: '1px solid rgba(251, 146, 60, 0.2)' }}
+              >
+                <div className="flex items-center gap-3">
+                  <CalendarClock className="w-5 h-5 text-orange-400" strokeWidth={1.5} />
+                  <div className="text-left">
+                    <p className="text-sm text-orange-400 font-medium">{stats.oldPasswords} Old Password{stats.oldPasswords > 1 ? 's' : ''}</p>
+                    <p className="text-xs text-slate-500">Haven't been changed in 90+ days</p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Getting Started - Only show when no entries */}
+      {entries.length === 0 && (
+        <div className="bg-slate-800/30 border border-[#5B82B8]/40 rounded-xl p-6 text-center">
+          <div className="w-16 h-16 bg-slate-700/50 rounded-xl flex items-center justify-center mx-auto mb-4">
+            <Key className="w-8 h-8" strokeWidth={1.5} style={{ color: colors.brandGold }} />
+          </div>
+          <h2 style={{ color: colors.warmIvory }} className="font-semibold mb-2">Welcome to Local Password Vault</h2>
+          <p className="text-slate-500 text-sm mb-4 max-w-md mx-auto">
+            Your passwords are stored locally and encrypted. Start by adding your first account or importing from another password manager.
+          </p>
+          <div className="flex items-center justify-center gap-3">
+            <button
+              onClick={onAddEntry}
+              className="px-4 py-2 rounded-lg text-sm font-medium text-white transition-colors"
+              style={{ backgroundColor: colors.steelBlue500 }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.steelBlue600}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = colors.steelBlue500}
+            >
+              Add First Account
             </button>
           </div>
-          <div className="space-y-2">
-            {categories.filter(c => c.id !== "all").map((category) => {
-              const count = stats.categoryCounts[category.id] || 0;
-              const percentage = entries.length > 0 
-                ? Math.round((count / entries.length) * 100) 
-                : 0;
-
-              return (
-                <button
-                  key={category.id}
-                  onClick={() => onViewCategory(category.id)}
-                  className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-slate-700/30 transition-colors group"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-slate-700/50 rounded-lg flex items-center justify-center">
-                      <CategoryIcon name={category.icon} size={16} className="text-slate-400" strokeWidth={1.5} />
-                    </div>
-                    <span style={{ color: colors.warmIvory }} className="text-sm">{category.name}</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="w-24 h-1.5 bg-slate-700 rounded-full overflow-hidden">
-                      <div 
-                        className="h-full rounded-full transition-all"
-                        style={{ width: `${percentage}%`, backgroundColor: colors.steelBlue500 }}
-                      />
-                    </div>
-                    <span className="text-slate-400 text-sm font-medium w-8 text-right">{count}</span>
-                    <ChevronRight className="w-4 h-4 text-slate-600 group-hover:text-slate-400 transition-colors" strokeWidth={1.5} />
-                  </div>
-                </button>
-              );
-            })}
-          </div>
         </div>
-
-        {/* Recent Activity */}
-        <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-xl p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h2 style={{ color: colors.warmIvory }} className="font-semibold">Recent Activity</h2>
-            <div className="flex items-center gap-1.5 text-xs text-slate-500">
-              <Clock className="w-3.5 h-3.5" strokeWidth={1.5} />
-              Last updated
-            </div>
-          </div>
-          {recentEntries.length === 0 ? (
-            <div className="text-center py-8">
-              <div className="w-12 h-12 bg-slate-700/50 rounded-xl flex items-center justify-center mx-auto mb-3">
-                <Key className="w-6 h-6 text-slate-600" strokeWidth={1.5} />
-              </div>
-              <p className="text-slate-500 text-sm">No recent activity</p>
-              <button
-                onClick={onAddEntry}
-                className="mt-3 text-sm transition-colors"
-                style={{ color: colors.steelBlue400 }}
-                onMouseEnter={(e) => e.currentTarget.style.color = colors.mutedSky}
-                onMouseLeave={(e) => e.currentTarget.style.color = colors.steelBlue400}
-              >
-                Add your first account
-              </button>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {recentEntries.map((entry) => {
-                const category = categories.find((c) => c.id === entry.category);
-                const timeAgo = getTimeAgo(new Date(entry.updatedAt));
-
-                return (
-                  <button
-                    key={entry.id}
-                    onClick={() => onViewEntry(entry)}
-                    className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-slate-700/30 transition-colors group"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-slate-700/50 rounded-lg flex items-center justify-center">
-                        {category && (
-                          <CategoryIcon name={category.icon} size={16} className="text-slate-400" strokeWidth={1.5} />
-                        )}
-                      </div>
-                      <div className="text-left">
-                        <p style={{ color: colors.warmIvory }} className="text-sm">{entry.accountName}</p>
-                        <p className="text-slate-500 text-xs">{entry.username}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-slate-500 text-xs">{timeAgo}</span>
-                      <ChevronRight className="w-4 h-4 text-slate-600 group-hover:text-slate-400 transition-colors" strokeWidth={1.5} />
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </div>
+      )}
 
       {/* Quick Tips */}
       <div 
@@ -455,7 +525,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
             style={{ backgroundColor: `${colors.steelBlue500}25` }}
           >
-            <Shield className="w-5 h-5" strokeWidth={1.5} style={{ color: colors.steelBlue400 }} />
+            <Shield className="w-5 h-5" strokeWidth={1.5} style={{ color: colors.brandGold }} />
           </div>
           <div>
             <h3 style={{ color: colors.warmIvory }} className="font-medium mb-1">Security Tip</h3>

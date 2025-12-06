@@ -34,6 +34,7 @@ import {
   Square,
   FileText,
   Check,
+  HelpCircle,
   // Category icons
   Grid3X3,
   CircleDollarSign,
@@ -129,6 +130,7 @@ import { CategoryIcon } from "./CategoryIcon";
 import { EntryForm } from "./EntryForm";
 import { Dashboard } from "./Dashboard";
 import { Settings, clearClipboardAfterTimeout, getVaultSettings } from "./Settings";
+import { FAQ } from "./FAQ";
 import { generateTOTP, getTimeRemaining, isValidTOTPSecret } from "../utils/totp";
 import { TrialStatusBanner } from "./TrialStatusBanner";
 import { playLockSound, playCopySound, playDeleteSound } from "../utils/soundEffects";
@@ -474,7 +476,7 @@ export const MainVault: React.FC<MainVaultProps> = ({
   };
 
   return (
-    <div className="h-screen flex overflow-hidden" style={{ backgroundColor: "#0f172a" }}>
+    <div className="h-screen flex overflow-hidden">
       
       {/* Left Sidebar */}
       <aside className="w-64 bg-slate-800/50 backdrop-blur-sm border-r border-slate-700/50 flex flex-col">
@@ -556,7 +558,7 @@ export const MainVault: React.FC<MainVaultProps> = ({
                 : "text-slate-400"
             }`}
           >
-            <LayoutDashboard className="w-4 h-4 opacity-70" strokeWidth={1.5} />
+            <LayoutDashboard className="w-4 h-4 opacity-70" strokeWidth={1.5} style={{ color: colors.brandGold }} />
             Dashboard
           </button>
 
@@ -581,7 +583,7 @@ export const MainVault: React.FC<MainVaultProps> = ({
             )}
           </button>
 
-          <p className="pl-5 pr-2 mb-2 mt-3 text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
+          <p className="pl-5 pr-2 mb-2 mt-3 text-[11px] font-semibold uppercase tracking-wider" style={{ color: '#A08850' }}>
             Categories
           </p>
           
@@ -599,7 +601,7 @@ export const MainVault: React.FC<MainVaultProps> = ({
                 : "text-slate-400"
             }`}
           >
-            <Shield className="w-4 h-4 opacity-70" strokeWidth={1.5} />
+            <Shield className="w-4 h-4 opacity-70" strokeWidth={1.5} style={{ color: colors.brandGold }} />
             All Accounts
             <span className="ml-auto text-xs text-slate-500">{entries.length}</span>
           </button>
@@ -619,7 +621,7 @@ export const MainVault: React.FC<MainVaultProps> = ({
                     : "text-slate-400"
                 }`}
               >
-                <CategoryIcon name={category.icon} size={16} className="opacity-70" strokeWidth={1.5} />
+                <CategoryIcon name={category.icon} size={16} className="opacity-70" strokeWidth={1.5} style={{ color: colors.brandGold }} />
                 {category.name}
               </button>
             );
@@ -636,22 +638,38 @@ export const MainVault: React.FC<MainVaultProps> = ({
                 : "text-slate-400"
             }`}
           >
-            <SettingsIcon className="w-4 h-4" strokeWidth={1.5} />
-            Settings
+            <SettingsIcon className="w-4 h-4" strokeWidth={1.5} style={{ color: colors.brandGold }} />
+            <span>Settings</span>
           </button>
           {onMinimize && (
             <button
               onClick={onMinimize}
-              className="w-full pl-5 pr-3 py-2 text-slate-300 hover:text-white bg-slate-700/30 hover:bg-slate-700/50 rounded-r-lg text-sm flex items-center gap-2.5 transition-colors border border-l-0 border-slate-600/30"
+              className="nav-item-hover w-full pl-5 pr-3 py-2 text-slate-400 rounded-r-lg text-sm flex items-center gap-2.5 transition-colors"
             >
               <Minimize2 
                 className="w-4 h-4" 
                 strokeWidth={1.5}
-                style={{ color: colors.steelBlue500 }}
+                style={{ color: colors.brandGold }}
               />
               <span>Mini Vault</span>
             </button>
           )}
+          <button
+            onClick={() => setCurrentView("help")}
+            aria-label="FAQs"
+            className={`nav-item-hover w-full pl-5 pr-3 py-2 rounded-r-lg text-sm flex items-center gap-2.5 transition-colors ${
+              currentView === "help"
+                ? "nav-item-selected text-white"
+                : "text-slate-400"
+            }`}
+          >
+            <HelpCircle 
+              className="w-4 h-4" 
+              strokeWidth={1.5}
+              style={{ color: colors.brandGold }}
+            />
+            <span>FAQs</span>
+          </button>
           <button
             onClick={() => { playLockSound(); onLock(); }}
             aria-label="Lock vault and return to login"
@@ -722,6 +740,10 @@ export const MainVault: React.FC<MainVaultProps> = ({
               totalEntries={entries.length}
             />
           </div>
+        ) : currentView === "help" ? (
+          <div key="help" className="page-transition-enter flex-1 overflow-hidden">
+            <FAQ />
+          </div>
         ) : (
           <div key={`passwords-${selectedCategory}-${showWeakOnly}-${showReusedOnly}-${showFavoritesOnly}`} className="page-transition-enter flex-1 flex flex-col overflow-hidden">
             {/* Header */}
@@ -786,16 +808,16 @@ export const MainVault: React.FC<MainVaultProps> = ({
                   {/* Dropdown Menu */}
                   {showSortDropdown && (
                     <div 
-                      className="absolute right-0 top-full mt-1 w-44 rounded-xl py-1 z-50 isolate"
+                      className="absolute right-0 top-full mt-1 w-48 rounded-xl py-2 z-50 isolate"
                       role="listbox"
                       aria-label="Sort options"
                       onKeyDown={(e) => {
                         if (e.key === 'Escape') setShowSortDropdown(false);
                       }}
                       style={{
-                        backgroundColor: "#1e293b",
-                        border: "1px solid #475569",
-                        boxShadow: "0 10px 40px -10px rgba(0, 0, 0, 0.6), 0 4px 6px -2px rgba(0, 0, 0, 0.3)",
+                        background: "linear-gradient(180deg, #1e293b 0%, #0f172a 100%)",
+                        border: "1px solid rgba(91, 130, 184, 0.3)",
+                        boxShadow: "0 20px 50px -12px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(91, 130, 184, 0.1)",
                       }}
                     >
                       {[
@@ -829,28 +851,30 @@ export const MainVault: React.FC<MainVaultProps> = ({
                                 setShowSortDropdown(false);
                               }
                             }}
-                            className="w-full text-left px-3 py-2 text-xs transition-colors focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            className="w-full text-left px-3 py-2.5 text-xs transition-all focus:outline-none rounded-lg mx-1"
                             style={{
-                              backgroundColor: isSelected ? "#334155" : "#1e293b",
-                              color: isSelected ? "#ffffff" : "#94a3b8",
+                              width: "calc(100% - 8px)",
+                              backgroundColor: isSelected ? "rgba(91, 130, 184, 0.15)" : "transparent",
+                              color: isSelected ? "#C9AE66" : "#E8EDF2",
+                              borderLeft: isSelected ? "2px solid #C9AE66" : "2px solid transparent",
                             }}
                             onMouseEnter={(e) => {
                               if (!isSelected) {
-                                e.currentTarget.style.backgroundColor = "#334155";
-                                e.currentTarget.style.color = "#ffffff";
+                                e.currentTarget.style.backgroundColor = "rgba(91, 130, 184, 0.1)";
+                                e.currentTarget.style.borderLeftColor = "rgba(91, 130, 184, 0.5)";
                               }
                             }}
                             onMouseLeave={(e) => {
                               if (!isSelected) {
-                                e.currentTarget.style.backgroundColor = "#1e293b";
-                                e.currentTarget.style.color = "#94a3b8";
+                                e.currentTarget.style.backgroundColor = "transparent";
+                                e.currentTarget.style.borderLeftColor = "transparent";
                               }
                             }}
                           >
-                            <span className="flex items-center justify-between">
+                            <span className="flex items-center justify-between w-full">
                               {option.label}
                               {isSelected && (
-                                <span className="w-1.5 h-1.5 rounded-full bg-[#5B82B8]"></span>
+                                <Check className="w-3.5 h-3.5" style={{ color: '#C9AE66' }} />
                               )}
                             </span>
                           </button>
@@ -929,6 +953,120 @@ export const MainVault: React.FC<MainVaultProps> = ({
             <div className="flex-1 overflow-y-auto p-6">
           {filteredEntries.length === 0 ? (
             (() => {
+              // Handle Weak Passwords empty state - this is a GOOD thing!
+              if (showWeakOnly) {
+                return (
+                  <div className="flex flex-col items-center justify-center h-full text-center pb-24">
+                    <div 
+                      className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4"
+                      style={{ 
+                        backgroundColor: 'rgba(34, 197, 94, 0.15)',
+                        border: '1px solid rgba(34, 197, 94, 0.3)'
+                      }}
+                    >
+                      <AlertTriangle 
+                        className="w-8 h-8" 
+                        strokeWidth={1.5} 
+                        style={{ color: '#22c55e' }}
+                      />
+                    </div>
+                    <h3 style={{ color: '#22c55e' }} className="font-medium mb-1">All passwords are strong!</h3>
+                    <p className="text-slate-500 text-sm mb-4">
+                      Great job! None of your passwords need attention.
+                    </p>
+                    <button
+                      onClick={() => {
+                        setShowWeakOnly(false);
+                        onCategoryChange("all");
+                      }}
+                      className="px-4 py-2 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2"
+                      style={{ backgroundColor: colors.steelBlue600 }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.steelBlue500}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = colors.steelBlue600}
+                    >
+                      <Key className="w-4 h-4" strokeWidth={1.5} />
+                      View All Accounts
+                    </button>
+                  </div>
+                );
+              }
+
+              // Handle Reused Passwords empty state - this is a GOOD thing!
+              if (showReusedOnly) {
+                return (
+                  <div className="flex flex-col items-center justify-center h-full text-center pb-24">
+                    <div 
+                      className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4"
+                      style={{ 
+                        backgroundColor: 'rgba(34, 197, 94, 0.15)',
+                        border: '1px solid rgba(34, 197, 94, 0.3)'
+                      }}
+                    >
+                      <AlertTriangle 
+                        className="w-8 h-8" 
+                        strokeWidth={1.5} 
+                        style={{ color: '#22c55e' }}
+                      />
+                    </div>
+                    <h3 style={{ color: '#22c55e' }} className="font-medium mb-1">All passwords are unique!</h3>
+                    <p className="text-slate-500 text-sm mb-4">
+                      Great job! You're not reusing any passwords.
+                    </p>
+                    <button
+                      onClick={() => {
+                        setShowReusedOnly(false);
+                        onCategoryChange("all");
+                      }}
+                      className="px-4 py-2 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2"
+                      style={{ backgroundColor: colors.steelBlue600 }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.steelBlue500}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = colors.steelBlue600}
+                    >
+                      <Key className="w-4 h-4" strokeWidth={1.5} />
+                      View All Accounts
+                    </button>
+                  </div>
+                );
+              }
+
+              // Handle Favorites empty state differently
+              if (showFavoritesOnly) {
+                return (
+                  <div className="flex flex-col items-center justify-center h-full text-center pb-24">
+                    <div 
+                      className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4"
+                      style={{ 
+                        backgroundColor: `${colors.brandGold}15`,
+                        border: `1px solid ${colors.brandGold}30`
+                      }}
+                    >
+                      <Star 
+                        className="w-8 h-8" 
+                        strokeWidth={1.5} 
+                        style={{ color: colors.brandGold }}
+                      />
+                    </div>
+                    <h3 style={{ color: colors.warmIvory }} className="font-medium mb-1">No favorites yet</h3>
+                    <p className="text-slate-500 text-sm mb-4">
+                      Mark accounts as favorites from All Accounts
+                    </p>
+                    <button
+                      onClick={() => {
+                        setShowFavoritesOnly(false);
+                        onCategoryChange("all");
+                      }}
+                      className="px-4 py-2 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2"
+                      style={{ backgroundColor: colors.steelBlue600 }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = colors.steelBlue500}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = colors.steelBlue600}
+                    >
+                      <Key className="w-4 h-4" strokeWidth={1.5} />
+                      View All Accounts
+                    </button>
+                  </div>
+                );
+              }
+
               // Get the current category's icon
               const currentCategory = categories.find(c => c.id === selectedCategory);
               const CategoryIcon = currentCategory?.icon 
@@ -1509,8 +1647,8 @@ export const MainVault: React.FC<MainVaultProps> = ({
 
       {/* Add/Edit Form Modal */}
       {(showAddForm || editingEntry) && (
-        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-sm flex items-start justify-center pt-[10vh] p-4 z-50">
-          <div className="bg-slate-800/90 backdrop-blur-sm border border-slate-700/50 rounded-xl w-full max-w-md max-h-[90vh] overflow-y-auto shadow-xl">
+        <div className="form-modal-backdrop">
+          <div className="form-modal-content">
             <EntryForm
               entry={editingEntry}
               categories={categories}
@@ -1547,7 +1685,7 @@ export const MainVault: React.FC<MainVaultProps> = ({
                 className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-4"
                 style={{ backgroundColor: `${colors.steelBlue600}20` }}
               >
-                <Key className="w-6 h-6" strokeWidth={1.5} style={{ color: colors.steelBlue400 }} />
+                <Key className="w-6 h-6" strokeWidth={1.5} style={{ color: colors.brandGold }} />
               </div>
               <h3 style={{ color: colors.warmIvory }} className="font-semibold mb-2">Change Master Password</h3>
               <p className="text-slate-400 text-sm mb-6">

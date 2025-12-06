@@ -58,7 +58,7 @@
   
   /* Typography */
   --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  --font-mono: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', monospace;
+  --font-mono: Arial, Helvetica, sans-serif;
   
   /* Font Sizes - Consistent across app */
   --font-size-xs: 0.625rem;     /* 10px */
@@ -104,28 +104,49 @@
 
 html {
   font-family: Arial, Helvetica, sans-serif;
-  background-color: var(--color-deep-navy) !important;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%) !important;
+  background-color: #0f172a !important;
+  background-attachment: fixed !important;
   color: var(--color-warm-ivory);
+  min-height: 100vh;
 }
 
 body {
   font-family: Arial, Helvetica, sans-serif;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%) !important;
   background-color: #0f172a !important;
+  background-attachment: fixed !important;
   margin: 0;
   padding: 0;
   color: white;
-  /* overflow-x: hidden; Prevent flash during load */
+  min-height: 100vh;
+}
+
+/* Subtle geometric pattern overlay */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  opacity: 0.06;
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%2393B4D1' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  z-index: 0;
 }
 
 #root {
-  background-color: #0f172a !important;
+  background: transparent !important;
   min-height: 100vh;
   color: white;
+  position: relative;
+  z-index: 1;
 }
 
-/* Ensure all components inherit dark background */
+/* Ensure all components inherit transparent background */
 .min-h-screen {
-  background-color: #0f172a !important;
+  background: transparent !important;
 }
 
 /* Ensure no black backgrounds on gradient elements */
@@ -164,7 +185,284 @@ body {
   scrollbar-color: rgba(100, 116, 139, 0.6) rgba(51, 65, 85, 0.3);
 }
 
+/* Override monospace font to use Arial for computer-generated text */
+.font-mono, code, kbd, pre, samp {
+  font-family: Arial, Helvetica, sans-serif !important;
+}
 
+/* ============================================
+   FORM STYLES (Legacy Vault Matching)
+   ============================================ */
+
+.form-container {
+  padding: 24px;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+  border-radius: 12px;
+  border: 1px solid rgba(91, 130, 184, 0.4);
+  max-width: 600px;
+  margin: 0 auto;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+/* Modal backdrop with pattern */
+.form-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 5vh;
+  padding: 1rem;
+  z-index: 50;
+  overflow-y: auto;
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+}
+
+.form-modal-backdrop::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  opacity: 0.06;
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%2393B4D1' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  z-index: 0;
+}
+
+.form-modal-content {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 36rem;
+}
+
+.form-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.form-back-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: #9CA3AF;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.form-back-button:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #E8EDF2;
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.form-header-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #E8EDF2;
+  margin: 0;
+  line-height: 1.3;
+}
+
+.form-section {
+  margin-bottom: 24px;
+}
+
+.form-section:last-child {
+  margin-bottom: 0;
+}
+
+.form-section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #5B82B8;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0 0 16px 0;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(91, 130, 184, 0.2);
+}
+
+.form-field {
+  margin-bottom: 16px;
+}
+
+.form-field:last-child {
+  margin-bottom: 0;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #9CA3AF;
+}
+
+.form-label.flex {
+  display: flex;
+}
+
+.form-label-required::after {
+  content: ' *';
+  color: #C9AE66;
+  font-weight: 600;
+}
+
+.form-input {
+  width: 100%;
+  padding: 12px 14px;
+  background: #2A3340;
+  border: 1px solid rgba(91, 130, 184, 0.3);
+  border-radius: 8px;
+  font-size: 14px;
+  color: #E8EDF2;
+  transition: all 0.15s;
+  box-sizing: border-box;
+}
+
+.form-input::placeholder {
+  color: #6B7280;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #5B82B8;
+  box-shadow: 0 0 0 2px rgba(91, 130, 184, 0.2);
+}
+
+.form-input:hover:not(:focus) {
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.form-textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.form-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.form-grid-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+@media (max-width: 640px) {
+  .form-grid-2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+.form-actions {
+  display: flex;
+  gap: 12px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  margin-top: 24px;
+}
+
+.form-btn-primary {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #5B82B8, #4A6FA5);
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.form-btn-primary:hover {
+  background: linear-gradient(135deg, #6B92C8, #5A7FB5);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(91, 130, 184, 0.3);
+}
+
+.form-btn-secondary {
+  padding: 12px 20px;
+  background: transparent;
+  color: #9CA3AF;
+  font-size: 14px;
+  font-weight: 500;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.form-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #E8EDF2;
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.form-btn-danger {
+  padding: 10px;
+  background: transparent;
+  color: #6B7280;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.form-btn-danger:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #EF4444;
+}
+
+.form-helper {
+  font-size: 12px;
+  color: #6B7280;
+  margin-top: 6px;
+}
+
+/* ============================================
+   BOUNCY CARD STYLES
+   Global card style with blue border and bounce
+   ============================================ */
+
+.bouncy-card {
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid rgba(91, 130, 184, 0.4);
+  border-radius: 12px;
+  transition: all 0.2s ease-out;
+  transform: translateY(0) scale(1);
+}
+
+.bouncy-card:hover {
+  border-color: #7A9DC7;
+  background: rgba(30, 41, 59, 0.8);
+  box-shadow: 0 8px 30px rgba(0,0,0,0.25), 0 0 25px rgba(91, 130, 184, 0.15);
+  transform: translateY(-3px) scale(1.01);
+}
+
+.bouncy-card-clickable {
+  cursor: pointer;
+}
+
+.bouncy-card-clickable:hover {
+  transform: translateY(-4px) scale(1.02);
+}
 
 /* Floating panel styles */
 .floating-panel-container {
@@ -1080,6 +1378,10 @@ button[data-primary="true"]:hover:not(:disabled) {
   font-weight: 500;
   color: var(--color-text-label, #C4CFD6);
   margin-bottom: 0.375rem;
+}
+
+.form-label.flex {
+  display: flex;
 }
 
 /* Form Input */
