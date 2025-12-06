@@ -83,3 +83,14 @@ export {
   safeParseJWT,
   safeGet 
 } from './safeUtils';
+
+// ==================== Performance Monitoring ====================
+export {
+  trackRender,
+  measureOperation,
+  measureSync,
+  snapshotMemory,
+  logMetrics,
+  clearMetrics,
+  getMetricsSummary,
+} from './performanceMonitor';

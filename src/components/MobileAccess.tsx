@@ -9,12 +9,18 @@ import { Smartphone, Clock, Plus, Trash2, Info, Shield, X } from "lucide-react";
 import { mobileService, MobileAccessToken } from "../utils/mobileService";
 import { devError, devWarn } from "../utils/devLog";
 
-// Dynamically import qrcode
-let QRCode: { toDataURL: (text: string) => Promise<string> } | null = null;
+// QRCode library type (optional dependency)
+interface QRCodeModule {
+  toDataURL: (text: string, options?: { width?: number; margin?: number }) => Promise<string>;
+}
+
+// Dynamically import qrcode (optional dependency)
+let QRCode: QRCodeModule | null = null;
 const loadQRCodeLib = async () => {
   try {
-    // @ts-expect-error - qrcode may not be installed
-    QRCode = (await import("qrcode")).default;
+    // Dynamic import of optional qrcode dependency
+    const module = await import("qrcode") as { default: QRCodeModule };
+    QRCode = module.default;
   } catch (error) {
     devWarn("QRCode library not available:", error);
   }

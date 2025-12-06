@@ -1,7 +1,34 @@
 /**
- * useEntryManagement Hook
+ * @fileoverview Entry Management Hook - CRUD Operations for Password Entries
  * 
- * Manages password entry CRUD operations with encryption and storage.
+ * Provides a custom React hook for managing password entry operations
+ * including add, update, and delete with automatic encryption and
+ * cross-window synchronization for Electron.
+ * 
+ * @module hooks/useEntryManagement
+ * @version 1.2.0
+ * 
+ * @example
+ * // Using the hook in a component
+ * const {
+ *   handleAddEntry,
+ *   handleUpdateEntry,
+ *   handleDeleteEntry,
+ *   isProcessing
+ * } = useEntryManagement({
+ *   entries,
+ *   setEntries,
+ *   isElectron,
+ *   broadcastChange
+ * });
+ * 
+ * // Add a new entry
+ * await handleAddEntry({
+ *   accountName: 'Gmail',
+ *   username: 'user@gmail.com',
+ *   password: 'securePassword123',
+ *   category: 'email'
+ * });
  */
 
 import { useCallback, useState } from "react";
@@ -9,18 +36,35 @@ import { PasswordEntry } from "../types";
 import { storageService } from "../utils/storage";
 import { devError } from "../utils/devLog";
 
+/**
+ * Props for the useEntryManagement hook.
+ * @interface UseEntryManagementProps
+ */
 interface UseEntryManagementProps {
+  /** Current array of password entries */
   entries: PasswordEntry[];
+  /** State setter for updating entries */
   setEntries: React.Dispatch<React.SetStateAction<PasswordEntry[]>>;
+  /** Whether running in Electron environment */
   isElectron: boolean;
+  /** Optional function to save entries to Electron shared storage */
   saveSharedEntries?: (entries: PasswordEntry[]) => Promise<void>;
+  /** Function to broadcast changes to other windows */
   broadcastChange: () => Promise<void>;
 }
 
+/**
+ * Return type for the useEntryManagement hook.
+ * @interface UseEntryManagementReturn
+ */
 interface UseEntryManagementReturn {
+  /** Adds a new password entry to the vault */
   handleAddEntry: (entryData: Omit<PasswordEntry, "id" | "createdAt" | "updatedAt">) => Promise<void>;
+  /** Updates an existing password entry */
   handleUpdateEntry: (updatedEntry: PasswordEntry) => Promise<void>;
+  /** Deletes a password entry by ID */
   handleDeleteEntry: (id: string) => Promise<void>;
+  /** Whether an operation is currently in progress */
   isProcessing: boolean;
 }
 

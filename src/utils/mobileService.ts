@@ -18,6 +18,16 @@ export interface MobileAccessToken {
   deviceInfo?: string;
 }
 
+// Serialized version stored in localStorage (dates as strings)
+interface StoredMobileAccessToken {
+  token: string;
+  createdAt: string;
+  expiresAt: string;
+  isActive: boolean;
+  permissions: 'view-only' | 'full';
+  deviceInfo?: string;
+}
+
 export interface MobileSession {
   token: string;
   deviceName: string;
@@ -194,8 +204,8 @@ class MobileService {
     try {
       const stored = localStorage.getItem(MOBILE_TOKENS_KEY);
       if (stored) {
-        const parsed = JSON.parse(stored);
-        this.activeTokens = parsed.map((token: any) => ({
+        const parsed: StoredMobileAccessToken[] = JSON.parse(stored);
+        this.activeTokens = parsed.map((token) => ({
           ...token,
           createdAt: new Date(token.createdAt),
           expiresAt: new Date(token.expiresAt),

@@ -1,9 +1,12 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { loadEnv } from "vite";
-import { resolve } from "path";
+import { resolve, dirname } from "path";
+import { fileURLToPath } from "url";
 
-const __dirname = new URL(".", import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1");
+// Properly handle Windows paths with spaces (e.g., "Kelly's Laptop")
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
@@ -38,7 +41,27 @@ export default defineConfig(({ mode }) => {
           floatingButton: resolve(__dirname, "floating-button.html"),
         },
         output: {
-          manualChunks: undefined,
+          // Code splitting for better caching and smaller initial bundle
+          manualChunks: {
+            // Vendor chunks
+            "vendor-react": ["react", "react-dom"],
+            "vendor-i18n": ["i18next", "react-i18next"],
+            "vendor-icons": ["lucide-react"],
+            // Feature chunks
+            "feature-settings": [
+              "./src/components/Settings.tsx",
+              "./src/components/settings/SettingsModals.tsx",
+            ],
+            "feature-faq": ["./src/components/FAQ.tsx"],
+            "feature-onboarding": [
+              "./src/components/OnboardingTutorial.tsx",
+              "./src/components/WhatsNewModal.tsx",
+            ],
+            "feature-mobile": [
+              "./src/components/MobileAccess.tsx",
+              "./src/utils/mobileService.ts",
+            ],
+          },
           // Obfuscate chunk names in production
           chunkFileNames:
             mode === "production"

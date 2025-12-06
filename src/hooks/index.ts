@@ -13,3 +13,12 @@ export { useVaultState, DEFAULT_CATEGORIES } from './useVaultState';
 
 // ==================== Electron Integration ====================
 export { useElectron } from './useElectron';
+
+// ==================== Performance Monitoring ====================
+export {
+  useRenderTracking,
+  useMeasuredCallback,
+  useLogMetrics,
+  usePerformanceSummary,
+  onRenderCallback,
+} from './usePerformance';

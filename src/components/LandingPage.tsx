@@ -23,6 +23,7 @@ import {
   Mail,
   Smartphone,
 } from "lucide-react";
+import { devLog } from "../utils/devLog";
 
 // Distinctive color palette - deep, trustworthy, premium feel
 const colors = {
@@ -433,16 +434,12 @@ export const LandingPage: React.FC = () => {
   
   const handleStartTrial = () => {
     // Trial signup handled by backend API
-    if (import.meta.env.DEV) {
-      console.log("Trial signup - email:", email);
-    }
+    devLog("Trial signup - email:", email);
   };
-  
+
   const handleDownload = (platform: string) => {
     // Download links open in new tab
-    if (import.meta.env.DEV) {
-      console.log("Download initiated:", platform);
-    }
+    devLog("Download initiated:", platform);
   };
 
   return (

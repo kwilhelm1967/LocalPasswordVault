@@ -8,7 +8,7 @@ import { TrialWarningPopup } from "./components/TrialWarningPopup";
 import { PasswordEntry, Category, RawPasswordEntry } from "./types";
 import { storageService } from "./utils/storage";
 import { importService } from "./utils/importService";
-import { devError } from "./utils/devLog";
+import { devError, devWarn } from "./utils/devLog";
 import { licenseService, AppLicenseStatus } from "./utils/licenseService";
 import { trialService, WarningPopupState } from "./utils/trialService";
 import { features } from "./config/environment";
@@ -118,9 +118,7 @@ const useAppStatus = () => {
         }
       } catch (error) {
         // Log error but don't crash the app
-        if (import.meta.env.DEV) {
-          console.error('Trial status check failed:', error);
-        }
+        devError('Trial status check failed:', error);
         // Could optionally disable checking after multiple failures
         // setCheckingEnabled(false);
       }
@@ -849,8 +847,8 @@ function App() {
           }
         }
 
-        if (result.warnings.length && import.meta.env.DEV) {
-          console.warn('Import warnings:', result.warnings);
+        if (result.warnings.length) {
+          devWarn('Import warnings:', result.warnings);
         }
 
         notify.success(`Imported ${newEntries.length} new entr${newEntries.length === 1 ? 'y' : 'ies'} (${result.format.toUpperCase()}).`);
@@ -1099,7 +1097,7 @@ function App() {
 
       {/* License Keys Display */}
       {showLicenseKeys && features.showTestingTools && (
-        <div className="fixed inset-0 z-50 bg-slate-900/95 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-[9998] bg-slate-900/95 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
           <div className="max-w-2xl w-full">
             <LicenseKeyDisplay />
             <div className="text-center mt-6">

@@ -1,5 +1,29 @@
 /// <reference types="vite/client" />
 
+import type { PasswordEntry } from "./types";
+
+// Electron IPC event type (simplified for renderer process)
+interface ElectronEvent {
+  sender: unknown;
+  senderId: number;
+}
+
+// Stored entry format (dates as ISO strings for IPC transfer)
+interface StoredPasswordEntry {
+  id: string;
+  accountName: string;
+  username: string;
+  password: string;
+  category: string;
+  entryType?: string;
+  website?: string;
+  notes?: string;
+  customFields?: Array<{ name: string; value: string; isSecret?: boolean }>;
+  isFavorite?: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
 declare global {
   interface Window {
     electronAPI: {
@@ -38,18 +62,18 @@ declare global {
       vaultLocked: () => Promise<void>;
       isVaultUnlocked: () => Promise<boolean>;
       onVaultStatusChange: (
-        callback: (event: any, unlocked: boolean) => void
+        callback: (event: ElectronEvent, unlocked: boolean) => void
       ) => void;
       removeVaultStatusListener: () => void;
 
       // Entries synchronization
       broadcastEntriesChanged: () => Promise<boolean>;
-      saveSharedEntries: (entries: any[]) => Promise<boolean>;
-      loadSharedEntries: () => Promise<any[]>;
+      saveSharedEntries: (entries: StoredPasswordEntry[]) => Promise<boolean>;
+      loadSharedEntries: () => Promise<StoredPasswordEntry[]>;
       getVaultStatus: () => Promise<boolean>;
       syncVaultToFloating: () => Promise<boolean>;
-      onEntriesChanged: (callback: (event: any) => void) => void;
-      removeEntriesChangedListener: (callback: (event: any) => void) => void;
+      onEntriesChanged: (callback: (event: ElectronEvent) => void) => void;
+      removeEntriesChangedListener: (callback: (event: ElectronEvent) => void) => void;
       openExternal: (url: string) => Promise<boolean>;
 
       // Trial/License management for floating button security
@@ -69,8 +93,8 @@ declare global {
       }>;
       isTrialExpired: () => Promise<boolean>;
 
-      // Allow for dynamic properties
-      [key: string]: any;
+      // Allow for additional Electron API methods
+      [key: string]: ((...args: unknown[]) => unknown) | undefined;
     };
   }
 }

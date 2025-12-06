@@ -35,7 +35,7 @@ import {
 import { APP_VERSION } from "../config/changelog";
 import { generateRecoveryPhrase, storeRecoveryPhrase } from "../utils/recoveryPhrase";
 import { storageService } from "../utils/storage";
-import { devError } from "../utils/devLog";
+import { devError, devWarn } from "../utils/devLog";
 import { MobileAccess } from "./MobileAccess";
 
 // Color palette
@@ -71,7 +71,7 @@ const DEFAULT_SETTINGS: VaultSettings = {
   soundEffectsEnabled: false, // OFF by default
 };
 
-interface SettingsProps {
+export interface SettingsProps {
   onExport: () => void;
   onExportEncrypted: (password: string) => Promise<void>;
   onImport: () => void;
@@ -1333,9 +1333,7 @@ export const getVaultSettings = (): VaultSettings => {
       soundEffectsEnabled = parsed.soundEffectsEnabled ?? false;
     }
   } catch (error) {
-    if (import.meta.env.DEV) {
-      console.error("Failed to parse vault settings in getVaultSettings:", error);
-    }
+    devError("Failed to parse vault settings in getVaultSettings:", error);
   }
   
   return {
@@ -1376,16 +1374,12 @@ export const clearClipboardAfterTimeout = (timeout: number, copiedText?: string)
           }
         } catch (readError) {
           // If we can't read clipboard (permission denied), clear it anyway for safety
-          if (import.meta.env.DEV) {
-            console.warn("Clipboard read denied, clearing anyway:", readError);
-          }
+          devWarn("Clipboard read denied, clearing anyway:", readError);
           await navigator.clipboard.writeText("");
         }
       } catch (clearError) {
         // Clipboard clear failed - non-critical
-        if (import.meta.env.DEV) {
-          console.warn("Clipboard clear failed:", clearError);
-        }
+        devWarn("Clipboard clear failed:", clearError);
       } finally {
         lastCopiedText = null;
         clearTimeoutId = null;

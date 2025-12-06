@@ -1,14 +1,35 @@
+/**
+ * @fileoverview Type Definitions for Local Password Vault
+ * 
+ * This module contains all TypeScript type definitions used throughout
+ * the Local Password Vault application. Types are organized by category:
+ * - Core entry types (PasswordEntry, Category)
+ * - License and trial types
+ * - Utility types (API, validation, forms)
+ * - Component prop types
+ * - Settings types
+ * 
+ * @module types
+ * @version 1.2.0
+ */
+
 // ============================================
 // LOCAL PASSWORD VAULT TYPES
 // ============================================
 
 /**
- * Entry type - password entry or secure note
+ * Type of entry stored in the vault.
+ * - `password`: Standard login credentials
+ * - `secure_note`: Encrypted text note without login fields
+ * @typedef {('password'|'secure_note')} EntryType
  */
 export type EntryType = "password" | "secure_note";
 
 /**
- * Password history item for tracking previous passwords
+ * Represents a historical password entry for password rotation tracking.
+ * @interface PasswordHistoryItem
+ * @property {string} password - The previous password (encrypted in storage)
+ * @property {Date} changedAt - When the password was changed
  */
 export interface PasswordHistoryItem {
   password: string;
@@ -16,21 +37,64 @@ export interface PasswordHistoryItem {
 }
 
 /**
- * Custom field for user-defined data
+ * User-defined custom field for storing additional entry data.
+ * @interface CustomField
+ * @property {string} id - Unique identifier for the field
+ * @property {string} label - Display label for the field
+ * @property {string} value - The field value (may be encrypted)
+ * @property {boolean} [isSecret] - If true, value is masked like a password
+ * 
+ * @example
+ * const securityQuestion: CustomField = {
+ *   id: 'sq1',
+ *   label: 'Security Question',
+ *   value: "Mother's maiden name",
+ *   isSecret: false
+ * };
  */
 export interface CustomField {
   id: string;
   label: string;
   value: string;
-  isSecret?: boolean; // If true, value is hidden by default (like a password)
+  isSecret?: boolean;
 }
 
 /**
- * Main password entry interface
+ * Main password entry interface representing a stored credential or secure note.
+ * This is the primary data structure for vault items.
+ * 
+ * @interface PasswordEntry
+ * @property {string} id - Unique identifier (UUID format)
+ * @property {EntryType} [entryType='password'] - Type of entry
+ * @property {string} accountName - Display name for the entry
+ * @property {string} username - Login username/email
+ * @property {string} password - Encrypted password
+ * @property {string} [website] - Associated website URL
+ * @property {string} [notes] - Additional notes
+ * @property {string} [balance] - Account balance (for financial entries)
+ * @property {string} category - Category ID for organization
+ * @property {Date} createdAt - Creation timestamp
+ * @property {Date} updatedAt - Last modification timestamp
+ * @property {boolean} [isFavorite] - Marked as favorite
+ * @property {Date} [lastPasswordChange] - When password was last changed
+ * @property {PasswordHistoryItem[]} [passwordHistory] - Previous passwords
+ * @property {string} [totpSecret] - TOTP 2FA secret (Base32)
+ * @property {CustomField[]} [customFields] - User-defined fields
+ * 
+ * @example
+ * const entry: PasswordEntry = {
+ *   id: 'abc-123',
+ *   accountName: 'Gmail',
+ *   username: 'user@gmail.com',
+ *   password: 'encrypted_password',
+ *   category: 'email',
+ *   createdAt: new Date(),
+ *   updatedAt: new Date()
+ * };
  */
 export interface PasswordEntry {
   id: string;
-  entryType?: EntryType; // defaults to "password" for backwards compatibility
+  entryType?: EntryType;
   accountName: string;
   username: string;
   password: string;
@@ -42,9 +106,9 @@ export interface PasswordEntry {
   updatedAt: Date;
   isFavorite?: boolean;
   lastPasswordChange?: Date;
-  passwordHistory?: PasswordHistoryItem[]; // Previous passwords
-  totpSecret?: string; // 2FA TOTP secret key (Base32 encoded)
-  customFields?: CustomField[]; // User-defined fields
+  passwordHistory?: PasswordHistoryItem[];
+  totpSecret?: string;
+  customFields?: CustomField[];
 }
 
 /**

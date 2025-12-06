@@ -3,7 +3,14 @@ import { defineConfig, devices } from '@playwright/test';
 /**
  * Playwright E2E Test Configuration
  * 
- * Run tests with: npm run test:e2e
+ * Run tests with:
+ *   npx playwright test
+ * 
+ * Run headed (visible browser):
+ *   npx playwright test --headed
+ * 
+ * Debug mode:
+ *   npx playwright test --debug
  */
 export default defineConfig({
   testDir: './e2e',
@@ -14,9 +21,17 @@ export default defineConfig({
   reporter: 'html',
   
   use: {
+    // Base URL for the dev server
     baseURL: 'http://localhost:5173',
+    
+    // Collect trace when retrying failed test
     trace: 'on-first-retry',
+    
+    // Screenshots on failure
     screenshot: 'only-on-failure',
+    
+    // Video on failure
+    video: 'on-first-retry',
   },
 
   projects: [
@@ -34,11 +49,11 @@ export default defineConfig({
     },
   ],
 
+  // Run dev server before tests
   webServer: {
-    command: 'npm run dev:vite',
+    command: 'npm run dev',
     url: 'http://localhost:5173',
     reuseExistingServer: !process.env.CI,
     timeout: 120000,
   },
 });
-

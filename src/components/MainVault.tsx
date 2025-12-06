@@ -129,8 +129,9 @@ import { PasswordEntry, Category, CustomField } from "../types";
 import { CategoryIcon } from "./CategoryIcon";
 import { EntryForm } from "./EntryForm";
 import { Dashboard } from "./Dashboard";
-import { Settings, clearClipboardAfterTimeout, getVaultSettings } from "./Settings";
-import { FAQ } from "./FAQ";
+// Lazy-loaded components for better initial load performance
+import { SettingsLazy as Settings, FAQLazy as FAQ } from "./LazyComponents";
+import { clearClipboardAfterTimeout, getVaultSettings } from "./Settings";
 import { generateTOTP, getTimeRemaining, isValidTOTPSecret } from "../utils/totp";
 import { TrialStatusBanner } from "./TrialStatusBanner";
 import { playLockSound, playCopySound, playDeleteSound } from "../utils/soundEffects";
@@ -1243,7 +1244,7 @@ export const MainVault: React.FC<MainVaultProps> = ({
 
                     {/* Expandable Content */}
                     {isExpanded && (
-                      <div className="mt-3 bg-slate-700/30 rounded-lg p-3 animate-fadeIn">
+                      <div className="mt-3 bg-slate-700/30 rounded-lg p-4 animate-fadeIn space-y-3">
                         {/* Secure Note shows notes content */}
                         {entry.entryType === "secure_note" ? (
                           <div>
@@ -1261,79 +1262,135 @@ export const MainVault: React.FC<MainVaultProps> = ({
                             </button>
                           </div>
                         ) : (
-                          /* Password Entry shows password */
-                          <div className="flex items-center justify-between">
-                            <span className="text-slate-300 text-sm font-mono">
-                              {isPasswordVisible ? entry.password : "••••••••••••"}
-                            </span>
-                            <div className="flex gap-1">
-                              <button
-                                onClick={() => togglePasswordVisibility(entry.id)}
-                                className="p-1.5 text-slate-500 hover:text-white rounded transition-colors"
-                                title={isPasswordVisible ? "Hide" : "Show"}
-                              >
-                                {isPasswordVisible ? <EyeOff className="w-4 h-4" strokeWidth={1.5} /> : <Eye className="w-4 h-4" strokeWidth={1.5} />}
-                              </button>
-                              <button
-                                onClick={() => copyToClipboard(entry.password, entry.id)}
-                                className={`p-1.5 rounded transition-colors ${
-                                  copiedId === entry.id 
-                                  ? "text-emerald-400" 
-                                  : "text-slate-500 hover:text-white"
-                                }`}
-                                title="Copy"
-                              >
-                                <Copy className="w-4 h-4" strokeWidth={1.5} />
-                              </button>
+                          /* Password Entry shows full login info */
+                          <div className="space-y-3">
+                            {/* Username Row */}
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2 min-w-0 flex-1">
+                                <span className="text-slate-500 text-xs w-20 flex-shrink-0">Username</span>
+                                <span className="text-slate-200 text-sm truncate font-medium">{entry.username || "—"}</span>
+                              </div>
+                              {entry.username && (
+                                <button
+                                  onClick={() => copyToClipboard(entry.username, entry.id + "-user")}
+                                  className={`p-1.5 rounded transition-colors flex-shrink-0 ${
+                                    copiedId === entry.id + "-user"
+                                    ? "text-emerald-400" 
+                                    : "text-slate-500 hover:text-white"
+                                  }`}
+                                  title="Copy username"
+                                >
+                                  <Copy className="w-4 h-4" strokeWidth={1.5} />
+                                </button>
+                              )}
                             </div>
+                            
+                            {/* Password Row */}
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2 min-w-0 flex-1">
+                                <span className="text-slate-500 text-xs w-20 flex-shrink-0">Password</span>
+                                <span className="text-slate-200 text-sm font-mono truncate">
+                                  {isPasswordVisible ? entry.password : "••••••••••••"}
+                                </span>
+                              </div>
+                              <div className="flex gap-1 flex-shrink-0">
+                                <button
+                                  onClick={() => togglePasswordVisibility(entry.id)}
+                                  className="p-1.5 text-slate-500 hover:text-white rounded transition-colors"
+                                  title={isPasswordVisible ? "Hide" : "Show"}
+                                >
+                                  {isPasswordVisible ? <EyeOff className="w-4 h-4" strokeWidth={1.5} /> : <Eye className="w-4 h-4" strokeWidth={1.5} />}
+                                </button>
+                                <button
+                                  onClick={() => copyToClipboard(entry.password, entry.id)}
+                                  className={`p-1.5 rounded transition-colors ${
+                                    copiedId === entry.id 
+                                    ? "text-emerald-400" 
+                                    : "text-slate-500 hover:text-white"
+                                  }`}
+                                  title="Copy password"
+                                >
+                                  <Copy className="w-4 h-4" strokeWidth={1.5} />
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* Website Row */}
+                            {entry.website && (
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2 min-w-0 flex-1">
+                                  <span className="text-slate-500 text-xs w-20 flex-shrink-0">Website</span>
+                                  <a
+                                    href={entry.website.startsWith('http') ? entry.website : `https://${entry.website}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-blue-400 hover:text-blue-300 text-sm truncate flex items-center gap-1 group"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <span className="truncate">{entry.website}</span>
+                                    <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" strokeWidth={1.5} />
+                                  </a>
+                                </div>
+                              </div>
+                            )}
+                            
+                            {/* Category Row */}
+                            <div className="flex items-center gap-2">
+                              <span className="text-slate-500 text-xs w-20 flex-shrink-0">Category</span>
+                              <span className="text-slate-400 text-sm capitalize">{category?.label || entry.category}</span>
+                            </div>
+
+                            {/* Notes Preview */}
+                            {entry.notes && (
+                              <div className="pt-2 border-t border-slate-600/50">
+                                <span className="text-slate-500 text-xs block mb-1">Notes</span>
+                                <p className="text-slate-400 text-xs line-clamp-3 whitespace-pre-wrap">{entry.notes}</p>
+                              </div>
+                            )}
+
+                            {/* Custom Fields */}
+                            {entry.customFields && entry.customFields.length > 0 && (
+                              <div className="pt-2 border-t border-slate-600/50">
+                                <span className="text-slate-500 text-xs block mb-2">Custom Fields</span>
+                                <div className="space-y-2">
+                                  {entry.customFields.map((field: CustomField) => (
+                                    <div key={field.id} className="flex items-center justify-between">
+                                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                                        <span className="text-slate-500 text-xs w-20 flex-shrink-0 truncate">{field.label}</span>
+                                        <span className="text-slate-300 text-sm truncate">
+                                          {field.isSecret ? "••••••••" : field.value}
+                                        </span>
+                                      </div>
+                                      <button
+                                        onClick={() => copyToClipboard(field.value, entry.id + "-" + field.id)}
+                                        className={`p-1 rounded transition-colors flex-shrink-0 ${
+                                          copiedId === entry.id + "-" + field.id
+                                          ? "text-emerald-400" 
+                                          : "text-slate-500 hover:text-white"
+                                        }`}
+                                        title={`Copy ${field.label}`}
+                                      >
+                                        <Copy className="w-3.5 h-3.5" strokeWidth={1.5} />
+                                      </button>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         )}
                       
-                      {/* Additional info for password entries only */}
+                      {/* Metadata footer for all entries */}
                       {entry.entryType !== "secure_note" && (
-                        <>
-                          {/* Website Link - inside expanded section */}
-                          {entry.website && (
-                            <a
-                              href={entry.website.startsWith('http') ? entry.website : `https://${entry.website}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="mt-3 flex items-center gap-2 text-blue-400 hover:text-blue-300 text-xs transition-colors group"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <Globe className="w-3.5 h-3.5" strokeWidth={1.5} />
-                              <span className="truncate">{entry.website}</span>
-                              <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" strokeWidth={1.5} />
-                            </a>
-                          )}
-                          
-                          {/* Notes Preview - inside expanded section */}
-                          {entry.notes && (
-                            <p className="mt-3 text-slate-500 text-xs line-clamp-2">{entry.notes}</p>
-                          )}
-
-                          {/* Custom Fields Preview - inside expanded section */}
-                          {entry.customFields && entry.customFields.length > 0 && (
-                            <div className="mt-3 flex flex-wrap gap-1">
-                              {entry.customFields.slice(0, 3).map((field: CustomField) => (
-                                <span key={field.id} className="text-xs px-2 py-0.5 rounded bg-slate-700/50 text-slate-400">
-                                  {field.label}
-                                </span>
-                              ))}
-                              {entry.customFields.length > 3 && (
-                                <span className="text-xs px-2 py-0.5 rounded bg-slate-700/50 text-slate-500">
-                                  +{entry.customFields.length - 3} more
-                                </span>
-                              )}
-                            </div>
-                          )}
-                          
-                          {/* Password Age - inside expanded section */}
-                          <p className={`mt-2 text-xs flex items-center gap-1 ${passwordAge.isOld ? 'text-orange-400' : 'text-slate-500'}`}>
+                        <div className="pt-2 border-t border-slate-600/50 flex items-center justify-between text-xs text-slate-500">
+                          <span className="flex items-center gap-1">
                             <Clock className="w-3 h-3" strokeWidth={1.5} />
                             {passwordAge.text}
-                          </p>
-                        </>
+                          </span>
+                          {passwordAge.isOld && (
+                            <span className="text-orange-400 text-[10px]">Consider updating</span>
+                          )}
+                        </div>
                       )}
                       </div>
                     )}

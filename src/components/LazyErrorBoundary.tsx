@@ -7,6 +7,7 @@
 
 import React, { Component, ReactNode } from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { devError } from '../utils/devLog';
 
 interface Props {
   children: ReactNode;
@@ -34,10 +35,8 @@ export class LazyErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    // Log error for debugging (only in development)
-    if (import.meta.env.DEV) {
-      console.error(`Lazy component error (${this.props.componentName}):`, error, errorInfo);
-    }
+    // Log error for debugging
+    devError(`Lazy component error (${this.props.componentName}):`, error, errorInfo);
 
     // In production, you might want to send this to an error reporting service
     // Example: errorReporting.captureException(error, { extra: errorInfo });

@@ -5,6 +5,8 @@
  * Provides standardized error types, logging, and recovery mechanisms.
  */
 
+import { devError } from "./devLog";
+
 export interface AppError {
   code: string;
   message: string;
@@ -81,9 +83,7 @@ export class ErrorHandler {
     const appError = this.normalizeError(error);
 
     // Log error in development
-    if (import.meta.env.DEV) {
-      console.error(`[${appError.code}] ${context ? `${context}: ` : ''}`, appError.message, appError.details);
-    }
+    devError(`[${appError.code}] ${context ? `${context}: ` : ''}`, appError.message, appError.details);
 
     // Determine user message
     const userMessage = appError.userMessage || 'An unexpected error occurred.';
@@ -121,8 +121,15 @@ export class ErrorHandler {
   /**
    * Check if error is an AppError
    */
-  private isAppError(error: any): error is AppError {
-    return error && typeof error.code === 'string' && typeof error.recoverable === 'boolean';
+  private isAppError(error: unknown): error is AppError {
+    return (
+      typeof error === 'object' &&
+      error !== null &&
+      'code' in error &&
+      'recoverable' in error &&
+      typeof (error as AppError).code === 'string' &&
+      typeof (error as AppError).recoverable === 'boolean'
+    );
   }
 
   /**

@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import { ErrorBoundary } from './components/ErrorBoundary.tsx';
 import { LiveRegionProvider } from './components/accessibility';
+import { devLog } from './utils/devLog';
 import './i18n'; // Initialize i18n for localization
 import './index.css';
 
@@ -17,7 +18,7 @@ if (import.meta.env.DEV) {
   if (urlParams.has('reset')) {
     localStorage.clear();
     sessionStorage.clear();
-    console.log('🗑️ DEV: All data cleared! Redirecting...');
+    devLog('🗑️ DEV: All data cleared! Redirecting...');
     window.location.href = '/';
   }
   
@@ -43,7 +44,7 @@ if (import.meta.env.DEV) {
   localStorage.setItem('license_token', `${header}.${payload}.${signature}`);
   localStorage.setItem('trial_expiry_time', expiryDate.toISOString());
   
-  console.log('🎁 DEV: Trial mode active! Expires:', expiryDate.toLocaleString());
+  devLog('🎁 DEV: Trial mode active! Expires:', expiryDate.toLocaleString());
 }
 
 const rootElement = document.getElementById('root')!;

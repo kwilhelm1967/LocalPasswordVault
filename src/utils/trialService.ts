@@ -162,7 +162,7 @@ export class TrialService {
     // Verify hardware hash matches
     const currentHardwareHash = await generateHardwareFingerprint();
     if (storedHardwareHash && storedHardwareHash !== currentHardwareHash) {
-      if (import.meta.env.DEV) console.error('Hardware hash mismatch detected');
+      devError('Hardware hash mismatch detected');
       return {
         isTrialActive: false,
         daysRemaining: 0,
@@ -365,7 +365,7 @@ export class TrialService {
         warningPopup2Timestamp: tokenData.warningPopup2Timestamp || null,
       };
     } catch (error) {
-      if (import.meta.env.DEV) console.error('QUICK JWT PARSE ERROR:', error);
+      devError('QUICK JWT PARSE ERROR:', error);
       return null;
     }
   }
@@ -613,7 +613,7 @@ export class TrialService {
         }
       }
     } catch (error) {
-      if (import.meta.env.DEV) console.error('Error checking warning popups:', error);
+      devError('Error checking warning popups:', error);
     }
   }
 

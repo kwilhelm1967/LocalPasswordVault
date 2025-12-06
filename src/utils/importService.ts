@@ -30,6 +30,19 @@ export interface ImportResult {
   format: "csv" | "json";
 }
 
+// Raw entry format from JSON import (unknown structure)
+interface RawImportEntry {
+  id?: string;
+  accountName?: string;
+  username?: string;
+  password?: string;
+  category?: string;
+  balance?: string;
+  notes?: string;
+  createdAt?: string | Date;
+  updatedAt?: string | Date;
+}
+
 function normalizeCategory(raw: string): string {
   if (!raw) return "other";
   const val = raw.trim().toLowerCase();
@@ -150,8 +163,8 @@ function parseJson(content: string): ImportResult {
         format: "json",
       };
     }
-    const entries: PasswordEntry[] = rawEntries
-      .map((e: any, idx: number) => {
+    const entries: PasswordEntry[] = (rawEntries as RawImportEntry[])
+      .map((e, idx) => {
         if (!e.password)
           warnings.push(`Entry ${idx + 1} missing password – skipped`);
         return {
@@ -166,7 +179,7 @@ function parseJson(content: string): ImportResult {
           updatedAt: parseDate(e.updatedAt),
         } as PasswordEntry;
       })
-      .filter((e: PasswordEntry) => !!e.password);
+      .filter((e) => !!e.password);
     return { entries, warnings, format: "json" };
   } catch (err) {
     return { entries: [], warnings: ["Invalid JSON file"], format: "json" };

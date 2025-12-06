@@ -1,9 +1,43 @@
+/**
+ * @fileoverview Storage Service - Encrypted Local Storage for Password Vault
+ * 
+ * This module provides secure, encrypted storage for password entries using
+ * military-grade AES-256-GCM encryption with PBKDF2 key derivation.
+ * 
+ * @module storage
+ * @version 1.2.0
+ * 
+ * Security Features:
+ * - AES-256-GCM encryption (256-bit keys)
+ * - PBKDF2 key derivation with 100,000 iterations
+ * - Unique IV for each encryption operation
+ * - Secure memory handling for sensitive data
+ * - Input sanitization for all stored data
+ * 
+ * @example
+ * // Initialize and use the storage service
+ * import { storageService } from './storage';
+ * 
+ * // Create a new vault
+ * await storageService.createVault('MySecurePassword123!');
+ * 
+ * // Save entries
+ * await storageService.saveEntries(entries);
+ * 
+ * // Load entries
+ * const entries = await storageService.loadEntries();
+ */
+
 import { PasswordEntry, Category, RawPasswordEntry } from "../types";
 import { memorySecurity } from "./memorySecurity";
 import { sanitizeTextField, sanitizePassword, sanitizeNotes } from "./sanitization";
 import { devError, devWarn } from "./devLog";
 
-// FIXED CATEGORIES - SINGLE SOURCE OF TRUTH (must match App.tsx)
+/**
+ * Fixed categories available in the vault.
+ * Single source of truth for category definitions.
+ * @constant {Category[]}
+ */
 const FIXED_CATEGORIES: Category[] = [
   { id: "all", name: "All", color: "#3b82f6", icon: "Grid3X3" },
   { id: "banking", name: "Banking", color: "#10b981", icon: "CircleDollarSign" },
@@ -15,11 +49,28 @@ const FIXED_CATEGORIES: Category[] = [
   { id: "other", name: "Other", color: "#6b7280", icon: "FileText" },
 ];
 
-// Military-grade AES-256-GCM encryption implementation
+/**
+ * Military-grade AES-256-GCM encryption implementation.
+ * Provides secure encryption/decryption for vault data.
+ * 
+ * @class MilitaryEncryption
+ * @private
+ * @singleton
+ * 
+ * @description
+ * Uses the Web Crypto API for all cryptographic operations:
+ * - PBKDF2 for key derivation (100,000 iterations)
+ * - AES-256-GCM for symmetric encryption
+ * - Cryptographically secure random IVs
+ */
 class MilitaryEncryption {
   private static instance: MilitaryEncryption;
   private encryptionKey: CryptoKey | null = null;
 
+  /**
+   * Gets the singleton instance of MilitaryEncryption.
+   * @returns {MilitaryEncryption} The singleton instance
+   */
   static getInstance(): MilitaryEncryption {
     if (!MilitaryEncryption.instance) {
       MilitaryEncryption.instance = new MilitaryEncryption();
@@ -27,7 +78,18 @@ class MilitaryEncryption {
     return MilitaryEncryption.instance;
   }
 
-  // Generate encryption key from master password using PBKDF2 (100,000 iterations)
+  /**
+   * Derives an AES-256-GCM encryption key from the master password.
+   * Uses PBKDF2 with 100,000 iterations for key stretching.
+   * 
+   * @param {string} masterPassword - The user's master password
+   * @param {Uint8Array} salt - Random salt for key derivation
+   * @returns {Promise<CryptoKey>} The derived encryption key
+   * 
+   * @example
+   * const salt = crypto.getRandomValues(new Uint8Array(32));
+   * const key = await encryption.deriveKeyFromPassword('password', salt);
+   */
   async deriveKeyFromPassword(
     masterPassword: string,
     salt: Uint8Array
