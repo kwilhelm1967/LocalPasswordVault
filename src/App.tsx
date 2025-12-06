@@ -25,6 +25,44 @@ import { OnboardingTutorial, useOnboarding } from "./components/OnboardingTutori
 import { KeyboardShortcutsModal, useKeyboardShortcuts } from "./components/KeyboardShortcutsModal";
 // MiniVaultButton removed - using Electron's FloatingButton instead
 
+/**
+ * Reset all license and trial data when ?reset is in the URL
+ * Usage: http://localhost:5173/?reset
+ */
+const checkForReset = () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.has('reset')) {
+    // Clear all license/trial related data
+    const keysToRemove = [
+      'trial_used',
+      'trial_license_key', 
+      'trial_activation_time',
+      'trial_expiry_time',
+      'trial_start',
+      'trial_hardware_hash',
+      'license_token',
+      'license_key',
+      'license_type',
+      'license_activated',
+      'lpv_local_license_file',
+      'vault_password_hash',
+      'vault_entries',
+      'vault_settings',
+      'onboarding_completed',
+      'whats_new_dismissed',
+    ];
+    
+    keysToRemove.forEach(key => localStorage.removeItem(key));
+    
+    // Remove the ?reset from URL and reload
+    window.history.replaceState({}, document.title, window.location.pathname);
+    window.location.reload();
+  }
+};
+
+// Run reset check immediately on load
+checkForReset();
+
 // Fixed categories with proper typing
 const FIXED_CATEGORIES: Category[] = [
   { id: "all", name: "All", color: "#3b82f6", icon: "Grid3X3" },

@@ -161,3 +161,4 @@ jobs:
           # Check for common secret patterns (will fail if found)
           ! grep -rE "(password|secret|api_key|apikey)\s*[:=]\s*['\"][^'\"]{8,}" src/ --include="*.ts" --include="*.tsx" || echo "⚠️ Potential secrets found - review required"
 
+
