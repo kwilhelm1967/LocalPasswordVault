@@ -50,22 +50,35 @@ const LoadingFallback = () => (
 const checkForReset = () => {
   const urlParams = new URLSearchParams(window.location.search);
   if (urlParams.has('reset')) {
-    // Clear all license/trial related data
+    // Clear ALL license/trial related data (complete list)
     const keysToRemove = [
+      // Trial keys
       'trial_used',
       'trial_license_key', 
       'trial_activation_time',
       'trial_expiry_time',
       'trial_start',
+      'trial_start_date',
       'trial_hardware_hash',
+      'warning_popup_1_shown',
+      'warning_popup_2_shown',
+      // License keys (old format)
       'license_token',
       'license_key',
       'license_type',
       'license_activated',
+      // License keys (new format used by licenseService)
+      'app_license_key',
+      'app_license_type',
+      'app_license_activated',
+      'app_device_id',
+      'lpv_license_file',
       'lpv_local_license_file',
+      // Vault data
       'vault_password_hash',
       'vault_entries',
       'vault_settings',
+      // UI state
       'onboarding_completed',
       'whats_new_dismissed',
     ];
@@ -571,16 +584,6 @@ function App() {
   const { isElectron, isVaultUnlocked, saveSharedEntries, loadSharedEntries, broadcastEntriesChanged } = useElectron();
   const { appStatus, updateAppStatus, checkStatusImmediately } = useAppStatus();
 
-  // Preload critical components after initial render to improve subsequent navigation
-  useEffect(() => {
-    const preloadTimer = setTimeout(() => {
-      // Only preload the most critical components to avoid large initial bundle
-      Dashboard.preload?.();
-      PersonalInfo.preload?.();
-    }, 3000); // Wait 3 seconds after initial render
-
-    return () => clearTimeout(preloadTimer);
-  }, []);
   const [isLocked, setIsLocked] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -600,8 +603,8 @@ function App() {
   const [currentWarningType, setCurrentWarningType] = useState<'expiring' | 'final'>('expiring');
 
   // Loading states for async operations
-  const [isImporting, setIsImporting] = useState(false);
-  const [isExporting, setIsExporting] = useState(false);
+  const [_isImporting, setIsImporting] = useState(false);
+  const [_isExporting, setIsExporting] = useState(false);
 
   useDarkTheme();
   const { entries, setEntries } = useVaultData(isLocked, isElectron, loadSharedEntries, saveSharedEntries);
