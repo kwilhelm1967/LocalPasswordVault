@@ -1,10 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
-import { LoginScreen } from "./components/LoginScreen";
-import { LicenseScreen } from "./components/LicenseScreen";
-import { MainVault } from "./components/MainVault";
-import { FloatingPanel } from "./components/FloatingPanel";
-import { ElectronFloatingPanel } from "./components/ElectronFloatingPanel";
-import { TrialWarningPopup } from "./components/TrialWarningPopup";
+import { useState, useEffect, useCallback, useMemo, lazy, Suspense } from "react";
 import { PasswordEntry, Category, RawPasswordEntry } from "./types";
 import { storageService } from "./utils/storage";
 import { importService } from "./utils/importService";
@@ -13,16 +7,40 @@ import { licenseService, AppLicenseStatus } from "./utils/licenseService";
 import { trialService, WarningPopupState } from "./utils/trialService";
 import { features } from "./config/environment";
 import { useElectron } from "./hooks/useElectron";
-import { LicenseKeyDisplay } from "./components/LicenseKeyDisplay";
-import { DownloadPage } from "./components/DownloadPage";
-import { PurchaseSuccessPage } from "./components/PurchaseSuccessPage";
+
+// Essential components - load immediately
+import { LoginScreen } from "./components/LoginScreen";
+import { LicenseScreen } from "./components/LicenseScreen";
 import { OfflineIndicator } from "./components/OfflineIndicator";
-import { UndoToast } from "./components/UndoToast";
-import { Notification, useNotification } from "./components/Notification";
-import { WhatsNewModal, useWhatsNew } from "./components/WhatsNewModal";
 import { SkipLink } from "./components/accessibility";
-import { OnboardingTutorial, useOnboarding } from "./components/OnboardingTutorial";
-import { KeyboardShortcutsModal, useKeyboardShortcuts } from "./components/KeyboardShortcutsModal";
+
+// Lazy load heavy components - only load when needed
+const MainVault = lazy(() => import("./components/MainVault").then(m => ({ default: m.MainVault })));
+const FloatingPanel = lazy(() => import("./components/FloatingPanel").then(m => ({ default: m.FloatingPanel })));
+const ElectronFloatingPanel = lazy(() => import("./components/ElectronFloatingPanel").then(m => ({ default: m.ElectronFloatingPanel })));
+const TrialWarningPopup = lazy(() => import("./components/TrialWarningPopup").then(m => ({ default: m.TrialWarningPopup })));
+const LicenseKeyDisplay = lazy(() => import("./components/LicenseKeyDisplay").then(m => ({ default: m.LicenseKeyDisplay })));
+const DownloadPage = lazy(() => import("./components/DownloadPage").then(m => ({ default: m.DownloadPage })));
+const PurchaseSuccessPage = lazy(() => import("./components/PurchaseSuccessPage").then(m => ({ default: m.PurchaseSuccessPage })));
+const UndoToast = lazy(() => import("./components/UndoToast").then(m => ({ default: m.UndoToast })));
+
+// Hooks that can be imported directly (small)
+import { useNotification, Notification } from "./components/Notification";
+import { useWhatsNew } from "./components/WhatsNewModal";
+import { useOnboarding } from "./components/OnboardingTutorial";
+import { useKeyboardShortcuts } from "./components/KeyboardShortcutsModal";
+
+// Lazy load modals - only shown occasionally
+const WhatsNewModal = lazy(() => import("./components/WhatsNewModal").then(m => ({ default: m.WhatsNewModal })));
+const OnboardingTutorial = lazy(() => import("./components/OnboardingTutorial").then(m => ({ default: m.OnboardingTutorial })));
+const KeyboardShortcutsModal = lazy(() => import("./components/KeyboardShortcutsModal").then(m => ({ default: m.KeyboardShortcutsModal })));
+
+// Simple loading fallback
+const LoadingFallback = () => (
+  <div className="flex items-center justify-center h-full min-h-[200px]">
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+  </div>
+);
 // MiniVaultButton removed - using Electron's FloatingButton instead
 
 /**
@@ -1020,7 +1038,11 @@ function App() {
   // Handle purchase success page (when redirected from payment)
   const urlParams = new URLSearchParams(window.location.search);
   if (urlParams.get('key') || urlParams.get('license')) {
-    return <PurchaseSuccessPage />;
+    return (
+      <Suspense fallback={<LoadingFallback />}>
+        <PurchaseSuccessPage />
+      </Suspense>
+    );
   }
 
   // Show loading state while app status is being determined
@@ -1040,17 +1062,19 @@ function App() {
     if (!isVaultUnlocked) return null;
 
     return (
-      <div className="bg-slate-900">
-        <ElectronFloatingPanel
-          key={`floating-panel-${entries.length}`}
-          {...floatingPanelProps}
-          onMaximize={() => {
-            window.electronAPI?.restoreMainWindow()?.then(() => {
-              window.electronAPI?.hideFloatingPanel();
-            });
-          }}
-        />
-      </div>
+      <Suspense fallback={<LoadingFallback />}>
+        <div className="bg-slate-900">
+          <ElectronFloatingPanel
+            key={`floating-panel-${entries.length}`}
+            {...floatingPanelProps}
+            onMaximize={() => {
+              window.electronAPI?.restoreMainWindow()?.then(() => {
+                window.electronAPI?.hideFloatingPanel();
+              });
+            }}
+          />
+        </div>
+      </Suspense>
     );
   }
 
@@ -1076,15 +1100,17 @@ function App() {
   // Download page
   if (showDownloadPage) {
     return (
-      <div className="relative">
-        <DownloadPage />
-        <button
-          onClick={toggleDownloadPage}
-          className="fixed top-4 left-4 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg transition-all flex items-center space-x-2"
-        >
-          <span>Back to Vault</span>
-        </button>
-      </div>
+      <Suspense fallback={<LoadingFallback />}>
+        <div className="relative">
+          <DownloadPage />
+          <button
+            onClick={toggleDownloadPage}
+            className="fixed top-4 left-4 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg transition-all flex items-center space-x-2"
+          >
+            <span>Back to Vault</span>
+          </button>
+        </div>
+      </Suspense>
     );
   }
 
@@ -1111,33 +1137,38 @@ function App() {
       {/* Skip to main content link for keyboard users */}
       <SkipLink targetId="main-content" />
 
-      {/* What's New Modal */}
-      <WhatsNewModal 
-        isOpen={whatsNewOpen} 
-        onClose={() => {
-          setWhatsNewOpen(false);
-          dismissWhatsNew();
-        }} 
-      />
+      {/* Lazy-loaded modals wrapped in Suspense */}
+      <Suspense fallback={null}>
+        {/* What's New Modal */}
+        <WhatsNewModal 
+          isOpen={whatsNewOpen} 
+          onClose={() => {
+            setWhatsNewOpen(false);
+            dismissWhatsNew();
+          }} 
+        />
 
-      {/* Onboarding Tutorial */}
-      <OnboardingTutorial
-        isOpen={showOnboarding}
-        onClose={() => setShowOnboarding(false)}
-        onComplete={completeOnboarding}
-      />
+        {/* Onboarding Tutorial */}
+        <OnboardingTutorial
+          isOpen={showOnboarding}
+          onClose={() => setShowOnboarding(false)}
+          onComplete={completeOnboarding}
+        />
 
-      {/* Keyboard Shortcuts Modal */}
-      <KeyboardShortcutsModal
-        isOpen={isShortcutsOpen}
-        onClose={closeShortcuts}
-      />
+        {/* Keyboard Shortcuts Modal */}
+        <KeyboardShortcutsModal
+          isOpen={isShortcutsOpen}
+          onClose={closeShortcuts}
+        />
+      </Suspense>
 
       {/* License Keys Display */}
       {showLicenseKeys && features.showTestingTools && (
         <div className="fixed inset-0 z-[9998] bg-slate-900/95 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
           <div className="max-w-2xl w-full">
-            <LicenseKeyDisplay />
+            <Suspense fallback={<LoadingFallback />}>
+              <LicenseKeyDisplay />
+            </Suspense>
             <div className="text-center mt-6">
               <button
                 onClick={() => setShowLicenseKeys(false)}
@@ -1152,30 +1183,36 @@ function App() {
 
       {/* Trial Warning Popup */}
       {showWarningPopup && (
-        <TrialWarningPopup
-          warningType={currentWarningType}
-          onClose={handleWarningPopupClose}
-          onPurchaseNow={handlePurchaseNow}
-          onDownloadContent={handleDownloadContent}
-        />
+        <Suspense fallback={null}>
+          <TrialWarningPopup
+            warningType={currentWarningType}
+            onClose={handleWarningPopupClose}
+            onPurchaseNow={handlePurchaseNow}
+            onDownloadContent={handleDownloadContent}
+          />
+        </Suspense>
       )}
 
       {/* Main Vault */}
       {showMainVault && (
         <div id="main-content" tabIndex={-1}>
-          <MainVault
-            key={`main-vault-${entries.length}`}
-            {...mainVaultProps}
-          />
+          <Suspense fallback={<LoadingFallback />}>
+            <MainVault
+              key={`main-vault-${entries.length}`}
+              {...mainVaultProps}
+            />
+          </Suspense>
         </div>
       )}
 
       {/* Floating Panel (Web) */}
       {!isElectron && showFloatingPanel && (
-        <FloatingPanel
-          {...floatingPanelProps}
-          onMaximize={toggleVaultView}
-        />
+        <Suspense fallback={null}>
+          <FloatingPanel
+            {...floatingPanelProps}
+            onMaximize={toggleVaultView}
+          />
+        </Suspense>
       )}
 
       {/* Mini Vault Floating Button removed - using Electron's FloatingButton instead */}
@@ -1188,12 +1225,14 @@ function App() {
 
       {/* Undo delete toast */}
       {deletedEntry && (
-        <UndoToast
-          message={`"${deletedEntry.accountName}" deleted`}
-          onUndo={handleUndoDelete}
-          onDismiss={() => setDeletedEntry(null)}
-          duration={5000}
-        />
+        <Suspense fallback={null}>
+          <UndoToast
+            message={`"${deletedEntry.accountName}" deleted`}
+            onUndo={handleUndoDelete}
+            onDismiss={() => setDeletedEntry(null)}
+            duration={5000}
+          />
+        </Suspense>
       )}
 
     </div>
