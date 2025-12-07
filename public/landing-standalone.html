@@ -34,6 +34,62 @@
       color: var(--ivory);
       line-height: 1.6;
     }
+
+    /* Animations */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+
+    @keyframes subtlePulse {
+      0%, 100% { box-shadow: 0 8px 32px rgba(59, 130, 246, 0.3); }
+      50% { box-shadow: 0 12px 48px rgba(59, 130, 246, 0.5); }
+    }
+
+    .hero-grid > div:first-child {
+      animation: fadeInUp 0.8s ease-out;
+    }
+
+    .hero-image-wrap {
+      animation: fadeIn 1s ease-out 0.3s both;
+    }
+
+    .hero-image {
+      animation: float 6s ease-in-out infinite;
+    }
+
+    .feature-card {
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .feature-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+    }
+
+    .pricing-card {
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .pricing-card:hover {
+      transform: translateY(-8px);
+    }
     
     /* Navigation */
     .nav {
@@ -235,6 +291,13 @@
       font-size: 1.25rem;
       color: var(--silver);
       max-width: 32rem;
+      margin-bottom: 1rem;
+    }
+
+    .hero-support {
+      font-size: 1.1rem;
+      color: var(--ivory);
+      font-weight: 600;
       margin-bottom: 2rem;
     }
     
@@ -334,6 +397,81 @@
       filter: drop-shadow(0 0 6px rgba(16, 185, 129, 0.5));
     }
     
+    /* Pain Points Section */
+    .pain-section {
+      padding: 4rem 1.5rem;
+      background: var(--midnight);
+    }
+
+    .pain-container {
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    .pain-header {
+      text-align: center;
+      margin-bottom: 3rem;
+    }
+
+    .pain-title {
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+    }
+
+    .pain-subtitle {
+      color: var(--silver);
+      font-size: 1.1rem;
+    }
+
+    .pain-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .pain-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 20px;
+      background: rgba(100, 116, 139, 0.08);
+      border: 1px solid rgba(100, 116, 139, 0.2);
+      border-radius: 12px;
+      font-size: 1rem;
+      color: var(--ivory);
+      transition: all 0.3s;
+      animation: fadeInUp 0.5s ease-out both;
+    }
+
+    .pain-item:nth-child(1) { animation-delay: 0.1s; }
+    .pain-item:nth-child(2) { animation-delay: 0.2s; }
+    .pain-item:nth-child(3) { animation-delay: 0.3s; }
+    .pain-item:nth-child(4) { animation-delay: 0.4s; }
+    .pain-item:nth-child(5) { animation-delay: 0.5s; }
+    .pain-item:nth-child(6) { animation-delay: 0.6s; }
+
+    .pain-item:hover {
+      background: rgba(100, 116, 139, 0.15);
+      transform: translateY(-2px);
+    }
+
+    .pain-item svg {
+      width: 20px;
+      height: 20px;
+      color: var(--silver);
+      flex-shrink: 0;
+    }
+
+    .pain-anchor {
+      text-align: center;
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--electric-light);
+      margin-top: 2rem;
+    }
+
     /* Stats Section */
     .stats {
       padding: 2.5rem 1.5rem;
@@ -751,6 +889,54 @@
       flex-shrink: 0;
     }
     
+    /* FAQ Section */
+    .faq-section {
+      padding: 5rem 1.5rem;
+      background: var(--obsidian);
+    }
+
+    .faq-container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .faq-header {
+      text-align: center;
+      margin-bottom: 3rem;
+    }
+
+    .faq-title {
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+    }
+
+    .faq-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .faq-item {
+      background: var(--slate);
+      border-radius: 12px;
+      padding: 24px;
+      border: 1px solid rgba(51, 65, 85, 0.5);
+    }
+
+    .faq-item h4 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: var(--ivory);
+    }
+
+    .faq-item p {
+      color: var(--silver);
+      font-size: 0.95rem;
+      line-height: 1.7;
+    }
+
     /* Footer */
     .footer {
       padding: 3rem 1.5rem 1.5rem;
@@ -870,17 +1056,19 @@
       <div class="hero-grid">
         <div>
           <div class="hero-badge">
-            <span>✨ 100% Offline • Zero Cloud Storage</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <span>100% Offline • Zero Cloud Storage</span>
           </div>
           <h1 class="hero-title">
-            Your passwords.<br>
-            <span class="gradient">Your device.</span><br>
-            Your control.
+            Your passwords should<br>
+            <span class="gradient">never leave your hands.</span>
           </h1>
           <p class="hero-desc">
             The password manager that never sends your data anywhere. 
             AES-256 encryption. Built-in 2FA. Import from any manager.
-            One price, forever yours.
+          </p>
+          <p class="hero-support">
+            One price. Forever yours. No subscriptions.
           </p>
           <div class="trust-badges">
             <div class="trust-badge">
@@ -926,6 +1114,43 @@
         <div class="stat-value">6+</div>
         <div class="stat-label">Import Sources</div>
       </div>
+    </div>
+  </section>
+
+  <!-- Pain Points Section -->
+  <section class="pain-section">
+    <div class="pain-container">
+      <div class="pain-header">
+        <h2 class="pain-title">Sound familiar?</h2>
+        <p class="pain-subtitle">The reality of password management today</p>
+      </div>
+      <div class="pain-grid">
+        <div class="pain-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+          <span>Data breaches exposing millions of passwords</span>
+        </div>
+        <div class="pain-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+          <span>Subscription fatigue—$50+ per year, forever</span>
+        </div>
+        <div class="pain-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+          <span>Cloud services that can access your data</span>
+        </div>
+        <div class="pain-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+          <span>Forgotten passwords, locked accounts</span>
+        </div>
+        <div class="pain-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+          <span>Trusting companies you cannot audit</span>
+        </div>
+        <div class="pain-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+          <span>Losing access when subscriptions lapse</span>
+        </div>
+      </div>
+      <p class="pain-anchor">Your passwords are not a product. Ever.</p>
     </div>
   </section>
 
@@ -1036,7 +1261,7 @@
           <h3 class="pricing-title">Free Trial</h3>
           <div class="pricing-price">
             <span class="pricing-amount">$0</span>
-            <span class="pricing-period">7 days</span>
+            <span class="pricing-period">14 days</span>
           </div>
           <ul class="pricing-features">
             <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Full feature access</li>
@@ -1130,6 +1355,37 @@
               </div>
             </a>
           </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ Section -->
+  <section class="faq-section">
+    <div class="faq-container">
+      <div class="faq-header">
+        <h2 class="faq-title">Frequently Asked Questions</h2>
+      </div>
+      <div class="faq-grid">
+        <div class="faq-item">
+          <h4>Is my data really stored only on my device?</h4>
+          <p>Yes. Local Password Vault uses 100% local storage. Your encrypted vault never leaves your computer—no cloud, no servers, no third-party access. We literally cannot see your data.</p>
+        </div>
+        <div class="faq-item">
+          <h4>What if I forget my master password?</h4>
+          <p>Your master password is the only key to your vault. We recommend writing it down and storing it in a safe place. Because we never have access to your password, we cannot reset it for you—that's the security tradeoff that keeps your data truly private.</p>
+        </div>
+        <div class="faq-item">
+          <h4>Can I import from my current password manager?</h4>
+          <p>Absolutely. We support direct imports from LastPass, 1Password, Bitwarden, Dashlane, Keeper, and Chrome. Most imports take less than 30 seconds.</p>
+        </div>
+        <div class="faq-item">
+          <h4>What happens if my computer crashes?</h4>
+          <p>Your vault is stored as an encrypted file on your device. You can back it up like any other file—copy it to an external drive, or use your existing backup solution. The file remains encrypted and useless without your master password.</p>
+        </div>
+        <div class="faq-item">
+          <h4>Why a one-time purchase instead of subscription?</h4>
+          <p>We believe security tools should not hold your data hostage behind recurring payments. Pay once, own it forever. You keep full access to your passwords even if we disappeared tomorrow.</p>
         </div>
       </div>
     </div>
