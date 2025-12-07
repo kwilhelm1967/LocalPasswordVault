@@ -503,6 +503,47 @@
       letter-spacing: 0.05em;
     }
 
+    /* Product Preview Section */
+    .product-preview {
+      padding: 4rem 1.5rem;
+      background: linear-gradient(180deg, var(--obsidian) 0%, var(--midnight) 100%);
+    }
+
+    .preview-container {
+      max-width: 1100px;
+      margin: 0 auto;
+      text-align: center;
+    }
+
+    .preview-title {
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+    }
+
+    .preview-desc {
+      font-size: 1.1rem;
+      color: var(--silver);
+      margin-bottom: 2rem;
+    }
+
+    .preview-image-wrap {
+      position: relative;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 
+        0 0 60px rgba(59, 130, 246, 0.2),
+        0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+
+    .preview-image {
+      width: 100%;
+      height: auto;
+      display: block;
+      border-radius: 16px;
+      border: 1px solid rgba(59, 130, 246, 0.3);
+    }
+
     /* Stats Section */
     .stats {
       padding: 2.5rem 1.5rem;
@@ -1131,6 +1172,17 @@
           <div class="hero-image-glow"></div>
           <img src="vault-hero.jpg.jpg" alt="Futuristic vault security interface" class="hero-image">
         </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Product Preview Section -->
+  <section class="product-preview">
+    <div class="preview-container">
+      <h2 class="preview-title">See it in action</h2>
+      <p class="preview-desc">Your entire digital life, organized and protected. One dashboard. Zero complexity.</p>
+      <div class="preview-image-wrap">
+        <img src="dashboard.png" alt="Local Password Vault Dashboard" class="preview-image">
       </div>
     </div>
   </section>
