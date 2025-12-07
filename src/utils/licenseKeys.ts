@@ -23,6 +23,61 @@ function getExpirationDate() {
   return { date, formatted };
 }
 
+// Function for permanent/lifetime licenses (never expires)
+function getLifetimeDate() {
+  return {
+    date: new Date('2099-12-31'),
+    formatted: 'Lifetime License'
+  };
+}
+
+// Lifetime/Gift Licenses (never expire - for friends and family)
+export const lifetimeLicenses: LicenseKey[] = [
+  // ADD YOUR GIFT KEYS HERE
+  {
+    key: "GIFT-LPV1-FREE-4EVR",
+    type: "single",
+    expires: getLifetimeDate().formatted,
+    expirationDate: getLifetimeDate().date
+  },
+  {
+    key: "GIFT-LPV2-FREE-4EVR",
+    type: "single",
+    expires: getLifetimeDate().formatted,
+    expirationDate: getLifetimeDate().date
+  },
+  {
+    key: "GIFT-LPV3-FREE-4EVR",
+    type: "single",
+    expires: getLifetimeDate().formatted,
+    expirationDate: getLifetimeDate().date
+  },
+  {
+    key: "GIFT-LPV4-FREE-4EVR",
+    type: "single",
+    expires: getLifetimeDate().formatted,
+    expirationDate: getLifetimeDate().date
+  },
+  {
+    key: "GIFT-LPV5-FREE-4EVR",
+    type: "single",
+    expires: getLifetimeDate().formatted,
+    expirationDate: getLifetimeDate().date
+  },
+  {
+    key: "GIFT-FAM1-FREE-4EVR",
+    type: "family",
+    expires: getLifetimeDate().formatted,
+    expirationDate: getLifetimeDate().date
+  },
+  {
+    key: "GIFT-FAM2-FREE-4EVR",
+    type: "family",
+    expires: getLifetimeDate().formatted,
+    expirationDate: getLifetimeDate().date
+  },
+];
+
 // Personal Vault Licenses ($49)
 export const singleUserLicenses: LicenseKey[] = [
   // NEW_PERSONAL_KEYS_HERE
@@ -131,6 +186,7 @@ export const familyLicenses: LicenseKey[] = [
 
 // All licenses combined
 export const allLicenseKeys: LicenseKey[] = [
+  ...lifetimeLicenses,
   ...singleUserLicenses,
   ...familyLicenses
 ];
