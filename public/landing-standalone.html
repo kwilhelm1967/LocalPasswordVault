@@ -522,6 +522,12 @@
       box-shadow: 0 0 60px rgba(59, 130, 246, 0.2);
     }
     
+    .pricing-card.best-value {
+      background: var(--slate);
+      border-color: var(--emerald);
+      box-shadow: 0 0 60px rgba(16, 185, 129, 0.2);
+    }
+    
     .pricing-badge {
       position: absolute;
       top: -1rem;
@@ -535,6 +541,14 @@
       text-transform: uppercase;
       letter-spacing: 0.05em;
       border-radius: 9999px;
+    }
+    
+    .pricing-badge.value {
+      background: var(--emerald);
+    }
+    
+    .pricing-card.best-value .pricing-amount {
+      color: var(--emerald);
     }
     
     .pricing-title {
@@ -1045,7 +1059,8 @@
           <a href="#" class="pricing-btn pricing-btn-primary">Buy Now →</a>
         </div>
         
-        <div class="pricing-card">
+        <div class="pricing-card best-value">
+          <div class="pricing-badge value">Best Value</div>
           <h3 class="pricing-title">Family Vault</h3>
           <div class="pricing-price">
             <span class="pricing-amount">$79</span>
