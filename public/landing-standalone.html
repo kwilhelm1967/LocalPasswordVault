@@ -512,9 +512,15 @@
       border: 2px solid var(--steel);
       border-radius: 24px;
       transition: transform 0.3s;
+      display: flex;
+      flex-direction: column;
     }
     
     .pricing-card:hover { transform: scale(1.02); }
+    
+    .pricing-features {
+      flex: 1;
+    }
     
     .pricing-card.popular {
       background: var(--slate);
@@ -606,6 +612,7 @@
       align-items: center;
       justify-content: center;
       gap: 0.5rem;
+      margin-top: auto;
       padding: 1rem;
       border-radius: 12px;
       font-size: 1rem;
