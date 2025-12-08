@@ -249,22 +249,22 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
       <div className="w-full max-w-md">
 
         {/* Logo & Title */}
-        <header className="text-center mb-5">
+        <header className="text-center mb-3">
           <div
-            className="w-14 h-14 bg-gradient-to-br from-blue-500 to-violet-600 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-blue-500/25"
+            className="w-12 h-12 bg-gradient-to-br from-blue-500 to-violet-600 rounded-xl flex items-center justify-center mx-auto mb-2 shadow-lg shadow-blue-500/25"
             role="img"
             aria-label="Security lock icon"
           >
-            <Lock className="w-7 h-7 text-white" aria-hidden="true" />
+            <Lock className="w-6 h-6 text-white" aria-hidden="true" />
           </div>
           <h1
             id="login-title"
-            className="text-2xl font-bold text-white tracking-tight"
+            className="text-xl font-bold text-white tracking-tight"
           >
             Local Password Vault
           </h1>
           <p
-            className="text-slate-400 text-sm mt-1"
+            className="text-slate-400 text-sm"
             id="login-subtitle"
           >
             {isFirstTime ? "Create your master password" : "Welcome back"}
@@ -273,7 +273,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
 
         {/* First Time Setup Notice */}
         {isFirstTime && (
-          <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-3 mb-4">
+          <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-2.5 mb-3">
             <div className="flex gap-2">
               <Info className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
               <p className="text-slate-300 text-xs leading-relaxed">

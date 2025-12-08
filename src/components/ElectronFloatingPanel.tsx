@@ -467,11 +467,19 @@ export const ElectronFloatingPanel: React.FC<ElectronFloatingPanelProps> = ({
 
   return (
     <div
-      className="h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 flex flex-col backdrop-blur-xl border border-slate-800/50 shadow-2xl"
+      className="h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 flex flex-col backdrop-blur-xl border border-slate-800/50 shadow-2xl relative"
       style={{ zIndex: 9999 }}
     >
+      {/* Pattern background overlay */}
+      <div 
+        className="absolute inset-0 pointer-events-none z-0"
+        style={{
+          opacity: 0.06,
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%2393B4D1' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+        }}
+      />
       {/* Header with gradient and enhanced controls */}
-      <div className="bg-gradient-to-r from-slate-800/80 via-slate-800/60 to-blue-900/40 backdrop-blur-md border-b border-slate-700/50 p-4 flex items-center justify-between drag-region shadow-lg">
+      <div className="bg-gradient-to-r from-slate-800/80 via-slate-800/60 to-blue-900/40 backdrop-blur-md border-b border-slate-700/50 p-4 flex items-center justify-between drag-region shadow-lg relative z-10">
         <div className="flex items-center space-x-3">
           <div className="p-2 bg-blue-500/20 rounded-lg border border-blue-400/30 shadow-inner">
             <Lock className="w-5 h-5 text-blue-400" />
@@ -498,7 +506,7 @@ export const ElectronFloatingPanel: React.FC<ElectronFloatingPanelProps> = ({
       </div>
 
       {/* Compact Category Pills */}
-      <div className="p-2 border-b border-slate-700/50 bg-slate-800/20 no-drag relative">
+      <div className="p-2 border-b border-slate-700/50 bg-slate-800/20 no-drag relative z-10">
         <div
           className="flex space-x-1.5 overflow-x-auto pb-1 scrollbar-none"
           style={{
@@ -534,7 +542,7 @@ export const ElectronFloatingPanel: React.FC<ElectronFloatingPanelProps> = ({
       </div>
 
       {/* Enhanced Entries List */}
-      <div className="flex-1 overflow-y-auto no-drag bg-gradient-to-b from-transparent to-slate-900/20">
+      <div className="flex-1 overflow-y-auto no-drag bg-gradient-to-b from-transparent to-slate-900/20 relative z-10">
         <div className="p-4 space-y-2">
           {displayEntries.slice(0, 8).map((entry) => (
             <EntryItem
@@ -568,7 +576,7 @@ export const ElectronFloatingPanel: React.FC<ElectronFloatingPanelProps> = ({
       </div>
 
       {/* Enhanced Footer Actions */}
-      <div className="bg-gradient-to-r from-slate-800/60 via-slate-800/40 to-slate-700/60 backdrop-blur-md border-t border-slate-700/50 p-4 flex items-center justify-between no-drag shadow-2xl">
+      <div className="bg-gradient-to-r from-slate-800/60 via-slate-800/40 to-slate-700/60 backdrop-blur-md border-t border-slate-700/50 p-4 flex items-center justify-between no-drag shadow-2xl relative z-10">
         <div className="flex items-center space-x-3">
           <button
             onClick={() => setShowAddForm(true)}
@@ -710,13 +718,11 @@ const EntryItem: React.FC<EntryItemProps> = ({
           </button>
 
           {category && (
-            <div className="p-2 bg-blue-500/20 rounded-lg border border-blue-400/30">
-              <CategoryIcon
-                name={category.icon}
-                size={16}
-                className="text-blue-400"
-              />
-            </div>
+            <CategoryIcon
+              name={category.icon}
+              size={20}
+              style={{ color: category.color }}
+            />
           )}
           <div className="min-w-0 flex-1 ml-2">
             <h4 className="font-semibold text-white text-sm mb-1 truncate">

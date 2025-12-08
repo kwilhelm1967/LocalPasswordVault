@@ -1155,9 +1155,9 @@ export const MainVault: React.FC<MainVaultProps> = ({
                           )}
                         </button>
                       )}
-                      <div className="w-10 h-10 bg-slate-700/50 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <div className="flex items-center justify-center flex-shrink-0">
                         {category && (
-                          <CategoryIcon name={category.icon} size={20} className="text-slate-400" strokeWidth={1.5} />
+                          <CategoryIcon name={category.icon} size={24} style={{ color: category.color }} strokeWidth={1.5} />
                         )}
                       </div>
                       <div className="flex-1 min-w-0">

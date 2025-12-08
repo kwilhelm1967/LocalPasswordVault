@@ -149,16 +149,13 @@ export const EntryCard: React.FC<EntryCardProps> = ({
 
       {/* Header */}
       <div className={`flex items-start gap-3 ${bulkSelectMode ? 'ml-6' : ''}`}>
-        {/* Icon */}
-        <div 
-          className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-110"
-          style={{ backgroundColor: `${categoryColor}20` }}
-        >
+        {/* Icon - standalone without box */}
+        <div className="flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-110">
           {entry.entryType === "secure_note" ? (
-            <FileText className="w-5 h-5" style={{ color: categoryColor }} strokeWidth={1.5} />
+            <FileText className="w-6 h-6" style={{ color: categoryColor }} strokeWidth={1.5} />
           ) : (
             <div style={{ color: categoryColor }}>
-              <CategoryIcon name="Key" size={20} strokeWidth={1.5} />
+              <CategoryIcon name="Key" size={24} strokeWidth={1.5} />
             </div>
           )}
         </div>

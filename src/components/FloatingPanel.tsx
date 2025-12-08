@@ -473,7 +473,7 @@ export const FloatingPanel: React.FC<FloatingPanelProps> = ({
       <div
         id="floating-panel"
         ref={panelRef}
-        className="fixed bg-slate-900 border border-slate-700 rounded-xl shadow-2xl w-96 flex flex-col"
+        className="fixed bg-slate-900 border border-slate-700 rounded-xl shadow-2xl w-96 flex flex-col overflow-hidden"
         style={{
           left: position.x,
           top: position.y,
@@ -482,9 +482,17 @@ export const FloatingPanel: React.FC<FloatingPanelProps> = ({
           ...FLOATING_PANEL_STYLES,
         }}
       >
+        {/* Pattern background overlay */}
+        <div 
+          className="absolute inset-0 pointer-events-none z-0"
+          style={{
+            opacity: 0.06,
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%2393B4D1' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+          }}
+        />
         {/* Header */}
         <div
-          className="drag-handle bg-slate-800 border-b border-slate-700 p-3 cursor-move flex items-center justify-between"
+          className="drag-handle bg-slate-800 border-b border-slate-700 p-3 cursor-move flex items-center justify-between relative z-10"
           onMouseDown={handleMouseDown}
         >
           <div className="flex items-center space-x-2">
@@ -524,7 +532,7 @@ export const FloatingPanel: React.FC<FloatingPanelProps> = ({
         </div>
 
         {/* Search Bar */}
-        <div className="p-3 border-b border-slate-700 bg-slate-900">
+        <div className="p-3 border-b border-slate-700 bg-slate-900 relative z-10">
           <div className="relative">
             <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-slate-400 w-3 h-3" />
             <input
@@ -567,7 +575,7 @@ export const FloatingPanel: React.FC<FloatingPanelProps> = ({
         </div>
 
         {/* Entries List - flex-1 to fill remaining space */}
-        <div className="flex-1 overflow-y-auto bg-slate-900">
+        <div className="flex-1 overflow-y-auto bg-slate-900 relative z-10">
           {favoriteEntries.length > 0 && (
             <div className="p-2 border-b border-slate-700">
               <div className="text-xs text-slate-400 mb-2 flex items-center">
@@ -617,7 +625,7 @@ export const FloatingPanel: React.FC<FloatingPanelProps> = ({
         </div>
 
         {/* Footer Actions */}
-        <div className="bg-slate-800 border-t border-slate-700 p-2 flex items-center justify-between">
+        <div className="bg-slate-800 border-t border-slate-700 p-2 flex items-center justify-between relative z-10">
           <div className="flex items-center space-x-1">
             <button
               onClick={() => setShowAddForm(true)}
@@ -629,8 +637,13 @@ export const FloatingPanel: React.FC<FloatingPanelProps> = ({
 
             <button
               onClick={onExport}
-              className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-700 rounded transition-all"
-              title="Export"
+              disabled={entries.length === 0}
+              className={`p-1.5 rounded transition-all ${
+                entries.length === 0 
+                  ? "text-slate-600 cursor-not-allowed opacity-50" 
+                  : "text-slate-400 hover:text-white hover:bg-slate-700"
+              }`}
+              title={entries.length === 0 ? "No entries to export" : "Export"}
             >
               <Download className="w-3 h-3" />
             </button>

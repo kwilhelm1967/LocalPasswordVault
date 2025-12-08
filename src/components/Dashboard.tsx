@@ -594,7 +594,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
           }}
         >
           <div 
-            className="rounded-xl w-full max-w-sm"
+            className="rounded-xl w-full max-w-md"
             style={{
               backgroundColor: '#1e293b',
               border: `1px solid ${colors.steelBlue500}40`,
@@ -603,12 +603,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
           >
             {/* Header */}
             <div 
-              className="flex items-center justify-between px-4 py-3"
+              className="flex items-center justify-between px-5 py-4"
               style={{ borderBottom: `1px solid ${colors.steelBlue500}30` }}
             >
-              <div className="flex items-center gap-2">
-                <Upload className="w-4 h-4" strokeWidth={1.5} style={{ color: colors.brandGold }} />
-                <h2 style={{ color: colors.warmIvory }} className="font-semibold text-sm">Import Passwords</h2>
+              <div className="flex items-center gap-3">
+                <Upload className="w-5 h-5" strokeWidth={1.5} style={{ color: colors.brandGold }} />
+                <h2 style={{ color: colors.warmIvory }} className="font-semibold text-base">Import Passwords</h2>
               </div>
               <button
                 onClick={() => {
@@ -623,18 +623,18 @@ export const Dashboard: React.FC<DashboardProps> = ({
             </div>
 
             {/* Content */}
-            <div className="p-4">
+            <div className="p-5">
               {!selectedProvider ? (
                 <>
-                  <p className="text-slate-400 text-xs mb-3">
+                  <p className="text-slate-400 text-sm mb-4">
                     Select your password manager:
                   </p>
-                  <div className="grid grid-cols-2 gap-1.5">
+                  <div className="grid grid-cols-2 gap-2.5">
                     {importProviders.map((provider) => (
                       <button
                         key={provider.id}
                         onClick={() => setSelectedProvider(provider.id)}
-                        className="px-2.5 py-1.5 rounded text-left transition-all flex items-center gap-2"
+                        className="px-4 py-3 rounded-lg text-left transition-all flex items-center gap-3"
                         style={{
                           backgroundColor: 'rgba(48, 58, 72, 0.6)',
                           border: `1px solid ${colors.steelBlue500}30`,
@@ -648,8 +648,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
                           e.currentTarget.style.backgroundColor = 'rgba(48, 58, 72, 0.6)';
                         }}
                       >
-                        <span className="text-sm">{provider.icon}</span>
-                        <span style={{ color: colors.warmIvory }} className="font-medium text-xs">{provider.name}</span>
+                        <span className="text-lg">{provider.icon}</span>
+                        <span style={{ color: colors.warmIvory }} className="font-medium text-sm">{provider.name}</span>
                       </button>
                     ))}
                   </div>
