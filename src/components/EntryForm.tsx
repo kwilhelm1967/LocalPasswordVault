@@ -218,7 +218,11 @@ export const EntryForm: React.FC<EntryFormProps> = ({
     password?: string;
     category?: string;
   }>({});
+  const [categorySearchString, setCategorySearchString] = useState("");
+  const [highlightedCategoryIndex, setHighlightedCategoryIndex] = useState(-1);
+  const categorySearchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const categoryListRef = useRef<HTMLDivElement>(null);
   
   // Refs for scrolling to error fields
   const accountNameRef = useRef<HTMLInputElement>(null);
@@ -269,6 +273,85 @@ export const EntryForm: React.FC<EntryFormProps> = ({
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  // Keyboard navigation for category dropdown
+  const filteredCategories = categories.filter((c) => c.id !== "all");
+  
+  useEffect(() => {
+    if (!showCategoryDropdown) {
+      setCategorySearchString("");
+      setHighlightedCategoryIndex(-1);
+      return;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Handle letter keys for type-ahead search
+      if (event.key.length === 1 && /[a-zA-Z]/.test(event.key)) {
+        event.preventDefault();
+        
+        // Clear previous timeout
+        if (categorySearchTimeoutRef.current) {
+          clearTimeout(categorySearchTimeoutRef.current);
+        }
+        
+        // Append to search string
+        const newSearchString = categorySearchString + event.key.toLowerCase();
+        setCategorySearchString(newSearchString);
+        
+        // Find matching category
+        const matchIndex = filteredCategories.findIndex(
+          (cat) => cat.name.toLowerCase().startsWith(newSearchString)
+        );
+        
+        if (matchIndex !== -1) {
+          setHighlightedCategoryIndex(matchIndex);
+          // Scroll to the highlighted item
+          const buttons = categoryListRef.current?.querySelectorAll('button');
+          if (buttons && buttons[matchIndex]) {
+            buttons[matchIndex].scrollIntoView({ block: 'nearest' });
+          }
+        }
+        
+        // Clear search string after 1 second of no typing
+        categorySearchTimeoutRef.current = setTimeout(() => {
+          setCategorySearchString("");
+        }, 1000);
+      }
+      
+      // Handle arrow keys
+      if (event.key === "ArrowDown") {
+        event.preventDefault();
+        setHighlightedCategoryIndex((prev) => 
+          prev < filteredCategories.length - 1 ? prev + 1 : 0
+        );
+      } else if (event.key === "ArrowUp") {
+        event.preventDefault();
+        setHighlightedCategoryIndex((prev) => 
+          prev > 0 ? prev - 1 : filteredCategories.length - 1
+        );
+      } else if (event.key === "Enter" && highlightedCategoryIndex >= 0) {
+        event.preventDefault();
+        const selectedCategory = filteredCategories[highlightedCategoryIndex];
+        if (selectedCategory) {
+          setFormData((prev) => ({ ...prev, category: selectedCategory.id }));
+          setShowCategoryDropdown(false);
+          if (fieldErrors.category) {
+            setFieldErrors(prev => ({ ...prev, category: undefined }));
+          }
+        }
+      } else if (event.key === "Escape") {
+        setShowCategoryDropdown(false);
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      if (categorySearchTimeoutRef.current) {
+        clearTimeout(categorySearchTimeoutRef.current);
+      }
+    };
+  }, [showCategoryDropdown, categorySearchString, highlightedCategoryIndex, filteredCategories, fieldErrors.category]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -588,11 +671,10 @@ export const EntryForm: React.FC<EntryFormProps> = ({
                         boxShadow: "0 20px 50px -12px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(91, 130, 184, 0.1)",
                       }}
                     >
-                      <div className="p-2">
-                        {categories
-                          .filter((c) => c.id !== "all")
-                          .map((category) => {
+                      <div ref={categoryListRef} className="p-2">
+                        {filteredCategories.map((category, index) => {
                             const isSelected = formData.category === category.id;
+                            const isHighlighted = highlightedCategoryIndex === index;
                             return (
                               <button
                                 key={category.id}
@@ -606,18 +688,27 @@ export const EntryForm: React.FC<EntryFormProps> = ({
                                 }}
                                 className="w-full px-3 py-2.5 text-left text-sm rounded-lg transition-all flex items-center justify-between"
                                 style={{
-                                  backgroundColor: isSelected ? "rgba(91, 130, 184, 0.15)" : "transparent",
+                                  backgroundColor: isHighlighted 
+                                    ? "rgba(91, 130, 184, 0.2)" 
+                                    : isSelected 
+                                      ? "rgba(91, 130, 184, 0.15)" 
+                                      : "transparent",
                                   color: isSelected ? "#C9AE66" : "#E8EDF2",
-                                  borderLeft: isSelected ? "2px solid #C9AE66" : "2px solid transparent",
+                                  borderLeft: isHighlighted 
+                                    ? "2px solid #C9AE66" 
+                                    : isSelected 
+                                      ? "2px solid #C9AE66" 
+                                      : "2px solid transparent",
                                 }}
                                 onMouseEnter={(e) => {
+                                  setHighlightedCategoryIndex(index);
                                   if (!isSelected) {
                                     e.currentTarget.style.backgroundColor = "rgba(91, 130, 184, 0.1)";
                                     e.currentTarget.style.borderLeftColor = "rgba(91, 130, 184, 0.5)";
                                   }
                                 }}
                                 onMouseLeave={(e) => {
-                                  if (!isSelected) {
+                                  if (!isSelected && !isHighlighted) {
                                     e.currentTarget.style.backgroundColor = "transparent";
                                     e.currentTarget.style.borderLeftColor = "transparent";
                                   }
