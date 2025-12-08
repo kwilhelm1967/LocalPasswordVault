@@ -50,40 +50,11 @@ const LoadingFallback = () => (
 const checkForReset = () => {
   const urlParams = new URLSearchParams(window.location.search);
   if (urlParams.has('reset')) {
-    // Clear ALL license/trial related data (complete list)
-    const keysToRemove = [
-      // Trial keys
-      'trial_used',
-      'trial_license_key', 
-      'trial_activation_time',
-      'trial_expiry_time',
-      'trial_start',
-      'trial_start_date',
-      'trial_hardware_hash',
-      'warning_popup_1_shown',
-      'warning_popup_2_shown',
-      // License keys (old format)
-      'license_token',
-      'license_key',
-      'license_type',
-      'license_activated',
-      // License keys (new format used by licenseService)
-      'app_license_key',
-      'app_license_type',
-      'app_license_activated',
-      'app_device_id',
-      'lpv_license_file',
-      'lpv_local_license_file',
-      // Vault data
-      'vault_password_hash',
-      'vault_entries',
-      'vault_settings',
-      // UI state
-      'onboarding_completed',
-      'whats_new_dismissed',
-    ];
+    // Clear ALL localStorage - complete fresh start
+    localStorage.clear();
     
-    keysToRemove.forEach(key => localStorage.removeItem(key));
+    // Also clear sessionStorage for good measure
+    sessionStorage.clear();
     
     // Remove the ?reset from URL and reload
     window.history.replaceState({}, document.title, window.location.pathname);
@@ -1062,7 +1033,27 @@ function App() {
 
   // Electron floating mode
   if (isElectron && isFloatingMode) {
-    if (!isVaultUnlocked) return null;
+    if (!isVaultUnlocked) {
+      // Show a locked state UI instead of blank screen
+      return (
+        <div className="h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 flex items-center justify-center">
+          <div className="text-center p-8">
+            <div className="w-16 h-16 bg-slate-800/50 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-slate-700/50">
+              <svg className="w-8 h-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+            </div>
+            <p className="text-slate-400 text-sm mb-4">Vault is locked</p>
+            <button
+              onClick={() => window.electronAPI?.restoreMainWindow()}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded-lg transition-colors"
+            >
+              Unlock in Main Window
+            </button>
+          </div>
+        </div>
+      );
+    }
 
     return (
       <Suspense fallback={<LoadingFallback />}>

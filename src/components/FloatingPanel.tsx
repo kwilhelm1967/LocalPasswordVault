@@ -4,7 +4,6 @@ import {
   Plus,
   Download,
   Lock,
-  Maximize2,
   Trash2,
   Eye,
   EyeOff,
@@ -473,7 +472,7 @@ export const FloatingPanel: React.FC<FloatingPanelProps> = ({
       <div
         id="floating-panel"
         ref={panelRef}
-        className="fixed bg-slate-900 border border-slate-700 rounded-xl shadow-2xl w-96 flex flex-col overflow-hidden"
+        className="fixed bg-slate-900/95 border border-slate-700 rounded-xl shadow-2xl w-96 flex flex-col overflow-hidden"
         style={{
           left: position.x,
           top: position.y,
@@ -492,7 +491,7 @@ export const FloatingPanel: React.FC<FloatingPanelProps> = ({
         />
         {/* Header */}
         <div
-          className="drag-handle bg-slate-800 border-b border-slate-700 p-3 cursor-move flex items-center justify-between relative z-10"
+          className="drag-handle bg-slate-800/80 border-b border-slate-700 p-3 cursor-move flex items-center justify-between relative z-10"
           onMouseDown={handleMouseDown}
         >
           <div className="flex items-center space-x-2">
@@ -514,25 +513,17 @@ export const FloatingPanel: React.FC<FloatingPanelProps> = ({
             </div>
 
             <button
-              onClick={() => setIsMinimized(true)}
-              className="p-1 text-slate-400 hover:text-white hover:bg-slate-700 rounded transition-all"
-              title="Minimize"
-            >
-              <X className="w-3 h-3" />
-            </button>
-
-            <button
               onClick={onMaximize}
               className="p-1 text-slate-400 hover:text-white hover:bg-slate-700 rounded transition-all"
-              title="Maximize"
+              title="Back to Main Vault"
             >
-              <Maximize2 className="w-3 h-3" />
+              <X className="w-3 h-3" />
             </button>
           </div>
         </div>
 
         {/* Search Bar */}
-        <div className="p-3 border-b border-slate-700 bg-slate-900 relative z-10">
+        <div className="p-3 border-b border-slate-700 relative z-10">
           <div className="relative">
             <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-slate-400 w-3 h-3" />
             <input
@@ -555,7 +546,7 @@ export const FloatingPanel: React.FC<FloatingPanelProps> = ({
         </div>
 
         {/* Category Quick Filters */}
-        <div className="p-2 border-b border-slate-700 bg-slate-900">
+        <div className="p-2 border-b border-slate-700 relative z-10">
           <div className="flex space-x-1 overflow-x-auto">
             {categories.slice(0, 6).map((category) => (
               <button
@@ -575,7 +566,7 @@ export const FloatingPanel: React.FC<FloatingPanelProps> = ({
         </div>
 
         {/* Entries List - flex-1 to fill remaining space */}
-        <div className="flex-1 overflow-y-auto bg-slate-900 relative z-10">
+        <div className="flex-1 overflow-y-auto relative z-10">
           {favoriteEntries.length > 0 && (
             <div className="p-2 border-b border-slate-700">
               <div className="text-xs text-slate-400 mb-2 flex items-center">
@@ -625,7 +616,7 @@ export const FloatingPanel: React.FC<FloatingPanelProps> = ({
         </div>
 
         {/* Footer Actions */}
-        <div className="bg-slate-800 border-t border-slate-700 p-2 flex items-center justify-between relative z-10">
+        <div className="bg-slate-800/80 border-t border-slate-700 p-2 flex items-center justify-between relative z-10">
           <div className="flex items-center space-x-1">
             <button
               onClick={() => setShowAddForm(true)}
@@ -716,7 +707,7 @@ const EntryItem: React.FC<EntryItemProps> = ({
   const isFavorite = favorites.has(entry.id);
 
   return (
-    <div className="bg-slate-800 rounded-lg p-2 mb-2 hover:bg-slate-700 group">
+    <div className="bg-slate-800/60 rounded-lg p-2 mb-2 hover:bg-slate-700/80 group">
       <div className="flex items-start justify-between mb-2">
         <div className="flex items-center space-x-2 flex-1 min-w-0">
           {category && (

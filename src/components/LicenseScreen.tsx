@@ -11,7 +11,7 @@ import {
   ArrowLeft,
   Download,
   Mail,
-  Gift,
+  Rocket,
   Loader2,
 } from "lucide-react";
 import { analyticsService } from "../utils/analyticsService";
@@ -41,8 +41,11 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
   appStatus, // Destructure appStatus
 }) => {
   const [licenseKey, setLicenseKey] = useState("");
+  const [trialKey, setTrialKey] = useState("");
   const [isActivating, setIsActivating] = useState(false);
+  const [isActivatingTrial, setIsActivatingTrial] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [trialKeyError, setTrialKeyError] = useState<string | null>(null);
 
   // Flow state variables
   const [showExpiredTrialScreen, setShowExpiredTrialScreen] = useState(false);
@@ -440,6 +443,40 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
     setError(null);
   };
 
+  const handleTrialKeyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatLicenseKey(e.target.value.toUpperCase());
+    setTrialKey(formatted);
+    setTrialKeyError(null);
+  };
+
+  const handleActivateTrialKey = async () => {
+    if (!trialKey.trim()) return;
+
+    setIsActivatingTrial(true);
+    setTrialKeyError(null);
+
+    try {
+      const result = await licenseService.activateLicense(trialKey.trim());
+
+      if (result.success) {
+        analyticsService.trackLicenseActivated(trialKey.trim(), 'trial');
+        onLicenseValid();
+      } else {
+        setTrialKeyError(result.error || 'Invalid trial key');
+      }
+    } catch (err) {
+      setTrialKeyError('Failed to activate trial key. Please try again.');
+    } finally {
+      setIsActivatingTrial(false);
+    }
+  };
+
+  const handleTrialKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && trialKey.trim()) {
+      handleActivateTrialKey();
+    }
+  };
+
   // Show loading state while app status is being determined
   if (!appStatus) {
     return (
@@ -605,63 +642,52 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
             />
           )}
 
-          {/* License Activation - Hide when trial is expired unless user clicks apply key */}
+          {/* License Activation - Two columns side by side */}
           {!showPricingPlans ? (
-            <div className="max-w-md mx-auto mb-8">
-              {/* License Activation */}
-              <div
-                id="license-activation-section"
-                className={`${
-                  // if trial is expired, only show if user clicks 'apply key'
-                  (localStorageTrialInfo.isExpired && showLicenseInput) ||
-                  // if trial is not expired (or not started), show it
-                  !localStorageTrialInfo.isExpired
-                    ? "block"
-                    : "hidden"
-                }`}
-              >
-                <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-6">
-                  <div className="flex bg-transparent items-center space-x-3 mb-6">
-                    <Key className="w-6 h-6 text-blue-400" />
-                    <h2 className="text-xl font-semibold text-white">
-                      Activate License
-                    </h2>
+            <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto mb-8">
+              {/* Left: Activate Paid License */}
+              <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-6 flex flex-col">
+                <div className="flex bg-transparent items-center space-x-3 mb-6">
+                  <Key className="w-6 h-6 text-blue-400" />
+                  <h2 className="text-xl font-semibold text-white">
+                    Activate License
+                  </h2>
+                </div>
+
+                <div className="space-y-4 bg-transparent flex-1 flex flex-col">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                      License Key
+                    </label>
+                    <input
+                      type="text"
+                      value={licenseKey}
+                      onChange={handleLicenseKeyChange}
+                      onKeyPress={handleKeyPress}
+                      placeholder="XXXX-XXXX-XXXX-XXXX"
+                      className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all text-center tracking-wider"
+                      maxLength={19}
+                    />
                   </div>
 
-                  <div className="space-y-4 bg-transparent">
-                    <div>
-                      <label className="block text-sm font-medium text-slate-300 mb-2">
-                        License Key
-                      </label>
-                      <input
-                        type="text"
-                        value={licenseKey}
-                        onChange={handleLicenseKeyChange}
-                        onKeyPress={handleKeyPress}
-                        placeholder="XXXX-XXXX-XXXX-XXXX"
-                        className="w-full px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all  text-center tracking-wider"
-                        maxLength={19}
-                      />
+                  {error && (
+                    <div className="flex items-center space-x-2 text-red-400 text-sm">
+                      <XCircle className="w-4 h-4" />
+                      <span>{error}</span>
                     </div>
+                  )}
 
-                    {error && (
-                      <div className="flex items-center space-x-2 text-red-400 text-sm">
-                        <XCircle className="w-4 h-4" />
-                        <span>{error}</span>
-                      </div>
-                    )}
-
-                    <button
-                      onClick={handleActivateLicense}
-                      disabled={isActivating || !licenseKey.trim()}
-                      className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:from-slate-600 disabled:to-slate-600 text-white py-3 px-4 rounded-lg font-medium transition-all disabled:cursor-not-allowed flex items-center justify-center space-x-2"
-                    >
-                      {isActivating ? (
-                        <>
-                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                          <span>Activating...</span>
-                        </>
-                      ) : (
+                  <button
+                    onClick={handleActivateLicense}
+                    disabled={isActivating || !licenseKey.trim()}
+                    className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:from-slate-600 disabled:to-slate-600 text-white py-3 px-4 rounded-lg font-medium transition-all disabled:cursor-not-allowed flex items-center justify-center space-x-2 mt-auto"
+                  >
+                    {isActivating ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        <span>Activating...</span>
+                      </>
+                    ) : (
                         <>
                           <CheckCircle className="w-4 h-4" />
                           <span>Activate License</span>
@@ -669,105 +695,88 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
                       )}
                     </button>
 
-                    <div className="text-center">
-                      <button
-                        onClick={(e) => {
-                          e.preventDefault();
-                          if (window.electronAPI) {
-                            window.electronAPI.openExternal(
-                              "https://localpasswordvault.com/#plans"
-                            );
-                          } else {
-                            window.open(
-                              "https://localpasswordvault.com/#plans",
-                              "_blank"
-                            );
-                          }
-                          // Hide floating button when user goes to purchase
-                          if (window.electronAPI?.hideFloatingButton) {
-                            window.electronAPI.hideFloatingButton();
-                          }
-                        }}
-                        className="text-blue-400 hover:text-blue-300 text-sm transition-colors inline-flex items-center space-x-1"
-                      >
-                        <span>Buy Lifetime Access</span>
-                        <ExternalLink className="w-3 h-3" />
-                      </button>
-                    </div>
+                  <div className="text-center">
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        if (window.electronAPI) {
+                          window.electronAPI.openExternal(
+                            "https://localpasswordvault.com/#plans"
+                          );
+                        } else {
+                          window.open(
+                            "https://localpasswordvault.com/#plans",
+                            "_blank"
+                          );
+                        }
+                        if (window.electronAPI?.hideFloatingButton) {
+                          window.electronAPI.hideFloatingButton();
+                        }
+                      }}
+                      className="text-blue-400 hover:text-blue-300 text-sm transition-colors inline-flex items-center space-x-1"
+                    >
+                      <span>Don't have a key? Buy now</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </button>
                   </div>
                 </div>
               </div>
 
-              {/* Start Free Trial Section - Only show if trial hasn't been used */}
-              {!localStorageTrialInfo.hasTrialBeenUsed && (
-                <div className="bg-gradient-to-br from-emerald-900/30 to-teal-900/30 backdrop-blur-sm border border-emerald-500/30 rounded-xl p-6 mt-6">
-                  <div className="flex items-center space-x-3 mb-4">
-                    <Gift className="w-6 h-6 text-emerald-400" />
-                    <h2 className="text-xl font-semibold text-white">
-                      Start 7-Day Free Trial
-                    </h2>
-                  </div>
-                  
-                  <p className="text-slate-300 text-sm mb-4">
-                    Try all features free for 7 days. No credit card required.
-                  </p>
-
-                  <div className="space-y-3">
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
-                      <input
-                        type="email"
-                        value={trialEmail}
-                        onChange={(e) => {
-                          setTrialEmail(e.target.value);
-                          setTrialError(null);
-                          setTrialSuccess(null);
-                        }}
-                        onKeyPress={(e) => e.key === "Enter" && handleStartTrial()}
-                        placeholder="Enter your email address"
-                        className="w-full pl-10 pr-4 py-3 bg-slate-700/50 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
-                        disabled={isStartingTrial}
-                      />
-                    </div>
-
-                    {trialError && (
-                      <div className="flex items-center space-x-2 text-red-400 text-sm">
-                        <XCircle className="w-4 h-4" />
-                        <span>{trialError}</span>
-                      </div>
-                    )}
-
-                    {trialSuccess && (
-                      <div className="flex items-center space-x-2 text-emerald-400 text-sm">
-                        <CheckCircle className="w-4 h-4" />
-                        <span>{trialSuccess}</span>
-                      </div>
-                    )}
-
-                    <button
-                      onClick={handleStartTrial}
-                      disabled={isStartingTrial || !trialEmail.trim()}
-                      className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 disabled:from-slate-600 disabled:to-slate-600 text-white py-3 px-4 rounded-lg font-medium transition-all disabled:cursor-not-allowed flex items-center justify-center space-x-2"
-                    >
-                      {isStartingTrial ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          <span>Starting Trial...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Gift className="w-4 h-4" />
-                          <span>Start Free Trial</span>
-                        </>
-                      )}
-                    </button>
-
-                    <p className="text-xs text-slate-500 text-center">
-                      We'll send your trial license key to your email
-                    </p>
-                  </div>
+              {/* Right: Trial Key Input */}
+              <div className="bg-gradient-to-br from-emerald-900/30 to-teal-900/30 backdrop-blur-sm border border-emerald-500/30 rounded-xl p-6 flex flex-col">
+                <div className="flex items-center space-x-3 mb-6">
+                  <Rocket className="w-6 h-6 text-emerald-400" />
+                  <h2 className="text-xl font-semibold text-white">
+                    7-Day Free Trial
+                  </h2>
                 </div>
-              )}
+
+                <div className="space-y-4 flex-1 flex flex-col">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                      Trial Key
+                    </label>
+                    <input
+                      type="text"
+                      value={trialKey}
+                      onChange={handleTrialKeyChange}
+                      onKeyPress={handleTrialKeyPress}
+                      placeholder="XXXX-XXXX-XXXX-XXXX"
+                      className="w-full px-4 py-3 bg-emerald-900/30 border border-emerald-500/30 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/20 transition-all text-center tracking-wider"
+                      maxLength={19}
+                    />
+                  </div>
+
+                  {trialKeyError && (
+                    <div className="flex items-center space-x-2 text-red-400 text-sm">
+                      <XCircle className="w-4 h-4" />
+                      <span>{trialKeyError}</span>
+                    </div>
+                  )}
+
+                  <button
+                    onClick={handleActivateTrialKey}
+                    disabled={isActivatingTrial || !trialKey.trim()}
+                    className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 disabled:from-slate-600 disabled:to-slate-600 text-white py-3 px-4 rounded-lg font-medium transition-all disabled:cursor-not-allowed flex items-center justify-center space-x-2 mt-auto"
+                  >
+                    {isActivatingTrial ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        <span>Activating...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Rocket className="w-4 h-4" />
+                        <span>Start Trial</span>
+                      </>
+                    )}
+                  </button>
+
+                  <p className="text-xs text-slate-400 text-center">
+                    All features unlocked for 7 days
+                  </p>
+                </div>
+              </div>
             </div>
           ) : (
             <div className="space-y-6 mb-8">
@@ -910,7 +919,7 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
               Secure • Private • Offline • Local Password Management
             </p>
             <p className="text-xs text-slate-600">
-              Need help? Visit{" "}
+              Need help?{" "}
               <a
                 href="mailto:support@LocalPasswordVault.com"
                 target="_blank"
