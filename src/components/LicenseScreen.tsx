@@ -10,9 +10,7 @@ import {
   CreditCard,
   ArrowLeft,
   Download,
-  Mail,
   Rocket,
-  Loader2,
 } from "lucide-react";
 import { analyticsService } from "../utils/analyticsService";
 import { licenseService, AppLicenseStatus } from "../utils/licenseService";
@@ -25,7 +23,6 @@ import { ExpiredTrialScreen } from "./ExpiredTrialScreen";
 import { KeyActivationScreen } from "./KeyActivationScreen";
 import { RecoveryOptionsScreen } from "./RecoveryOptionsScreen";
 import { LicenseTransferDialog } from "./LicenseTransferDialog";
-import environment from "../config/environment";
 
 interface LicenseScreenProps {
   onLicenseValid: () => void;
@@ -56,11 +53,6 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
   const [showTransferDialog, setShowTransferDialog] = useState(false);
   const [pendingTransferKey, setPendingTransferKey] = useState<string>("");
   
-  // Trial signup state
-  const [trialEmail, setTrialEmail] = useState("");
-  const [isStartingTrial, setIsStartingTrial] = useState(false);
-  const [trialError, setTrialError] = useState<string | null>(null);
-  const [trialSuccess, setTrialSuccess] = useState<string | null>(null);
 
   const updateAppStatus = useCallback(async () => {
     try {
@@ -136,70 +128,6 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
     setLicenseKey("");
   };
 
-  // Handle trial signup
-  const handleStartTrial = async () => {
-    // Check if online first
-    if (!navigator.onLine) {
-      setTrialError("No internet connection. Please check your network and try again.");
-      return;
-    }
-
-    if (!trialEmail.trim()) {
-      setTrialError("Please enter your email address");
-      return;
-    }
-
-    // Basic email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(trialEmail.trim())) {
-      setTrialError("Please enter a valid email address");
-      return;
-    }
-
-    setIsStartingTrial(true);
-    setTrialError(null);
-    setTrialSuccess(null);
-
-    try {
-      const response = await fetch(
-        `${environment.environment.licenseServerUrl}/api/trial/signup`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: trialEmail.trim().toLowerCase() }),
-        }
-      );
-
-      const result = await response.json();
-
-      if (result.success) {
-        setTrialSuccess("🎉 Check your email! Your trial key has been sent.");
-        analyticsService.trackConversion("trial_started", { source: "license_screen" });
-        
-        // In dev mode, show the trial key directly
-        if (result.trialKey) {
-          setTrialSuccess(`🎉 Trial started! Your key: ${result.trialKey}`);
-        }
-      } else {
-        if (result.expired) {
-          setTrialError("Your trial has expired. Please purchase a license to continue.");
-        } else if (result.hasLicense) {
-          setTrialError("You already have a license! Enter your license key above.");
-        } else {
-          setTrialError(result.error || "Failed to start trial. Please try again.");
-        }
-      }
-    } catch (error) {
-      devError("Trial signup error:", error);
-      if (error instanceof TypeError && error.message.includes("fetch")) {
-        setTrialError("Unable to connect to server. Please check your internet connection.");
-      } else {
-        setTrialError("Failed to start trial. Please try again.");
-      }
-    } finally {
-      setIsStartingTrial(false);
-    }
-  };
 
   // New flow handlers
   const handleBuyLifetimeAccess = () => {
