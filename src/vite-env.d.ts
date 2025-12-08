@@ -1,7 +1,5 @@
 /// <reference types="vite/client" />
 
-import type { PasswordEntry } from "./types";
-
 // Electron IPC event type (simplified for renderer process)
 interface ElectronEvent {
   sender: unknown;

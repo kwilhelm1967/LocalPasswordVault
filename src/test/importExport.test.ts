@@ -5,7 +5,7 @@
  * to ensure data integrity and security during transfers.
  */
 
-import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { importService } from '../utils/importService';
 import { storageService } from '../utils/storage';
 

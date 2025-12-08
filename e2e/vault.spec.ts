@@ -29,8 +29,8 @@ async function createVault(page: Page, password: string = 'TestPassword123!') {
   await page.waitForSelector('text=Dashboard', { timeout: 10000 });
 }
 
-// Helper to unlock existing vault
-async function unlockVault(page: Page, password: string = 'TestPassword123!') {
+// Helper to unlock existing vault (prefixed with _ as currently unused but kept for future tests)
+async function _unlockVault(page: Page, password: string = 'TestPassword123!') {
   await page.goto('/');
   await page.waitForSelector('input[type="password"]');
   await page.fill('input[type="password"]', password);
@@ -162,8 +162,8 @@ test.describe('Vault Operations', () => {
       await copyButton.click();
       
       // Verify clipboard (may not work in all browsers)
-      const clipboardText = await page.evaluate(() => navigator.clipboard.readText()).catch(() => '');
-      // Just verify the action completed without error
+      const _clipboardText = await page.evaluate(() => navigator.clipboard.readText()).catch(() => '');
+      // Just verify the action completed without error (clipboardText kept for debugging)
     }
   });
 

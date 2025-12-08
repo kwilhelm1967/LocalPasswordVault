@@ -141,8 +141,9 @@ describe('LiveRegionProvider', () => {
   });
 
   it('should throw error when useLiveRegion is used outside provider', () => {
+    // Test that hook throws when used outside provider
     const TestComponent = () => {
-      expect(() => useLiveRegion()).toThrow('useLiveRegion must be used within a LiveRegionProvider');
+      useLiveRegion(); // This should throw
       return <div>Test</div>;
     };
 
@@ -288,7 +289,7 @@ describe('FocusTrap', () => {
       </FocusTrap>
     );
 
-    const firstButton = screen.getByText('First');
+    const _firstButton = screen.getByText('First'); // Keep reference for potential future assertions
     const thirdButton = screen.getByText('Third');
 
     // Start with third button focused

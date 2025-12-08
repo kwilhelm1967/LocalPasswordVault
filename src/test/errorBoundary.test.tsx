@@ -7,7 +7,7 @@
 
 import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 
@@ -63,7 +63,7 @@ describe('ErrorBoundary', () => {
 
   it('should display error message in development mode', () => {
     // Mock import.meta.env.DEV to true
-    const originalDev = import.meta.env.DEV;
+    const _originalDev = import.meta.env.DEV; // Stored for reference
     vi.stubEnv('DEV', true);
 
     const ThrowError = () => {
