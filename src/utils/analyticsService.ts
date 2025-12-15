@@ -1,27 +1,26 @@
-// Simple analytics service for tracking user actions
+/**
+ * Analytics Service - NO-OP Implementation
+ * 
+ * This service is a complete no-op (no operation) to maintain API compatibility
+ * while ensuring ZERO analytics, tracking, or data collection.
+ * 
+ * SECURITY GUARANTEE:
+ * - No data collection
+ * - No network calls
+ * - No localStorage writes for analytics
+ * - No user tracking
+ * - No telemetry
+ * - No phone-home functionality
+ * 
+ * All methods are empty functions that do nothing.
+ */
 
 interface AnalyticsEventProperties {
-  timestamp?: number;
-  sessionId?: string;
-  userId?: string;
-  action?: string;
-  feature?: string;
-  licenseEvent?: string;
-  licenseType?: string;
-  step?: string;
   [key: string]: string | number | boolean | undefined;
-}
-
-interface AnalyticsEvent {
-  event: string;
-  properties: AnalyticsEventProperties;
 }
 
 class AnalyticsService {
   private static instance: AnalyticsService;
-  private sessionId: string = '';
-  private userId: string = '';
-  private events: AnalyticsEvent[] = [];
 
   static getInstance(): AnalyticsService {
     if (!AnalyticsService.instance) {
@@ -30,86 +29,26 @@ class AnalyticsService {
     return AnalyticsService.instance;
   }
 
-  constructor() {
-    this.sessionId = this.generateSessionId();
-    
-    // Only get user ID if we're in a browser environment
-    if (typeof window !== 'undefined' && window.localStorage) {
-      this.userId = this.getUserId();
-    }
+  // All methods are no-ops - they do nothing
+  track(_event: string, _properties: AnalyticsEventProperties = {}): void {
+    // NO-OP: No tracking, no data collection, no network calls
   }
 
-  private generateSessionId(): string {
-    return 'session_' + Date.now().toString(36) + '_' + Math.random().toString(36).substring(2);
+  trackUserAction(_action: string, _details: AnalyticsEventProperties = {}): void {
+    // NO-OP: No tracking, no data collection, no network calls
   }
 
-  private getUserId(): string {
-    let userId = localStorage.getItem('analytics_user_id');
-    if (!userId && typeof window !== 'undefined' && window.localStorage) {
-      userId = 'user_' + Date.now().toString(36) + '_' + Math.random().toString(36).substring(2);
-      localStorage.setItem('analytics_user_id', userId);
-    }
-    return userId || 'anonymous';
+  trackFeatureUsage(_feature: string, _details: AnalyticsEventProperties = {}): void {
+    // NO-OP: No tracking, no data collection, no network calls
   }
 
-  // Track events
-  track(event: string, properties: AnalyticsEventProperties = {}): void {
-    // Skip tracking if analytics is disabled
-    if (!environment.analyticsEnabled) {
-      return;
-    }
-    
-    const eventData: AnalyticsEvent = {
-      event,
-      properties: {
-        ...properties,
-        timestamp: Date.now(),
-        sessionId: this.sessionId,
-        userId: this.userId
-      }
-    };
-
-    this.events.push(eventData);
-    
-    // In a real app, we would send this to a server
-    if (environment.isTest) {
-      void eventData; // Test mode - event captured
-    }
+  trackLicenseEvent(_event: string, _licenseType?: string, _details: AnalyticsEventProperties = {}): void {
+    // NO-OP: No tracking, no data collection, no network calls
   }
 
-  // Track user actions
-  trackUserAction(action: string, details: AnalyticsEventProperties = {}): void {
-    this.track('user_action', {
-      action,
-      ...details
-    });
-  }
-
-  // Track feature usage
-  trackFeatureUsage(feature: string, details: AnalyticsEventProperties = {}): void {
-    this.track('feature_usage', {
-      feature,
-      ...details
-    });
-  }
-
-  // Track license events
-  trackLicenseEvent(event: string, licenseType?: string, details: AnalyticsEventProperties = {}): void {
-    this.track('license_event', {
-      licenseEvent: event,
-      licenseType,
-      ...details
-    });
-  }
-
-  // Track conversion events
-  trackConversion(step: string, details: AnalyticsEventProperties = {}): void {
-    this.track('conversion', {
-      step,
-      ...details
-    });
+  trackConversion(_step: string, _details: AnalyticsEventProperties = {}): void {
+    // NO-OP: No tracking, no data collection, no network calls
   }
 }
 
-import { environment } from '../config/environment';
 export const analyticsService = AnalyticsService.getInstance();

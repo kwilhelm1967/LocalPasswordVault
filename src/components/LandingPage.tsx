@@ -459,12 +459,11 @@ export const LandingPage: React.FC = () => {
         fontFamily: "'Outfit', 'SF Pro Display', -apple-system, sans-serif",
       }}
     >
-      {/* Google Font */}
+      {/* System Fonts Only - No External Network Calls */}
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap');
-        
+        /* Using system fonts only - no external network calls */
         .font-mono {
-          font-family: Arial, Helvetica, sans-serif;
+          font-family: 'Courier New', Courier, monospace;
         }
         
         @keyframes gradient {

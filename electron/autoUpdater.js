@@ -1,158 +1,59 @@
 /**
- * Auto-Updater Module
+ * Auto-Updater Module - DISABLED
  * 
- * Handles automatic updates for Local Password Vault.
- * Uses electron-updater to check GitHub releases.
+ * SECURITY POLICY: Auto-updates are DISABLED to prevent any phone-home behavior.
+ * 
+ * This module is a no-op implementation that does nothing. All update checking
+ * and downloading functionality has been removed to ensure:
+ * - Zero network calls after license activation
+ * - No phone-home behavior
+ * - No background sync services
+ * - Complete privacy and security
+ * 
+ * Users can manually download updates from the website if desired.
  */
 
-const { autoUpdater } = require('electron-updater');
-const { dialog, BrowserWindow } = require('electron');
 const log = require('electron-log');
 
-// Configure logging
-log.transports.file.level = 'info';
-autoUpdater.logger = log;
-autoUpdater.autoDownload = false;
-autoUpdater.autoInstallOnAppQuit = true;
-
-// Update state
+// Update state (always false - no updates)
 let updateAvailable = false;
 let updateDownloaded = false;
 let mainWindow = null;
 
 /**
- * Initialize auto-updater
- * @param {BrowserWindow} win - Main window reference
+ * Initialize auto-updater - DISABLED (no-op)
+ * @param {BrowserWindow} win - Main window reference (unused)
  */
 function initAutoUpdater(win) {
   mainWindow = win;
-
-  // Check for updates on startup (after a delay)
-  setTimeout(() => {
-    checkForUpdates(false);
-  }, 10000); // Wait 10 seconds after app start
-
-  // Check for updates every 4 hours
-  setInterval(() => {
-    checkForUpdates(false);
-  }, 4 * 60 * 60 * 1000);
+  // DISABLED: No update checking, no network calls, no phone-home
+  log.info('Auto-updater disabled per security policy - zero network calls after activation');
 }
 
 /**
- * Check for updates
- * @param {boolean} showNoUpdateDialog - Show dialog if no update available
+ * Check for updates - DISABLED (no-op)
+ * @param {boolean} showNoUpdateDialog - Unused (no-op)
  */
 async function checkForUpdates(showNoUpdateDialog = false) {
-  try {
-    const result = await autoUpdater.checkForUpdates();
-    if (!result && showNoUpdateDialog) {
-      dialog.showMessageBox(mainWindow, {
-        type: 'info',
-        title: 'No Updates',
-        message: 'You are running the latest version.',
-        buttons: ['OK']
-      });
-    }
-  } catch (error) {
-    log.error('Error checking for updates:', error);
-    if (showNoUpdateDialog) {
-      dialog.showMessageBox(mainWindow, {
-        type: 'error',
-        title: 'Update Error',
-        message: 'Could not check for updates. Please try again later.',
-        buttons: ['OK']
-      });
-    }
-  }
+  // DISABLED: No network calls, no phone-home
+  log.info('Update checking disabled per security policy');
+  void showNoUpdateDialog; // Suppress unused parameter warning
 }
 
 /**
- * Download the available update
+ * Download the available update - DISABLED (no-op)
  */
 function downloadUpdate() {
-  if (updateAvailable && !updateDownloaded) {
-    autoUpdater.downloadUpdate();
-  }
+  // DISABLED: No downloads, no network calls
+  log.info('Update downloading disabled per security policy');
 }
 
 /**
- * Install the downloaded update
+ * Install the downloaded update - DISABLED (no-op)
  */
 function installUpdate() {
-  if (updateDownloaded) {
-    autoUpdater.quitAndInstall(false, true);
-  }
-}
-
-// Event handlers
-autoUpdater.on('checking-for-update', () => {
-  log.info('Checking for updates...');
-  sendStatusToWindow('checking-for-update');
-});
-
-autoUpdater.on('update-available', (info) => {
-  log.info('Update available:', info.version);
-  updateAvailable = true;
-  sendStatusToWindow('update-available', info);
-
-  // Show notification to user
-  dialog.showMessageBox(mainWindow, {
-    type: 'info',
-    title: 'Update Available',
-    message: `A new version (${info.version}) is available!`,
-    detail: 'Would you like to download it now?',
-    buttons: ['Download', 'Later'],
-    defaultId: 0
-  }).then(({ response }) => {
-    if (response === 0) {
-      downloadUpdate();
-    }
-  });
-});
-
-autoUpdater.on('update-not-available', (info) => {
-  log.info('Update not available. Current version:', info.version);
-  updateAvailable = false;
-  sendStatusToWindow('update-not-available', info);
-});
-
-autoUpdater.on('error', (err) => {
-  log.error('Update error:', err);
-  sendStatusToWindow('update-error', err);
-});
-
-autoUpdater.on('download-progress', (progressObj) => {
-  log.info(`Download progress: ${progressObj.percent.toFixed(2)}%`);
-  sendStatusToWindow('download-progress', progressObj);
-});
-
-autoUpdater.on('update-downloaded', (info) => {
-  log.info('Update downloaded:', info.version);
-  updateDownloaded = true;
-  sendStatusToWindow('update-downloaded', info);
-
-  // Show notification to user
-  dialog.showMessageBox(mainWindow, {
-    type: 'info',
-    title: 'Update Ready',
-    message: 'Update downloaded successfully!',
-    detail: 'The update will be installed when you restart the app. Would you like to restart now?',
-    buttons: ['Restart Now', 'Later'],
-    defaultId: 0
-  }).then(({ response }) => {
-    if (response === 0) {
-      installUpdate();
-    }
-  });
-});
-
-/**
- * Send update status to renderer
- */
-function sendStatusToWindow(status, data = null) {
-  if (mainWindow && mainWindow.webContents) {
-    mainWindow.webContents.send('update-status', { status, data });
-  }
+  // DISABLED: No installation, no network calls
+  log.info('Update installation disabled per security policy');
 }
 
 /**
