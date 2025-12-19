@@ -152,11 +152,17 @@ export const ForgotPassword: React.FC<ForgotPasswordProps> = ({
 
         {/* Form */}
         <form onSubmit={handleSubmit}>
-          {/* Error Alert */}
+          {/* Error Alert - Unified amber/gold style */}
           {error && (
-            <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 flex items-start gap-2 mb-4">
-              <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" strokeWidth={1.5} />
-              <p className="text-red-400 text-xs">{error}</p>
+            <div 
+              className="rounded-lg p-3.5 flex items-start gap-2.5 mb-4"
+              style={{ backgroundColor: 'rgba(217, 119, 6, 0.1)', border: '1px solid rgba(217, 119, 6, 0.4)' }}
+            >
+              <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: '#D97706' }} strokeWidth={1.5} />
+              <div>
+                <p className="text-xs font-semibold mb-0.5" style={{ color: '#D97706' }}>Warning</p>
+                <p className="text-xs text-slate-200">{error}</p>
+              </div>
             </div>
           )}
 

@@ -31,6 +31,8 @@ import {
   BookOpen,
   Keyboard,
   Smartphone,
+  ExternalLink,
+  Globe,
 } from "lucide-react";
 import { APP_VERSION } from "../config/changelog";
 import { generateRecoveryPhrase, storeRecoveryPhrase } from "../utils/recoveryPhrase";
@@ -846,6 +848,24 @@ export const Settings: React.FC<SettingsProps> = ({
               <p className="text-slate-500 text-xs truncate">Press ? to see all shortcuts</p>
             </div>
             <kbd className="px-2 py-1 text-xs font-mono bg-slate-700 text-slate-300 rounded border border-slate-600">?</kbd>
+          </div>
+        </BouncyCard>
+
+        {/* Visit Website */}
+        <BouncyCard 
+          variant="accent" 
+          onClick={() => {
+            const url = "https://localpasswordvault.com";
+            void (window.electronAPI?.openExternal?.(url) ?? window.open(url, "_blank"));
+          }}
+        >
+          <div className="flex items-center gap-3">
+            <Globe className="w-6 h-6" strokeWidth={1.5} style={{ color: colors.brandGold }} />
+            <div className="flex-1 min-w-0">
+              <h3 style={{ color: colors.warmIvory }} className="font-semibold mb-0.5 text-sm">Visit Website</h3>
+              <p className="text-slate-500 text-xs truncate">LocalPasswordVault.com</p>
+            </div>
+            <ExternalLink className="w-4 h-4 text-slate-400" strokeWidth={1.5} />
           </div>
         </BouncyCard>
       </div>

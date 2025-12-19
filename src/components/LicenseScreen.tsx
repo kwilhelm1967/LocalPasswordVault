@@ -599,9 +599,15 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
                   </div>
 
                   {error && (
-                    <div className="flex items-center space-x-2 text-red-400 text-sm">
-                      <XCircle className="w-4 h-4" />
-                      <span>{error}</span>
+                    <div 
+                      className="rounded-lg p-3 flex items-start gap-2.5"
+                      style={{ backgroundColor: 'rgba(217, 119, 6, 0.1)', border: '1px solid rgba(217, 119, 6, 0.4)' }}
+                    >
+                      <XCircle className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: '#D97706' }} />
+                      <div>
+                        <p className="text-xs font-semibold mb-0.5" style={{ color: '#D97706' }}>Warning</p>
+                        <p className="text-xs text-slate-200">{error}</p>
+                      </div>
                     </div>
                   )}
 
@@ -676,9 +682,15 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
                   </div>
 
                   {trialKeyError && (
-                    <div className="flex items-center space-x-2 text-red-400 text-sm">
-                      <XCircle className="w-4 h-4" />
-                      <span>{trialKeyError}</span>
+                    <div 
+                      className="rounded-lg p-3 flex items-start gap-2.5"
+                      style={{ backgroundColor: 'rgba(217, 119, 6, 0.1)', border: '1px solid rgba(217, 119, 6, 0.4)' }}
+                    >
+                      <XCircle className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: '#D97706' }} />
+                      <div>
+                        <p className="text-xs font-semibold mb-0.5" style={{ color: '#D97706' }}>Warning</p>
+                        <p className="text-xs text-slate-200">{trialKeyError}</p>
+                      </div>
                     </div>
                   )}
 

@@ -4,6 +4,7 @@ import {
   Plus,
   Download,
   Lock,
+  LockOpen,
   Trash2,
   Eye,
   EyeOff,
@@ -495,8 +496,9 @@ export const FloatingPanel: React.FC<FloatingPanelProps> = ({
           onMouseDown={handleMouseDown}
         >
           <div className="flex items-center space-x-2">
-            <Lock className="w-4 h-4 text-blue-400" />
+            <LockOpen className="w-4 h-4 text-cyan-400" style={{ filter: 'drop-shadow(0 0 4px rgba(6, 182, 212, 0.5))' }} />
             <span className="text-sm font-medium text-white">Mini Vault</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
           </div>
 
           <div className="flex items-center space-x-1">

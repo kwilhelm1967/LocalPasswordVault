@@ -87,8 +87,14 @@ export const KeyActivationScreen: React.FC<KeyActivationScreenProps> = ({
             />
 
             {error && (
-              <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-xl">
-                <p className="text-red-400 text-sm text-center">{error}</p>
+              <div 
+                className="p-3.5 rounded-xl flex items-start gap-2.5"
+                style={{ backgroundColor: 'rgba(217, 119, 6, 0.1)', border: '1px solid rgba(217, 119, 6, 0.4)' }}
+              >
+                <div className="flex-1 text-center">
+                  <p className="text-xs font-semibold mb-0.5" style={{ color: '#D97706' }}>Warning</p>
+                  <p className="text-xs text-slate-200">{error}</p>
+                </div>
               </div>
             )}
           </div>

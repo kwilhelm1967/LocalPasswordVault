@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import {
   Plus,
   Lock,
+  LockOpen,
   Maximize2,
   Trash2,
   Eye,
@@ -481,14 +482,17 @@ export const ElectronFloatingPanel: React.FC<ElectronFloatingPanelProps> = ({
       {/* Header with gradient and enhanced controls */}
       <div className="bg-gradient-to-r from-slate-800/80 via-slate-800/60 to-blue-900/40 backdrop-blur-md border-b border-slate-700/50 p-4 flex items-center justify-between drag-region shadow-lg relative z-10">
         <div className="flex items-center space-x-3">
-          <div className="p-2 bg-blue-500/20 rounded-lg border border-blue-400/30 shadow-inner">
-            <Lock className="w-5 h-5 text-blue-400" />
+          <div className="p-2 bg-cyan-500/20 rounded-lg border border-cyan-400/30 shadow-inner" style={{ boxShadow: '0 0 8px rgba(6, 182, 212, 0.3)' }}>
+            <LockOpen className="w-5 h-5 text-cyan-400" />
           </div>
           <div>
             <span className="text-sm font-semibold text-white">
               Local Password Vault
             </span>
-            <p className="text-xs text-slate-400">Secure Access Panel</p>
+            <p className="text-xs text-emerald-400/80 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              Vault Unlocked
+            </p>
           </div>
         </div>
 

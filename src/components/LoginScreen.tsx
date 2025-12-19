@@ -251,11 +251,14 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
         {/* Logo & Title */}
         <header className="text-center mb-3">
           <div
-            className="w-12 h-12 bg-gradient-to-br from-blue-500 to-violet-600 rounded-xl flex items-center justify-center mx-auto mb-2 shadow-lg shadow-blue-500/25"
+            className="w-12 h-12 bg-gradient-to-br from-slate-600 to-slate-700 rounded-xl flex items-center justify-center mx-auto mb-2 shadow-lg"
+            style={{ 
+              boxShadow: '0 4px 15px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255,255,255,0.1)'
+            }}
             role="img"
-            aria-label="Security lock icon"
+            aria-label="Security lock icon - vault locked"
           >
-            <Lock className="w-6 h-6 text-white" aria-hidden="true" />
+            <Lock className="w-6 h-6 text-slate-300" aria-hidden="true" />
           </div>
           <h1
             id="login-title"
@@ -264,7 +267,14 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
             Local Password Vault
           </h1>
           <p
-            className="text-slate-400 text-sm"
+            className="text-slate-500 text-xs mt-1 flex items-center justify-center gap-1.5"
+            id="login-status"
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-slate-500"></span>
+            Vault Locked
+          </p>
+          <p
+            className="text-slate-400 text-sm mt-2"
             id="login-subtitle"
           >
             {isFirstTime ? "Create your master password" : "Welcome back"}
@@ -310,15 +320,22 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
               </div>
             )}
             
-            {/* Error Alert */}
+            {/* Error Alert - Unified amber/gold style */}
             {error && !lockoutSeconds && (
               <div
-                className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 flex items-center gap-2"
+                className="rounded-lg p-3.5 flex items-start gap-2.5"
+                style={{
+                  backgroundColor: 'rgba(217, 119, 6, 0.1)',
+                  border: '1px solid rgba(217, 119, 6, 0.4)',
+                }}
                 role="alert"
                 aria-live="assertive"
               >
-                <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0" aria-hidden="true" />
-                <p id="login-error" className="text-red-400 text-xs font-medium">{error}</p>
+                <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: '#D97706' }} aria-hidden="true" />
+                <div>
+                  <p className="text-xs font-semibold mb-0.5" style={{ color: '#D97706' }}>Warning</p>
+                  <p id="login-error" className="text-xs text-slate-200">{error}</p>
+                </div>
               </div>
             )}
 

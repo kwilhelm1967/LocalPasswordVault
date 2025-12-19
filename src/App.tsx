@@ -29,11 +29,13 @@ import { useNotification, Notification } from "./components/Notification";
 import { useWhatsNew } from "./components/WhatsNewModal";
 import { useOnboarding } from "./components/OnboardingTutorial";
 import { useKeyboardShortcuts } from "./components/KeyboardShortcutsModal";
+import { useSecurityBriefing } from "./components/SecurityBriefing";
 
 // Lazy load modals - only shown occasionally
 const WhatsNewModal = lazy(() => import("./components/WhatsNewModal").then(m => ({ default: m.WhatsNewModal })));
 const OnboardingTutorial = lazy(() => import("./components/OnboardingTutorial").then(m => ({ default: m.OnboardingTutorial })));
 const KeyboardShortcutsModal = lazy(() => import("./components/KeyboardShortcutsModal").then(m => ({ default: m.KeyboardShortcutsModal })));
+const SecurityBriefing = lazy(() => import("./components/SecurityBriefing").then(m => ({ default: m.SecurityBriefing })));
 
 // Simple loading fallback
 const LoadingFallback = () => (
@@ -592,6 +594,9 @@ function App() {
   // Keyboard shortcuts modal state
   const { isShortcutsOpen, openShortcuts, closeShortcuts } = useKeyboardShortcuts();
 
+  // Security briefing state (first-run security essentials)
+  const { showBriefing, checkBriefing, completeBriefing } = useSecurityBriefing();
+
   // Notification system (replaces browser alert())
   const { notification, dismissNotification, notify } = useNotification();
 
@@ -615,6 +620,17 @@ function App() {
     window.addEventListener('show-keyboard-shortcuts', handleShowShortcuts);
     return () => window.removeEventListener('show-keyboard-shortcuts', handleShowShortcuts);
   }, [openShortcuts]);
+
+  // Check for security briefing when vault is unlocked
+  useEffect(() => {
+    if (!isLocked) {
+      // Small delay to let the main UI settle
+      const timer = setTimeout(() => {
+        checkBriefing();
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [isLocked, checkBriefing]);
 
   // Warning popup callback
   const handleWarningPopup = useCallback((state: WarningPopupState) => {
@@ -1133,6 +1149,12 @@ function App() {
 
       {/* Lazy-loaded modals wrapped in Suspense */}
       <Suspense fallback={null}>
+        {/* Security Briefing - first-run security essentials (shows before onboarding) */}
+        <SecurityBriefing
+          isOpen={showBriefing}
+          onComplete={completeBriefing}
+        />
+
         {/* What's New Modal */}
         <WhatsNewModal 
           isOpen={whatsNewOpen} 
@@ -1144,7 +1166,7 @@ function App() {
 
         {/* Onboarding Tutorial */}
         <OnboardingTutorial
-          isOpen={showOnboarding}
+          isOpen={showOnboarding && !showBriefing}
           onClose={() => setShowOnboarding(false)}
           onComplete={completeOnboarding}
         />

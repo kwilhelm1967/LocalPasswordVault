@@ -201,13 +201,16 @@ export const MobileAccess = ({ onClose }: MobileAccessProps) => {
             </div>
           </div>
 
-          {/* Error Message */}
+          {/* Error Message - Unified amber/gold style */}
           {error && (
             <div 
-              className="rounded-lg p-3 mb-4 flex items-center gap-2"
-              style={{ backgroundColor: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)' }}
+              className="rounded-lg p-3.5 mb-4 flex items-start gap-2.5"
+              style={{ backgroundColor: 'rgba(217, 119, 6, 0.1)', border: '1px solid rgba(217, 119, 6, 0.4)' }}
             >
-              <span className="text-sm text-red-400">{error}</span>
+              <div className="flex-1">
+                <p className="text-xs font-semibold mb-0.5" style={{ color: '#D97706' }}>Warning</p>
+                <p className="text-xs text-slate-200">{error}</p>
+              </div>
               <button
                 type="button"
                 onClick={() => setError("")}

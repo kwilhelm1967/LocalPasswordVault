@@ -12,6 +12,7 @@ import {
   Key,
   Settings as SettingsIcon,
   Lock,
+  LockOpen,
   LayoutDashboard,
   AlertTriangle,
   Minimize2,
@@ -103,15 +104,18 @@ export const VaultSidebar: React.FC<VaultSidebarProps> = ({
         <div className="flex items-center gap-3">
           <div 
             className="w-9 h-9 rounded-lg flex items-center justify-center transition-transform hover:scale-105"
-            style={{ background: `linear-gradient(135deg, ${colors.steelBlue500}, ${colors.steelBlue600})` }}
+            style={{ 
+              background: `linear-gradient(135deg, ${colors.steelBlue500}, ${colors.steelBlue600})`,
+              boxShadow: '0 0 12px rgba(6, 182, 212, 0.4), 0 0 24px rgba(6, 182, 212, 0.2)'
+            }}
           >
-            <Shield className="w-5 h-5 text-white" strokeWidth={1.5} />
+            <LockOpen className="w-5 h-5 text-cyan-300" strokeWidth={1.5} />
           </div>
           <div>
             <h1 className="text-sm font-semibold" style={{ color: colors.warmIvory }}>
               Local Password Vault
             </h1>
-            <p className="text-[10px] text-slate-500">AES-256 Encrypted</p>
+            <p className="text-[10px] text-emerald-400/80">● Vault Unlocked</p>
           </div>
         </div>
       </div>

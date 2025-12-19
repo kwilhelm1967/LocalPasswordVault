@@ -180,7 +180,12 @@ export const EncryptedExportModal: React.FC<ExportModalProps> = ({
           </div>
           
           {error && (
-            <p className="text-red-400 text-xs bg-red-500/10 p-2 rounded">{error}</p>
+            <div 
+              className="rounded-lg p-2.5 flex items-start gap-2"
+              style={{ backgroundColor: 'rgba(217, 119, 6, 0.1)', border: '1px solid rgba(217, 119, 6, 0.4)' }}
+            >
+              <p className="text-xs text-slate-200">{error}</p>
+            </div>
           )}
           
           <div className="flex gap-3 pt-2">
@@ -330,7 +335,12 @@ export const EncryptedImportModal: React.FC<ImportModalProps> = ({
           </div>
           
           {error && (
-            <p className="text-red-400 text-xs bg-red-500/10 p-2 rounded">{error}</p>
+            <div 
+              className="rounded-lg p-2.5 flex items-start gap-2"
+              style={{ backgroundColor: 'rgba(217, 119, 6, 0.1)', border: '1px solid rgba(217, 119, 6, 0.4)' }}
+            >
+              <p className="text-xs text-slate-200">{error}</p>
+            </div>
           )}
           
           <div className="flex gap-3 pt-2">
@@ -361,6 +371,9 @@ export default {
   EncryptedExportModal,
   EncryptedImportModal,
 };
+
+
+
 
 
 
