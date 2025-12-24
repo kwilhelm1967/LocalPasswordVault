@@ -94,13 +94,26 @@ backend/
 
 ## Pricing
 
+### Individual Products
+
 | Plan | Price | Devices |
 |------|-------|---------|
 | Free Trial | $0 | 1 (7 days) |
-| Personal Vault | $49 | 1 (lifetime) |
-| Family Vault | $79 | 5 (lifetime) |
-| **Family Protection Bundle** | **$179** | **5 devices (both products)** |
-| *Save $29 when buying LPV Family + LLV Family together* | | |
+| Personal Vault (LPV) | $49 | 1 (lifetime) |
+| Family Vault (LPV) | $79 | 5 (lifetime) |
+| Local Legacy Vault - Personal (LLV) | $49 | 1 (lifetime) |
+| Local Legacy Vault - Family (LLV) | $129 | 5 (lifetime) |
+
+### Bundle Options (All bundles receive 13.94% discount)
+
+| Bundle | Products Included | Regular Price | Bundle Price | Savings |
+|--------|------------------|---------------|--------------|---------|
+| **Personal Bundle** | LPV Personal + LLV Personal | $98 | **$84** | $14 |
+| **Family Protection Bundle** | LPV Family + LLV Family | $208 | **$179** | $29 |
+| **Mixed Bundle** | LPV Personal + LLV Family | $178 | **$153** | $25 |
+| **Mixed Bundle** | LPV Family + LLV Personal | $128 | **$110** | $18 |
+
+*All bundles automatically receive a 13.94% discount when purchasing multiple products together.*
 
 ## Support
 

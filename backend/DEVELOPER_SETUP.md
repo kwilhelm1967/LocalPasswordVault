@@ -100,10 +100,16 @@ STRIPE_PRICE_LLV_FAMILY=price_xxxxx
 ```
 
 **Bundle Support:**
-- The backend automatically applies discounts for bundles:
-  - **Family Protection Bundle**: LPV Family ($79) + LLV Family ($129) = $179 (save $29)
-  - **Personal Bundle**: LPV Personal ($49) + LLV Personal ($49) = $79 (save $19)
+- The backend automatically applies a **13.94% discount** to all bundle purchases
 - Use `POST /api/checkout/bundle` endpoint with multiple products
+
+**Available Bundle Options:**
+1. **Personal Bundle**: LPV Personal ($49) + LLV Personal ($49) = $98 → **$84** (save $14)
+2. **Family Protection Bundle**: LPV Family ($79) + LLV Family ($129) = $208 → **$179** (save $29)
+3. **Mixed Bundle**: LPV Personal ($49) + LLV Family ($129) = $178 → **$153** (save $25)
+4. **Mixed Bundle**: LPV Family ($79) + LLV Personal ($49) = $128 → **$110** (save $18)
+
+All bundles receive the same percentage discount (13.94%) for consistency.
 
 ---
 
