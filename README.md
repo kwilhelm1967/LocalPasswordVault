@@ -200,9 +200,12 @@ npm run lint          # Run ESLint
 
 | Plan | Price | Keys | Devices |
 |------|-------|------|---------|
-| **Personal Vault** | $49 | 1 | 1 |
-| **Family Vault** | $79 | 5 | 5 |
 | **Free Trial** | $0 | — | 1 (7 days) |
+| **Personal Vault** | $49 | 1 | 1 (lifetime) |
+| **Family Vault** | $79 | 5 | 5 (lifetime) |
+| **Family Protection Bundle** | **$179** | **10** | **5 devices (both products)** |
+
+*Save $29 when buying LPV Family + LLV Family together*
 
 All paid plans are **one-time lifetime purchases** — no subscriptions, no recurring fees.
 

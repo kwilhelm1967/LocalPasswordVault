@@ -47,7 +47,7 @@ const PRODUCTS = {
   llv_family: {
     name: 'Local Legacy Vault - Family',
     description: 'Lifetime license for up to 5 devices',
-    price: 7900, // $79.00 in cents (adjust as needed)
+    price: 12900, // $129.00 in cents
     priceId: process.env.STRIPE_PRICE_LLV_FAMILY, // Set in .env
     maxDevices: 5,
     productType: 'llv',
