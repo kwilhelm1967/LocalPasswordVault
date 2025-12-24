@@ -23,10 +23,10 @@ const path = require('path');
  * Load and process HTML email template
  */
 function loadTemplate(templateName, variables = {}) {
-  const templatePath = path.join(__dirname, '..', 'templates', 'brevo', `${templateName}.html`);
+  const templatePath = path.join(__dirname, '..', 'templates', `${templateName}.html`);
   let html = fs.readFileSync(templatePath, 'utf-8');
   
-  // Replace Brevo-style variables {{ params.X }}
+  // Replace template variables {{ params.X }}
   for (const [key, value] of Object.entries(variables)) {
     const regex = new RegExp(`\\{\\{\\s*params\\.${key}\\s*\\}\\}`, 'g');
     html = html.replace(regex, value);
@@ -50,7 +50,7 @@ function formatDate(date) {
  * Send trial expiring email (24-hour warning)
  */
 async function sendTrialExpiringEmail(email, expiresAt) {
-  const html = loadTemplate('trial-expiring', {
+  const html = loadTemplate('trial-expires-tomorrow-email', {
     EXPIRES_AT: formatDate(expiresAt),
   });
 
@@ -70,7 +70,7 @@ async function sendTrialExpiringEmail(email, expiresAt) {
  * Send trial expired email (with discount)
  */
 async function sendTrialExpiredEmail(email, expiredDate) {
-  const html = loadTemplate('trial-expired', {
+  const html = loadTemplate('trial-expired-email', {
     EXPIRED_DATE: formatDate(expiredDate),
     EMAIL: email,
   });

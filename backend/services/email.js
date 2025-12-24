@@ -44,10 +44,9 @@ function loadTemplate(templateName, variables = {}) {
   const templatePath = path.join(__dirname, '..', 'templates', `${templateName}.html`);
   let html = fs.readFileSync(templatePath, 'utf-8');
   
-  // Replace all {{variable}} placeholders
+  // Replace template variables {{ params.KEY }}
   for (const [key, value] of Object.entries(variables)) {
-    // Escape braces in regex
-    const regex = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
+    const regex = new RegExp(`\\{\\{\\s*params\\.${key}\\s*\\}\\}`, 'g');
     html = html.replace(regex, value);
   }
   
@@ -115,18 +114,17 @@ async function sendPurchaseEmail({ to, licenseKey, planType, amount }) {
   const amountFormatted = `$${(amount / 100).toFixed(2)}`;
   const maxDevices = planType === 'family' ? '5' : '1';
   
-  const html = loadTemplate('purchase-email', {
-    licenseKey,
-    planName,
-    amount: amountFormatted,
-    maxDevices,
-    date: new Date().toLocaleDateString('en-US', {
+  const html = loadTemplate('purchase-confirmation-email', {
+    LICENSE_KEY: licenseKey,
+    PLAN_NAME: planName,
+    AMOUNT: amountFormatted,
+    MAX_DEVICES: maxDevices,
+    ORDER_DATE: new Date().toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
     }),
-    supportEmail: process.env.SUPPORT_EMAIL || 'support@localpasswordvault.com',
-    websiteUrl: process.env.WEBSITE_URL || 'https://localpasswordvault.com',
+    ORDER_ID: `ORDER-${Date.now()}`,
   });
 
   const text = `
@@ -179,13 +177,14 @@ async function sendTrialEmail({ to, trialKey, expiresAt }) {
     day: 'numeric',
   });
   
-  const html = loadTemplate('trial-email', {
-    trialKey,
-    expiresAt: expiresFormatted,
-    daysRemaining: '7',
-    supportEmail: process.env.SUPPORT_EMAIL || 'support@localpasswordvault.com',
-    websiteUrl: process.env.WEBSITE_URL || 'https://localpasswordvault.com',
-    purchaseUrl: `${process.env.WEBSITE_URL || 'https://localpasswordvault.com'}/pricing`,
+  const html = loadTemplate('trial-welcome-email', {
+    TRIAL_KEY: trialKey,
+    EXPIRES_AT: expiresFormatted,
+    SIGNUP_DATE: new Date().toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    }),
   });
 
   const text = `
@@ -293,13 +292,8 @@ async function sendBundleEmail({ to, licenses, totalAmount, orderId = null }) {
     TOTAL_AMOUNT: totalFormatted,
     LICENSE_KEYS_HTML: licensesHtml,
     ORDER_DATE: date,
-    ORDER_ID: orderId || 'N/A',
+    ORDER_ID: orderId || `ORDER-${Date.now()}`,
   });
-  
-  const totalKeyCount = licenses.reduce((sum, license) => {
-    const keys = license.keys || [license.key];
-    return sum + keys.length;
-  }, 0);
   
   const text = `
 Thank you for purchasing the Family Protection Bundle!
