@@ -42,7 +42,7 @@ router.post('/stripe', express.raw({ type: 'application/json' }), async (req, re
   }
   
   // Check for duplicate events
-  const existingEvent = db.webhookEvents.exists.get(event.id);
+  const existingEvent = await db.webhookEvents.exists(event.id);
   if (existingEvent) {
     console.log(`Duplicate webhook event ignored: ${event.id}`);
     return res.json({ received: true, duplicate: true });
@@ -50,7 +50,7 @@ router.post('/stripe', express.raw({ type: 'application/json' }), async (req, re
   
   // Log the event
   try {
-    db.webhookEvents.create.run({
+    await db.webhookEvents.create({
       stripe_event_id: event.id,
       event_type: event.type,
       payload: JSON.stringify(event.data),
@@ -80,11 +80,11 @@ router.post('/stripe', express.raw({ type: 'application/json' }), async (req, re
     }
     
     // Mark event as processed
-    db.webhookEvents.markProcessed.run(event.id);
+    await db.webhookEvents.markProcessed(event.id);
     
   } catch (error) {
     console.error('Error processing webhook:', error);
-    db.webhookEvents.markError.run(error.message, event.id);
+    await db.webhookEvents.markError(event.id, error.message);
     // Return 200 anyway to prevent Stripe from retrying
     // The error is logged for manual review
   }
@@ -102,7 +102,7 @@ async function handleCheckoutCompleted(session) {
   console.log('Processing checkout session:', session.id);
   
   // Check if we already processed this session
-  const existingLicense = db.licenses.findBySessionId.get(session.id);
+  const existingLicense = await db.licenses.findBySessionId(session.id);
   if (existingLicense) {
     console.log('License already exists for session:', session.id);
     return;
@@ -122,16 +122,15 @@ async function handleCheckoutCompleted(session) {
   }
   
   // Get or create customer record
-  let customer = db.customers.findByEmail.get(customerEmail);
+  let customer = await db.customers.findByEmail(customerEmail);
   if (!customer) {
-    db.customers.create.run({
+    customer = await db.customers.create({
       email: customerEmail,
       stripe_customer_id: fullSession.customer || null,
       name: fullSession.customer_details?.name || null,
     });
-    customer = db.customers.findByEmail.get(customerEmail);
   } else if (fullSession.customer && !customer.stripe_customer_id) {
-    db.customers.updateStripeId.run({
+    customer = await db.customers.updateStripeId({
       email: customerEmail,
       stripe_customer_id: fullSession.customer,
     });
@@ -185,7 +184,7 @@ async function handleCheckoutCompleted(session) {
       const licenseKey = keyGenerator();
       
       // Create license record for each key
-      db.licenses.create.run({
+      await db.licenses.create({
         license_key: licenseKey,
         plan_type: planType,
         product_type: product.productType || 'lpv',
@@ -216,10 +215,10 @@ async function handleCheckoutCompleted(session) {
   }
   
   // Mark any existing trial as converted
-  const existingTrial = db.trials.findByEmail.get(customerEmail);
-  if (existingTrial && licenses.length > 0) {
-    const firstLicense = db.licenses.findByKey.get(licenses[0].key);
-    db.trials.markConverted.run({
+  const existingTrial = await db.trials.findByEmail(customerEmail);
+  if (existingTrial && licenses.length > 0 && licenses[0].keys && licenses[0].keys.length > 0) {
+    const firstLicense = await db.licenses.findByKey(licenses[0].keys[0]);
+    await db.trials.markConverted({
       email: customerEmail,
       license_id: firstLicense?.id || null,
     });
@@ -239,8 +238,8 @@ async function handleCheckoutCompleted(session) {
       } else {
       await sendPurchaseEmail({
         to: customerEmail,
-        licenseKey: licenses[0].key,
-        planType: licenses[0].planType,
+        licenseKey: licenses[0].keys[0],
+        planName: licenses[0].productName,
         amount: licenses[0].amount,
       });
       console.log(`Purchase email sent to ${customerEmail}`);
