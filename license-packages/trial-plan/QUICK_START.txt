@@ -46,7 +46,7 @@ Visit: https://LocalPasswordVault.com/pricing
 
 ================================================================================
 
-Need help? See GETTING_STARTED.txt or visit LocalPasswordVault.com/kb
+Need help? See GETTING_STARTED.txt or visit LocalPasswordVault.com
 
 ================================================================================
 

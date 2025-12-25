@@ -129,15 +129,14 @@ Personal Plan - $49
 - 1 device, lifetime license
 - All features forever
 - Perfect for individuals
-- https://LocalPasswordVault.com/buy/personal
+- Visit: https://LocalPasswordVault.com/pricing
 
 Family Plan - $79
 -----------------
 - 5 devices, lifetime license
 - All features forever
-- Priority support
 - Perfect for households
-- https://LocalPasswordVault.com/buy/family
+- Visit: https://LocalPasswordVault.com/pricing
 
 After purchase:
 1. Enter your new license key in Settings > License
@@ -168,7 +167,7 @@ A: No! All data stays 100% on your device.
 ================================================================================
 
 Email: support@LocalPasswordVault.com
-Website: https://LocalPasswordVault.com/kb
+Website: https://LocalPasswordVault.com
 
 ================================================================================
 

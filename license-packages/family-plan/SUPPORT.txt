@@ -1,19 +1,12 @@
 ================================================================================
                     LOCAL PASSWORD VAULT - SUPPORT
-                         Family Plan (Priority)
+                              Family Plan
 ================================================================================
 
-                      ⭐ PRIORITY SUPPORT ACCESS ⭐
-================================================================================
-
-As a Family Plan customer, you receive priority support!
-
-Priority Email:  priority@LocalPasswordVault.com
-Response Time:   Within 24 hours (7 days a week)
-Knowledge Base:  https://LocalPasswordVault.com/kb
+Support Email: support@LocalPasswordVault.com
+Website:       https://LocalPasswordVault.com
 
 When contacting support:
-- Mention you have a Family Plan
 - Include the affected license key
 - Specify which family member needs help
 
@@ -25,7 +18,7 @@ ISSUE: "License Key Already in Use"
 -----------------------------------
 Each key can only activate ONE device. Solutions:
 1. Check if the key was used on another device in the family
-2. If the old device is gone, contact priority support to reset the key
+2. If the old device is gone, contact support to reset the key
 3. Make sure each family member uses THEIR assigned key
 
 ISSUE: Family Member Forgot Master Password
@@ -49,12 +42,12 @@ ISSUE: Device Replacement
 To move a license to a new device:
 1. On OLD device: Settings > License > Deactivate
 2. On NEW device: Enter the same license key
-3. If old device is lost: Contact priority support to reset
+3. If old device is lost: Contact support to reset
 
 ISSUE: Need More Than 5 Licenses
 --------------------------------
 Contact us for additional licenses or to discuss larger family needs.
-Email: priority@LocalPasswordVault.com
+Email: support@LocalPasswordVault.com
 
 ================================================================================
                     💡 FAMILY-SPECIFIC TIPS
@@ -94,16 +87,7 @@ Use Local Password Vault to teach good habits:
                          📚 SELF-HELP RESOURCES
 ================================================================================
 
-Knowledge Base
---------------
-https://LocalPasswordVault.com/kb
-- Installation guides
-- Feature tutorials
-- Troubleshooting
-
-Video Tutorials
----------------
-https://LocalPasswordVault.com/tutorials
+For help and resources, visit: https://LocalPasswordVault.com
 - Family setup guide
 - Per-person setup
 - Best practices

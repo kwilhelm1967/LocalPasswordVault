@@ -164,7 +164,7 @@ Escape           - Close dialogs
 
 - See SUPPORT.txt for contact information
 - See FEATURES.txt for complete feature list
-- Visit: https://LocalPasswordVault.com/kb
+- Visit: https://LocalPasswordVault.com
 
 ================================================================================
 

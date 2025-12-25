@@ -45,15 +45,15 @@ FOR EACH FAMILY MEMBER:
 ⚠️  Vaults are private - family can't see each other's passwords
 
 ================================================================================
-                           FAMILY PRIORITY SUPPORT
+                              SUPPORT
 ================================================================================
 
-Email: priority@LocalPasswordVault.com
-Response: Within 24 hours
+Email: support@LocalPasswordVault.com
+Website: https://LocalPasswordVault.com
 
 ================================================================================
 
-Need more help? See GETTING_STARTED.txt or visit LocalPasswordVault.com/kb
+Need more help? See GETTING_STARTED.txt or visit LocalPasswordVault.com
 
 ================================================================================
 

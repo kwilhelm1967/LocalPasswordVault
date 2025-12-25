@@ -65,7 +65,6 @@ Family Plan - $79 (Lifetime)
 - 5 device licenses
 - One-time purchase
 - All features forever
-- Priority support
 - Best for households
 
 Visit: https://LocalPasswordVault.com/pricing
@@ -98,7 +97,7 @@ This backup can be imported after you purchase a license.
 
 Email:          support@LocalPasswordVault.com
 Website:        https://LocalPasswordVault.com
-Knowledge Base: https://LocalPasswordVault.com/kb
+Website: https://LocalPasswordVault.com
 
 ================================================================================
 

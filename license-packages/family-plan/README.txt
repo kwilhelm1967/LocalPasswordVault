@@ -16,7 +16,7 @@ gets their own private, encrypted vault that never leaves their device.
 ✓ 5 Unique License Keys (one per family member)
 ✓ Each person has their own private vault
 ✓ All Personal Plan features included
-✓ Priority support
+✓ Full support access
 ✓ Free updates for life
 
 ================================================================================
@@ -62,15 +62,13 @@ For each family member:
 4. Start storing YOUR passwords
 
 ================================================================================
-                           PRIORITY SUPPORT
+                              SUPPORT
 ================================================================================
 
-As a Family Plan customer, you get priority support:
+Support Email: support@LocalPasswordVault.com
+Website: https://LocalPasswordVault.com
 
-Priority Email: priority@LocalPasswordVault.com
-Response Time:  Within 24 hours (7 days a week)
-
-When contacting support, mention you have a Family Plan license.
+When contacting support, include your license key and describe the issue.
 
 ================================================================================
                               IMPORTANT NOTES
@@ -79,7 +77,7 @@ When contacting support, mention you have a Family Plan license.
 ⚠️  Each person's master password CANNOT be recovered.
 ⚠️  Each person should create their own backups.
 ⚠️  Vaults are private - family members cannot see each other's passwords.
-⚠️  Lost a key? Contact priority support.
+⚠️  Lost a key? Contact support.
 
 ================================================================================
 

@@ -6,10 +6,8 @@
                          📧 CONTACT SUPPORT
 ================================================================================
 
-Email:          support@LocalPasswordVault.com
-Response Time:  Within 48 hours (business days)
-Website:        https://LocalPasswordVault.com
-Knowledge Base: https://LocalPasswordVault.com/kb
+Email:   support@LocalPasswordVault.com
+Website: https://LocalPasswordVault.com
 
 ================================================================================
                          🔧 TRIAL-SPECIFIC ISSUES
@@ -70,8 +68,7 @@ ISSUE: Import Failed
                          📚 SELF-HELP RESOURCES
 ================================================================================
 
-Knowledge Base: https://LocalPasswordVault.com/kb
-Video Tutorials: https://LocalPasswordVault.com/tutorials
+For help and resources, visit: https://LocalPasswordVault.com
 
 ================================================================================
                          📝 BEFORE CONTACTING SUPPORT
@@ -105,7 +102,6 @@ Personal Plan: $49 (1 device, lifetime)
 
 Family Plan: $79 (5 devices, lifetime)
 - Best for households
-- Includes priority support
 
 Visit: https://LocalPasswordVault.com/pricing
 

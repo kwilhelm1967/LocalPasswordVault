@@ -52,7 +52,7 @@ Keep this key safe! You'll need it if you reinstall or move to a new device.
 
 Email: support@LocalPasswordVault.com
 Website: https://LocalPasswordVault.com
-Knowledge Base: https://LocalPasswordVault.com/kb
+Website: https://LocalPasswordVault.com
 
 ================================================================================
                               IMPORTANT NOTES

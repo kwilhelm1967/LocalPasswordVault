@@ -30,7 +30,7 @@ Option A - Share the installer file directly:
 - AirDrop (Mac)
 
 Option B - Each person downloads:
-- Visit: https://LocalPasswordVault.com/download
+- Visit: https://LocalPasswordVault.com
 - Download the version for their operating system
 
 ================================================================================
@@ -128,7 +128,7 @@ Option 2: Designated "family passwords" manager
 "Key Already in Use"
 - Each key can only activate ONE device
 - Check if that key was used on another device
-- Contact priority support to reset if needed
+- Contact support to reset if needed
 
 "Wrong Key Type"
 - Ensure you're using a FMLY-XXXX-XXXX-XXXX key
@@ -140,13 +140,11 @@ Option 2: Designated "family passwords" manager
 - Otherwise, must start fresh with new vault
 
 ================================================================================
-                    PRIORITY SUPPORT
+                              SUPPORT
 ================================================================================
 
-Family Plan includes priority support:
-
-Email: priority@LocalPasswordVault.com
-Response: Within 24 hours, 7 days a week
+Support Email: support@LocalPasswordVault.com
+Website: https://LocalPasswordVault.com
 
 When contacting, include:
 - The affected license key

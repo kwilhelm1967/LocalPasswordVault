@@ -82,4 +82,3 @@ Include the appropriate plan folder contents with each installer:
 
 - **Website**: https://LocalPasswordVault.com
 - **Support**: support@LocalPasswordVault.com
-- **Priority Support**: priority@LocalPasswordVault.com (Family Plan)

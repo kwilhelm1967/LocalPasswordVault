@@ -16,12 +16,11 @@ One license key per person, one device per key.
 Each family member gets their own key. No sharing, no conflicts.
 Easy to track who has which license.
 
-Priority Support
-----------------
-Family customers get faster support response:
-- Email: priority@LocalPasswordVault.com
-- Response within 24 hours, 7 days a week
-- Mention your Family Plan status for priority handling
+Full Support Access
+-------------------
+All customers receive the same quality support:
+- Email: support@LocalPasswordVault.com
+- Website: https://LocalPasswordVault.com
 
 Independent Vaults
 ------------------
