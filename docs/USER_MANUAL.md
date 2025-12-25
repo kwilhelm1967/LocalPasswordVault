@@ -391,6 +391,27 @@ Local Password Vault is intentionally offline-only for maximum security. To tran
 2. Securely transfer the file
 3. Import on the other device
 
+### License Transfers
+
+You may transfer your license to a new device if needed:
+
+**Transfer Limits:**
+- **3 transfers per year** per license key
+- Each transfer deactivates the license on the previous device
+- Transfer count resets 12 months after your first transfer
+
+**How to Transfer:**
+1. Open Local Password Vault on your new device
+2. Enter your license key
+3. The app will detect the device mismatch
+4. Confirm the transfer when prompted
+5. The license will be activated on the new device
+
+**Important Notes:**
+- Transfers require an internet connection for validation
+- If you exceed 3 transfers in a year, contact support for assistance
+- Plan your device changes carefully to avoid hitting the limit
+
 ### What if I lose my device?
 
 Your vault is encrypted with your master password. Without the password, the data cannot be accessed. However, you should:
