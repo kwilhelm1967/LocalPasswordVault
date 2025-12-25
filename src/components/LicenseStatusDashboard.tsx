@@ -264,6 +264,34 @@ export const LicenseStatusDashboard: React.FC<LicenseStatusDashboardProps> = ({
                 </div>
               )}
 
+              {localLicense && typeof localLicense.transfer_count === 'number' && (
+                <div className="flex items-center justify-between py-2 border-b border-slate-700/50">
+                  <span className="text-sm text-slate-400">Transfers Used</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-slate-300">
+                      {localLicense.transfer_count} / 3
+                    </span>
+                    {localLicense.transfer_count >= 3 && (
+                      <span className="text-xs px-2 py-0.5 rounded" style={{ 
+                        backgroundColor: 'rgba(245, 158, 11, 0.2)',
+                        color: colors.warningAmber 
+                      }}>
+                        Limit Reached
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {localLicense?.last_transfer_at && (
+                <div className="flex items-center justify-between py-2">
+                  <span className="text-sm text-slate-400">Last Transfer</span>
+                  <span className="text-sm text-slate-300">
+                    {formatDate(localLicense.last_transfer_at)}
+                  </span>
+                </div>
+              )}
+
               {licenseInfo.type === 'trial' && (
                 <div className="mt-4 p-3 rounded-lg" style={{ backgroundColor: 'rgba(245, 158, 11, 0.1)' }}>
                   <div className="flex items-center gap-2 mb-2">

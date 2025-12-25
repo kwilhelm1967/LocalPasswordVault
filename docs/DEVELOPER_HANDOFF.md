@@ -32,9 +32,10 @@ This document outlines what's **already implemented** and what **remains** for a
    - Location: `backend/database/db.js`, `backend/database/schema.sql`
 
 4. **API Endpoints** ✅
-   - `POST /api/lpv/license/activate` - LPV activation (device binding)
+   - `POST /api/lpv/license/activate` - LPV activation (returns signed license file)
    - `POST /api/lpv/license/transfer` - License transfer to new device
-   - `POST /api/licenses/validate` - Legacy validation (returns JWT)
+   - `POST /api/lpv/license/status/:key` - License status check
+   - `POST /api/licenses/validate` - Legacy validation endpoint (still uses JWT for backward compatibility)
    - `GET /api/checkout/session/:sessionId` - Retrieve license after purchase
    - `POST /api/trial/signup` - Trial signup
    - Location: `backend/routes/`
@@ -65,24 +66,21 @@ This document outlines what's **already implemented** and what **remains** for a
 
 ### Critical Issues
 
-#### 1. **Family Plan max_devices Bug** 🔴 HIGH PRIORITY
+#### 1. **Family Plan Model** ✅ COMPLETE
 
-**Problem:**
-- Family plans are being created with `max_devices: 1` instead of `5` in webhook handler
-- This prevents family plans from activating on multiple devices
+**Model:** Family Plan = 5 Separate Keys, Each for 1 Device (No Sharing)
+- Family plan purchase generates 5 distinct license keys
+- Each key can be activated on 1 device only
+- Keys cannot be shared or reused on multiple devices
+- Each key behaves like a personal license (single device binding)
 
-**Location:** `backend/routes/webhooks.js:151`
+**Implementation:**
+- `backend/routes/webhooks.js` - Generates 5 keys with `max_devices: 1` each
+- `backend/routes/lpv-licenses.js` - Enforces single device binding per key
+- `docs/FAMILY_PLAN_MODEL.md` - Complete model documentation
+- `docs/TESTING_FAMILY_PLAN.md` - Comprehensive testing guide
 
-**Fix:**
-```javascript
-// Change from:
-max_devices: 1,
-
-// To:
-max_devices: product.maxDevices, // Use product.maxDevices (1 or 5)
-```
-
-**Status:** ✅ FIXED - See commit history
+**Status:** ✅ COMPLETE - This is the intended design
 
 ---
 
@@ -92,7 +90,7 @@ max_devices: product.maxDevices, // Use product.maxDevices (1 or 5)
 - **Status:** COMPLETE
 - **Implementation:** Signed license files with HMAC-SHA256
 - **Location:** `backend/services/licenseSigner.js`, `src/utils/licenseValidator.ts`
-- **Note:** JWT approach was replaced with signed license files for better privacy
+- **Note:** Uses signed license files (not JWT) for offline validation. Legacy `/api/licenses/validate` endpoint still uses JWT for backward compatibility, but main LPV activation uses signed license files.
 
 #### ✅ **Family Plan Device Management UI**
 - **Status:** COMPLETE
@@ -287,19 +285,19 @@ max_devices: product.maxDevices, // Use product.maxDevices (1 or 5)
 1. ✅ Backend license generation
 2. ✅ Stripe integration
 3. ✅ Database setup
-4. ⚠️ **JWT token return in activation endpoint**
-5. ⚠️ **Offline JWT validation (or confirm local file approach)**
+4. ✅ **Signed license file return in activation endpoint**
+5. ✅ **Offline validation with signed license files**
 
 ### Phase 2: Important (Should Have)
-6. ⚠️ Family plan device management UI
-7. ⚠️ Bundle purchase frontend handling
-8. ⚠️ Comprehensive error handling
-9. ⚠️ Edge case testing
+6. ✅ Family plan device management UI
+7. ✅ Bundle purchase frontend handling
+8. ✅ Comprehensive error handling
+9. ⚠️ Edge case testing (recommended)
 
 ### Phase 3: Nice to Have
-10. Device management screen
-11. License status dashboard
-12. Transfer history
+10. ✅ Device management screen
+11. ✅ License status dashboard
+12. ⚠️ Transfer history display (in progress)
 
 ---
 
@@ -309,8 +307,8 @@ max_devices: product.maxDevices, // Use product.maxDevices (1 or 5)
 
 ```bash
 # Backend endpoints
-backend/routes/lpv-licenses.js    # LPV activation (no JWT currently)
-backend/routes/licenses.js         # Legacy validation (has JWT)
+backend/routes/lpv-licenses.js    # LPV activation (returns signed license file)
+backend/routes/licenses.js         # Legacy validation (uses JWT for backward compatibility)
 backend/routes/webhooks.js         # Stripe payment handling
 
 # Frontend services
@@ -330,18 +328,19 @@ src/components/LicenseScreen.tsx   # Activation UI
 
 ### 3. Identify Gaps
 
-- Check if JWT tokens are used for offline validation
-- Verify local license file approach works
-- Test all activation scenarios
-- Test offline operation
+- ✅ Signed license files are used for offline validation (not JWT)
+- ✅ Local license file approach is working
+- ⚠️ Test all activation scenarios (recommended)
+- ⚠️ Test offline operation (recommended)
 
 ### 4. Implement Missing Pieces
 
 Based on gaps identified, implement:
-- JWT token handling (if needed)
-- Device management (for family plans)
-- Error handling improvements
-- Edge case handling
+- ✅ Signed license file handling (complete)
+- ✅ Device management (for family plans - complete)
+- ✅ Error handling improvements (complete)
+- ⚠️ Edge case handling (recommended)
+- ⚠️ Transfer history display (optional)
 
 ---
 
@@ -353,13 +352,13 @@ Based on gaps identified, implement:
 - Supabase (PostgreSQL) for data storage
 - Stripe for payments
 - Brevo for emails
-- JWT for offline validation tokens
+- HMAC-SHA256 signed license files for offline validation
 
 **Frontend:**
 - Electron app
-- Local license file storage
+- Local signed license file storage
 - Device fingerprint for binding
-- Offline-first design
+- Offline-first design (zero network calls after activation)
 
 ### Key Design Decisions
 
@@ -371,9 +370,11 @@ Based on gaps identified, implement:
 ### Security Considerations
 
 - Device fingerprint is SHA-256 hash (one-way)
-- JWT tokens signed with secret key
-- License keys validated against database
-- No user data transmitted (only license key + device hash)
+- License files signed with HMAC-SHA256 (backend secret)
+- License files verified locally using Web Crypto API
+- License keys validated against database (only at activation)
+- No user data transmitted (only license key + device hash at activation)
+- Zero network traffic after activation (100% offline)
 
 ---
 

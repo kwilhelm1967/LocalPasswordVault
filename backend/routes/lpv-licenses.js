@@ -112,6 +112,8 @@ router.post('/activate', async (req, res) => {
         max_devices: license.max_devices,
         activated_at: license.activated_at || new Date().toISOString(),
         product_type: license.product_type || 'lpv',
+        transfer_count: license.transfer_count || 0,
+        last_transfer_at: license.last_transfer_at || null,
       });
       
       return res.json({
@@ -222,16 +224,18 @@ router.post('/transfer', async (req, res) => {
       });
     }
     
-    // Return signed license file after transfer
-    const updatedLicense = await db.licenses.findByKey(normalizedKey);
-    const licenseFile = signLicenseFile({
-      license_key: normalizedKey,
-      device_id: new_device_id,
-      plan_type: updatedLicense.plan_type,
-      max_devices: updatedLicense.max_devices,
-      activated_at: new Date().toISOString(),
-      product_type: updatedLicense.product_type || 'lpv',
-    });
+      // Return signed license file after transfer
+      const updatedLicense = await db.licenses.findByKey(normalizedKey);
+      const licenseFile = signLicenseFile({
+        license_key: normalizedKey,
+        device_id: new_device_id,
+        plan_type: updatedLicense.plan_type,
+        max_devices: updatedLicense.max_devices,
+        activated_at: new Date().toISOString(),
+        product_type: updatedLicense.product_type || 'lpv',
+        transfer_count: updatedLicense.transfer_count || 0,
+        last_transfer_at: updatedLicense.last_transfer_at || null,
+      });
     
     res.json({
       status: 'transferred',
