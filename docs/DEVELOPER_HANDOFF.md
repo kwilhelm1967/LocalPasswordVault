@@ -1,18 +1,8 @@
-# Developer Handoff: What's Left to Do
-
-## Overview
-
-**Everything listed below is a task that needs to be done.** All items have [ ] checkboxes - check them off as you complete each task.
-
-**For complete step-by-step instructions, see:** `docs/ACTIVATION_AND_FIRST_USER.md`
-
----
+# Developer Handoff: Tasks to Complete
 
 ## Phase 1: Backend Deployment
 
 ### 1.1 Deploy Backend to Server
-
-**Required Steps:**
 - [ ] SSH into production server (Linode/VPS)
 - [ ] Clone or upload backend code to `/var/www/lpv-api`
 - [ ] Install dependencies: `npm install`
@@ -20,7 +10,7 @@
 - [ ] Start with PM2: `pm2 start server.js --name lpv-api`
 - [ ] Enable auto-start: `pm2 startup` and `pm2 save`
 
-**Required Environment Variables:**
+**Environment Variables Needed:**
 ```env
 NODE_ENV=production
 PORT=3001
@@ -42,25 +32,17 @@ API_URL=<api-url>
 openssl rand -hex 32
 ```
 
-**Reference:** `docs/PRODUCTION_LAUNCH_GUIDE.md` - Step 2
-
 ---
 
 ### 1.2 Configure Nginx & SSL
-
-**Required Steps:**
 - [ ] Install Nginx (if not installed)
 - [ ] Configure SSL certificate (Let's Encrypt)
 - [ ] Set up reverse proxy for API domain (api.localpasswordvault.com)
 - [ ] Test health endpoint: `curl https://api.localpasswordvault.com/health`
 
-**Reference:** `docs/PRODUCTION_LAUNCH_GUIDE.md` - Step 2
-
 ---
 
 ### 1.3 Database Setup
-
-**Required Steps:**
 - [ ] Verify Supabase project exists
 - [ ] Run database schema: Execute `backend/database/schema.sql` in Supabase SQL Editor
 - [ ] Get connection details:
@@ -69,15 +51,11 @@ openssl rand -hex 32
 - [ ] Add to backend `.env` file
 - [ ] Test connection from backend server
 
-**Reference:** `docs/PRODUCTION_LAUNCH_GUIDE.md` - Step 1
-
 ---
 
 ## Phase 2: Payment & Email Configuration
 
 ### 2.1 Stripe Configuration
-
-**Required Steps:**
 - [ ] Create Stripe products (if not done):
   - Personal Vault ($49) - Get Price ID
   - Family Vault ($79) - Get Price ID
@@ -96,28 +74,20 @@ openssl rand -hex 32
   - Verify webhook received and processed
   - Check backend logs for webhook processing
 
-**Reference:** `docs/PRODUCTION_LAUNCH_GUIDE.md` - Step 3
-
 ---
 
 ### 2.2 Email Service (Brevo)
-
-**Required Steps:**
 - [ ] Create/verify Brevo account
 - [ ] Generate API key with "Send emails" permission
 - [ ] Verify sender email address in Brevo
 - [ ] Add API key to backend `.env` as `BREVO_API_KEY`
 - [ ] Test email sending
 
-**Reference:** `docs/PRODUCTION_LAUNCH_GUIDE.md` - Step 4
-
 ---
 
 ## Phase 3: Application Builds
 
 ### 3.1 Build Applications
-
-**Required Steps:**
 
 **Windows:**
 - [ ] Run: `npm run dist:win`
@@ -133,13 +103,9 @@ openssl rand -hex 32
 - [ ] Run: `npm run dist:linux`
 - [ ] Test AppImage on clean Linux machine
 
-**Reference:** `docs/PRODUCTION_LAUNCH_GUIDE.md` - Step 5
-
 ---
 
 ### 3.2 Create Download Packages
-
-**Required Steps:**
 - [ ] Create ZIP package for each platform containing:
   - Installer file (`.exe`, `.dmg`, or `.AppImage`)
   - `README.txt` (if available)
@@ -149,99 +115,88 @@ openssl rand -hex 32
   - Get download URLs
   - Update email templates with download URLs
 
-**Files to Update:**
-- Email templates in `backend/templates/` - Update download links
-
-**Reference:** `docs/PRODUCTION_LAUNCH_GUIDE.md` - Step 6
-
 ---
 
 ## Phase 4: Testing & Verification
 
 ### 4.1 End-to-End Purchase Test
 
-**Required Test Steps:**
+**Single Purchase Test:**
+- [ ] Go to pricing page
+- [ ] Click "Buy Now" for Personal Vault
+- [ ] Complete Stripe checkout
+- [ ] Verify webhook received and processed
+- [ ] Verify license key generated in database
+- [ ] Verify email received with license key
+- [ ] Verify email contains correct download links
+- [ ] Download and install application
+- [ ] Enter license key in app
+- [ ] Verify activation successful
+- [ ] Disconnect internet
+- [ ] Verify app works offline
 
-1. **Single Purchase Test:**
-   - [ ] Go to pricing page
-   - [ ] Click "Buy Now" for Personal Vault
-   - [ ] Complete Stripe checkout
-   - [ ] Verify webhook received and processed
-   - [ ] Verify license key generated in database
-   - [ ] Verify email received with license key
-   - [ ] Verify email contains correct download links
-   - [ ] Download and install application
-   - [ ] Enter license key in app
-   - [ ] Verify activation successful
-   - [ ] Disconnect internet
-   - [ ] Verify app works offline
+**Bundle Purchase Test:**
+- [ ] Purchase bundle (2 products)
+- [ ] Verify multiple license keys in email
+- [ ] Verify success page shows all keys
+- [ ] Activate first key
+- [ ] Activate second key
+- [ ] Verify both keys work independently
 
-2. **Bundle Purchase Test:**
-   - [ ] Purchase bundle (2 products)
-   - [ ] Verify multiple license keys in email
-   - [ ] Verify success page shows all keys
-   - [ ] Activate first key
-   - [ ] Activate second key
-   - [ ] Verify both keys work independently
-
-3. **Trial Flow Test:**
-   - [ ] Sign up for trial on website
-   - [ ] Verify trial key received in email
-   - [ ] Activate trial key in app
-   - [ ] Verify trial works
-   - [ ] Verify trial expiration detected offline
+**Trial Flow Test:**
+- [ ] Sign up for trial on website
+- [ ] Verify trial key received in email
+- [ ] Activate trial key in app
+- [ ] Verify trial works
+- [ ] Verify trial expiration detected offline
 
 ---
 
 ### 4.2 Error Scenario Testing
 
-**Required Test Scenarios:**
+**Invalid License Key:**
+- [ ] Enter invalid format key
+- [ ] Enter non-existent key
+- [ ] Verify appropriate error message shown
 
-1. **Invalid License Key:**
-   - [ ] Enter invalid format key
-   - [ ] Enter non-existent key
-   - [ ] Verify appropriate error message shown
+**Network Failure:**
+- [ ] Disable network connection
+- [ ] Attempt license activation
+- [ ] Verify network error message shown
+- [ ] Re-enable network and verify retry works
 
-2. **Network Failure:**
-   - [ ] Disable network connection
-   - [ ] Attempt license activation
-   - [ ] Verify network error message shown
-   - [ ] Re-enable network and verify retry works
+**Device Transfer:**
+- [ ] Activate license on Device A
+- [ ] Enter same key on Device B
+- [ ] Verify transfer dialog appears
+- [ ] Complete transfer
+- [ ] Verify Device B works after transfer
+- [ ] Verify Device A no longer works
 
-3. **Device Transfer:**
-   - [ ] Activate license on Device A
-   - [ ] Enter same key on Device B
-   - [ ] Verify transfer dialog appears
-   - [ ] Complete transfer
-   - [ ] Verify Device B works after transfer
-   - [ ] Verify Device A no longer works
-
-4. **Transfer Limit:**
-   - [ ] Perform 3 transfers
-   - [ ] Attempt 4th transfer
-   - [ ] Verify transfer limit message shown
+**Transfer Limit:**
+- [ ] Perform 3 transfers
+- [ ] Attempt 4th transfer
+- [ ] Verify transfer limit message shown
 
 ---
 
 ### 4.3 Offline Operation Verification
 
-**Required Verification:**
+**After Activation:**
+- [ ] Activate license successfully
+- [ ] Disconnect internet completely
+- [ ] Use app for 30+ minutes
+- [ ] Verify zero network requests (check DevTools Network tab)
+- [ ] Verify all app features work offline
+- [ ] Verify license validation works offline
 
-1. **After Activation:**
-   - [ ] Activate license successfully
-   - [ ] Disconnect internet completely
-   - [ ] Use app for 30+ minutes
-   - [ ] Verify zero network requests (check DevTools Network tab)
-   - [ ] Verify all app features work offline
-   - [ ] Verify license validation works offline
-
-2. **App Restart Offline:**
-   - [ ] Activate license
-   - [ ] Disconnect internet
-   - [ ] Close application completely
-   - [ ] Reopen application
-   - [ ] Verify app loads without network calls
-   - [ ] Verify license validated from local file
+**App Restart Offline:**
+- [ ] Activate license
+- [ ] Disconnect internet
+- [ ] Close application completely
+- [ ] Reopen application
+- [ ] Verify app loads without network calls
+- [ ] Verify license validated from local file
 
 **Verification Method:**
 - Open browser DevTools → Network tab
@@ -283,16 +238,11 @@ openssl rand -hex 32
 
 ---
 
-## 📞 Reference Documents
+## Reference Documents
 
-- **`docs/ACTIVATION_AND_FIRST_USER.md`** - ⭐ **START HERE** - Complete step-by-step deployment guide
+- `docs/ACTIVATION_AND_FIRST_USER.md` - Complete step-by-step deployment guide
 - `docs/PRODUCTION_LAUNCH_GUIDE.md` - Detailed production setup guide
 - `docs/PRODUCTION_CHECKLIST.md` - Comprehensive production checklist
 - `backend/README.md` - API documentation
 - `backend/database/schema.sql` - Database structure
 - `backend/env.example` - Environment variables reference
-
----
-
-**Last Updated:** January 2025  
-**Status:** Deployment tasks remaining
