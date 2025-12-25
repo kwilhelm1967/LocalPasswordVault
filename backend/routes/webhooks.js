@@ -136,6 +136,8 @@ async function handleCheckoutCompleted(session) {
     const productKeys = [];
     
     // Generate keys (1 for personal, 5 for family)
+    // Family plan: 5 separate keys, each for 1 device (no sharing)
+    // Personal plan: 1 key for 1 device
     for (let i = 0; i < numKeys; i++) {
       const licenseKey = keyGenerator();
       
@@ -148,7 +150,7 @@ async function handleCheckoutCompleted(session) {
         stripe_payment_id: fullSession.payment_intent?.id || null,
         stripe_checkout_session_id: session.id,
         amount_paid: lineItemAmount / numKeys,
-        max_devices: product.maxDevices, // Use product maxDevices (1 for personal, 5 for family)
+        max_devices: 1, // Each key is for 1 device only (family plan = 5 keys, each for 1 device)
       });
       
       productKeys.push(licenseKey);
