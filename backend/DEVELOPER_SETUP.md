@@ -289,11 +289,11 @@ Response:
 
 | Issue | Solution |
 |-------|----------|
-| Email not sending | Verify Brevo SMTP key in `.env` |
+| Email not sending | Verify `BREVO_API_KEY` in `.env` |
 | Webhook failing | Check `STRIPE_WEBHOOK_SECRET` matches Stripe Dashboard |
 | 502 Bad Gateway | Run `pm2 status` to check if server is running |
 | SSL error | Run `certbot renew` |
-| Database error | Check `database/vault.db` exists and is writable |
+| Database error | Verify Supabase credentials and schema is run in Supabase SQL Editor |
 
 ---
 
@@ -316,8 +316,11 @@ backend/
 │   ├── db.js              # Supabase database connection
 │   └── schema.sql         # Table definitions
 └── templates/
-    ├── purchase-email.html
-    └── trial-email.html
+    ├── bundle-email.html
+    ├── purchase-confirmation-email.html
+    ├── trial-expired-email.html
+    ├── trial-expires-tomorrow-email.html
+    └── trial-welcome-email.html
 ```
 
 ---

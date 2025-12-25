@@ -111,7 +111,7 @@ A simple 1-page PDF with:
 │  STEP 2: ENTER LICENSE KEY                                  │
 │  ─────────────────────────                                  │
 │  Enter the license key from your email.                     │
-│  Format: LPV4-XXXX-XXXX-XXXX-XXXX                          │
+│  Format: PERS-XXXX-XXXX-XXXX or FMLY-XXXX-XXXX-XXXX                          │
 │                                                             │
 │  STEP 3: CREATE MASTER PASSWORD                             │
 │  ──────────────────────────────                             │

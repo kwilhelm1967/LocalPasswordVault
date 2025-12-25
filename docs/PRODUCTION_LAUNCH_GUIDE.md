@@ -426,83 +426,33 @@ Before starting, ensure you have:
 
 1. **Log into Brevo:** https://app.brevo.com
 
-2. **Go to Settings → SMTP & API**
+2. **Go to Settings → SMTP & API → API Keys**
 
-3. **Copy SMTP credentials:**
-   - **SMTP Server:** `smtp-relay.brevo.com`
-   - **Port:** `587`
-   - **Login:** Your Brevo login email
-   - **SMTP Key:** Generate or copy existing
+3. **Create a new API key:**
+   - Click **Generate a new API key**
+   - Name: `Local Password Vault Backend`
+   - Permissions: **Send emails**
+   - Copy the API key (starts with `xkeysib-`)
 
 4. **Add to backend `.env`:**
    ```env
-   SMTP_HOST=smtp-relay.brevo.com
-   SMTP_PORT=587
-   SMTP_USER=your-email@example.com
-   SMTP_PASSWORD=your-smtp-key-here
+   BREVO_API_KEY=xkeysib-your-api-key-here
+   FROM_EMAIL=noreply@localpasswordvault.com
+   SUPPORT_EMAIL=support@localpasswordvault.com
    ```
 
-### 4.2: Create Email Templates in Brevo
+**Note:** The backend uses Brevo's Transactional API (not SMTP). This is more reliable and doesn't require SMTP credentials.
 
-**Template 1: Purchase Confirmation**
+### 4.2: Email Templates
 
-1. **Go to Transactional → Email Templates**
-2. **Click "New Template"**
-3. **Choose "Code your own"**
-4. **Name:** `purchase_confirmation`
-5. **Subject:** `🔐 Your Local Password Vault License Key`
-6. **Paste HTML from `docs/EMAIL_TEMPLATES.md` (Template 1)**
-7. **Replace variables:**
-   - `{{ params.planName }}` → Use in code
-   - `{{ params.licenseKeys }}` → Use in code
-   - `{{ params.numKeys }}` → Use in code
-8. **Save** and note **Template ID**
+All email templates are located in `backend/templates/` and are automatically loaded by the email service. No additional setup is required.
 
-**Template 2: Trial Started**
-
-1. **Create new template**
-2. **Name:** `trial_started`
-3. **Subject:** `🎉 Your 7-Day Free Trial Has Started!`
-4. **Paste HTML from `docs/EMAIL_TEMPLATES.md` (Template 2)**
-5. **Replace variables:**
-   - `{{ params.trialKey }}` → Use in code
-   - `{{ params.expiryDate }}` → Use in code
-6. **Save** and note **Template ID**
-
-**Template 3: Trial Expiring**
-
-1. **Create new template**
-2. **Name:** `trial_expiring`
-3. **Subject:** `⏰ Your Trial Expires in 3 Days`
-4. **Paste HTML from `docs/EMAIL_TEMPLATES.md` (Template 3)**
-5. **Save** and note **Template ID**
-
-**Template 4: Trial Expired**
-
-1. **Create new template**
-2. **Name:** `trial_expired`
-3. **Subject:** `😢 Your Trial Has Expired`
-4. **Paste HTML from `docs/EMAIL_TEMPLATES.md` (Template 4)**
-5. **Save** and note **Template ID**
-
-### 4.3: Update Email Service Code
-
-**File:** `backend/services/email.js`
-
-Update to use Brevo template IDs if using their template system, OR use the HTML templates directly (current implementation).
-
-**Current implementation uses HTML files in `backend/templates/`:**
-
-1. **Copy email templates:**
-   ```bash
-   # From docs/EMAIL_TEMPLATES.md, extract HTML and save as:
-   backend/templates/purchase-email.html
-   backend/templates/trial-email.html
-   backend/templates/trial-expiring.html
-   backend/templates/trial-expired.html
-   ```
-
-2. **Update template variables in `email.js`** to match your templates
+**Templates included:**
+- `purchase-confirmation-email.html` - Sent after purchase
+- `bundle-email.html` - Sent for bundle purchases
+- `trial-welcome-email.html` - Sent when trial starts
+- `trial-expires-tomorrow-email.html` - 24-hour warning
+- `trial-expired-email.html` - Sent when trial expires
 
 ### 4.4: Test Email Sending
 

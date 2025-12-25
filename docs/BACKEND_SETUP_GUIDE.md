@@ -1,20 +1,21 @@
 # Local Password Vault - Backend Setup Guide
 
-## For Developers: Complete Backend API Setup
+## Overview
 
-This guide walks through setting up the backend API for Local Password Vault to handle:
+This guide walks through deploying the existing backend API codebase to handle:
 - License key generation and validation
 - Stripe payment webhook processing
-- Email delivery via Brevo
+- Email delivery via Brevo Transactional API
+- Trial signup management
 
 ---
 
-## Architecture Overview
+## Architecture
 
 ```
 ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
 │   Frontend      │────▶│   Linode API    │────▶│    Supabase     │
-│   (Electron)    │     │   (Node.js)     │     │   (Database)    │
+│   (Electron)    │     │   (Node.js)     │     │   (PostgreSQL)  │
 └─────────────────┘     └─────────────────┘     └─────────────────┘
                                │
                                ▼
@@ -26,507 +27,149 @@ This guide walks through setting up the backend API for Local Password Vault to 
                                ▼
                         ┌─────────────────┐
                         │     Brevo       │
-                        │    (Email)      │
+                        │  (Transactional)│
                         └─────────────────┘
 ```
 
----
-
-## Step 1: Database Setup
-
-The backend uses **Supabase** (PostgreSQL database).
-
-### 1.1 Database Schema
-
-The database schema is defined in `backend/database/schema.sql` and must be run manually in the Supabase SQL Editor. The schema creates the following tables:
-
-- **customers** - Customer records synced from Stripe
-- **licenses** - License keys with activation tracking and device binding
-- **trials** - Trial signups with expiration tracking
-- **device_activations** - Device tracking for family plans
-- **webhook_events** - Stripe webhook event logging
-
-See `backend/database/schema.sql` for the complete schema definition.
-
-### 1.2 Get Supabase Credentials
-
-From Supabase Dashboard → Settings → API:
-- **Project URL**: `https://YOUR-PROJECT.supabase.co`
-- **Service Role Key**: `eyJhbGc...` (use the service_role key, NOT anon key)
+**Stack:**
+- **Server**: Linode (Ubuntu 22.04 LTS)
+- **Database**: Supabase (PostgreSQL)
+- **Email**: Brevo Transactional API
+- **Payments**: Stripe
 
 ---
 
-## Step 2: Linode Server Setup
+## Step 1: Supabase Database Setup
 
-### 2.1 Server Requirements
+### 1.1 Create Supabase Project
 
-- **OS**: Ubuntu 22.04 LTS
-- **Node.js**: v18+ (already installed: v24.11.0)
-- **PM2**: Process manager (already installed)
-- **Nginx**: Reverse proxy
+1. Go to [Supabase Dashboard](https://app.supabase.com)
+2. Click **New Project**
+3. Enter project name: `local-password-vault`
+4. Set database password (save securely)
+5. Choose region closest to your server
+6. Click **Create new project**
+7. Wait 2-3 minutes for project to initialize
 
-### 2.2 Install Dependencies (if needed)
+### 1.2 Run Database Schema
+
+1. In Supabase Dashboard, go to **SQL Editor**
+2. Open `backend/database/schema.sql` from the repository
+3. Copy the entire schema
+4. Paste into SQL Editor
+5. Click **Run** to execute
+
+The schema creates these tables:
+- `customers` - Customer records from Stripe
+- `licenses` - License keys with activation tracking
+- `trials` - Trial signups with expiration tracking
+- `device_activations` - Device tracking for family plans
+- `webhook_events` - Stripe webhook event logging
+
+### 1.3 Get Supabase Credentials
+
+1. Go to **Settings** → **API**
+2. Copy:
+   - **Project URL**: `https://YOUR-PROJECT-ID.supabase.co`
+   - **Service Role Key**: `eyJhbGc...` (use service_role key, NOT anon key)
+
+Save these for Step 2.
+
+---
+
+## Step 2: Deploy Backend Code
+
+### 2.1 Server Setup
 
 ```bash
-# Update system
-apt update && apt upgrade -y
+# SSH into Linode server
+ssh root@[LINODE_IP]
 
-# Install Nginx (if not installed)
-apt install nginx -y
+# Install Node.js 18+ (if not installed)
+curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
+apt install -y nodejs
 
-# Install Node.js (if not installed)
-curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
-apt install nodejs -y
-
-# Install PM2 globally
+# Install PM2 (process manager)
 npm install -g pm2
+
+# Install Nginx (reverse proxy)
+apt update && apt install -y nginx
 ```
 
-### 2.3 Create API Directory
+### 2.2 Clone and Setup Repository
 
 ```bash
-mkdir -p /var/www/lpv-api
-cd /var/www/lpv-api
-```
+# Clone repository
+git clone https://github.com/kwilhelm1967/Vault.git
+cd Vault/backend
 
-### 2.4 Create package.json
+# Install dependencies
+npm install
 
-```bash
-nano package.json
-```
-
-Paste this content:
-
-```json
-{
-  "name": "lpv-api",
-  "version": "1.0.0",
-  "description": "Local Password Vault License API",
-  "main": "server.js",
-  "scripts": {
-    "start": "node server.js",
-    "dev": "node server.js"
-  },
-  "dependencies": {
-    "@supabase/supabase-js": "^2.39.0",
-    "cors": "^2.8.5",
-    "dotenv": "^16.3.1",
-    "express": "^4.18.2",
-    "helmet": "^7.1.0",
-    "nodemailer": "^6.9.7",
-    "stripe": "^14.10.0"
-  }
-}
-```
-
-Save: `Ctrl+X`, then `Y`, then `Enter`
-
-### 2.5 Create server.js
-
-```bash
-nano server.js
-```
-
-Paste this content:
-
-```javascript
-// Local Password Vault - Backend API
-// server.js
-
-require('dotenv').config();
-const express = require('express');
-const cors = require('cors');
-const helmet = require('helmet');
-const crypto = require('crypto');
-const { createClient } = require('@supabase/supabase-js');
-const Stripe = require('stripe');
-const nodemailer = require('nodemailer');
-
-const app = express();
-const PORT = process.env.PORT || 3000;
-
-// Initialize Supabase
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY
-);
-
-// Initialize Stripe
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-
-// Email transporter (Brevo SMTP)
-const transporter = nodemailer.createTransport({
-  host: 'smtp-relay.brevo.com',
-  port: 587,
-  auth: {
-    user: process.env.BREVO_SMTP_USER,
-    pass: process.env.BREVO_SMTP_PASS
-  }
-});
-
-// Middleware
-app.use(helmet());
-app.use(cors({
-  origin: [
-    'https://localpasswordvault.com',
-    'http://localhost:5173',
-    'http://localhost:3000'
-  ],
-  credentials: true
-}));
-
-// Stripe webhook needs raw body
-app.use('/stripe-webhook', express.raw({ type: 'application/json' }));
-app.use(express.json());
-
-// ============================================
-// HELPER: Generate License Key
-// Format: LPV4-XXXX-XXXX-XXXX-XXXX
-// ============================================
-function generateLicenseKey() {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  let key = 'LPV4-';
-  for (let i = 0; i < 4; i++) {
-    for (let j = 0; j < 4; j++) {
-      key += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    if (i < 3) key += '-';
-  }
-  return key;
-}
-
-// ============================================
-// ENDPOINT: Health Check
-// GET /
-// ============================================
-app.get('/', (req, res) => {
-  res.json({ 
-    status: 'ok', 
-    service: 'Local Password Vault API',
-    version: '1.0.0'
-  });
-});
-
-// ============================================
-// ENDPOINT: API Health Check
-// GET /api/health
-// ============================================
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
-});
-
-// ============================================
-// ENDPOINT: Validate License
-// POST /api/licenses/validate
-// ============================================
-app.post('/api/licenses/validate', async (req, res) => {
-  try {
-    const { licenseKey, hardwareHash } = req.body;
-    
-    if (!licenseKey) {
-      return res.json({ success: false, error: 'License key required' });
-    }
-
-    // Look up license in Supabase
-    const { data: license, error } = await supabase
-      .from('licenses')
-      .select('*')
-      .eq('license_key', licenseKey.toUpperCase().trim())
-      .single();
-
-    if (error || !license) {
-      return res.json({ success: false, error: 'Invalid license key' });
-    }
-
-    if (license.status === 'revoked') {
-      return res.json({ success: false, error: 'License has been revoked' });
-    }
-
-    // Check device limit for family plans
-    if (license.plan_type === 'family' && license.family_group_id) {
-      const { count } = await supabase
-        .from('licenses')
-        .select('*', { count: 'exact', head: true })
-        .eq('family_group_id', license.family_group_id)
-        .not('hardware_hash', 'is', null);
-      
-      // Family plan allows 5 devices
-      if (count >= 5 && !license.hardware_hash) {
-        return res.json({ 
-          success: false, 
-          error: 'Maximum devices reached for this family plan' 
-        });
-      }
-    }
-
-    // Check if already activated on different device (for single licenses)
-    if (license.plan_type === 'personal') {
-      if (license.hardware_hash && license.hardware_hash !== hardwareHash) {
-        return res.json({ 
-          success: false, 
-          error: 'License already activated on another device' 
-        });
-      }
-    }
-
-    // First-time activation
-    if (!license.hardware_hash && hardwareHash) {
-      await supabase
-        .from('licenses')
-        .update({ 
-          hardware_hash: hardwareHash, 
-          status: 'active',
-          activated_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
-        .eq('license_key', licenseKey.toUpperCase().trim());
-    }
-
-    return res.json({
-      success: true,
-      valid: true,
-      licenseType: license.plan_type,
-      activated: true,
-      email: license.email
-    });
-
-  } catch (err) {
-    console.error('License validation error:', err);
-    return res.json({ success: false, error: 'Validation failed' });
-  }
-});
-
-// ============================================
-// ENDPOINT: Stripe Webhook
-// POST /stripe-webhook
-// ============================================
-app.post('/stripe-webhook', async (req, res) => {
-  const sig = req.headers['stripe-signature'];
-  let event;
-
-  try {
-    event = stripe.webhooks.constructEvent(
-      req.body,
-      sig,
-      process.env.STRIPE_WEBHOOK_SECRET
-    );
-  } catch (err) {
-    console.error('Webhook signature verification failed:', err.message);
-    return res.status(400).send(`Webhook Error: ${err.message}`);
-  }
-
-  // Handle successful payment
-  if (event.type === 'checkout.session.completed') {
-    const session = event.data.object;
-    
-    const email = session.customer_email || session.customer_details?.email;
-    const planType = session.metadata?.plan_type || 'personal';
-    const amountCents = session.amount_total;
-    
-    // Determine number of keys based on plan
-    const numKeys = planType === 'family' ? 5 : 1;
-    const familyGroupId = planType === 'family' ? crypto.randomUUID() : null;
-    
-    // Generate license key(s)
-    const licenseKeys = [];
-    for (let i = 0; i < numKeys; i++) {
-      const key = generateLicenseKey();
-      licenseKeys.push(key);
-      
-      // Save to Supabase
-      await supabase.from('licenses').insert({
-        license_key: key,
-        email: email,
-        plan_type: planType,
-        status: 'pending',
-        stripe_payment_id: session.payment_intent,
-        stripe_customer_id: session.customer,
-        family_group_id: familyGroupId
-      });
-    }
-
-    // Record purchase
-    await supabase.from('purchases').insert({
-      email: email,
-      plan_type: planType,
-      amount_cents: amountCents,
-      stripe_session_id: session.id,
-      stripe_payment_intent: session.payment_intent
-    });
-
-    // Send email with license key(s)
-    const keysHtml = licenseKeys.map((key, i) => 
-      `<div style="background:#1e293b;padding:12px 16px;border-radius:8px;margin:8px 0;font-family:monospace;font-size:16px;color:#5B82B8;letter-spacing:1px;">${numKeys > 1 ? `Key ${i+1}: ` : ''}${key}</div>`
-    ).join('');
-
-    const planName = planType === 'family' ? 'Family Vault (5 devices)' : 'Personal Vault (1 device)';
-
-    try {
-      await transporter.sendMail({
-        from: '"Local Password Vault" <noreply@localpasswordvault.com>',
-        to: email,
-        subject: 'Your Local Password Vault License Key',
-        html: `
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <meta charset="utf-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          </head>
-          <body style="margin:0;padding:0;background:#0a0a0a;">
-            <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:600px;margin:0 auto;background:#0f172a;border-radius:12px;overflow:hidden;">
-              
-              <!-- Header -->
-              <div style="background:linear-gradient(135deg,#1e293b 0%,#334155 100%);padding:40px 32px;text-align:center;">
-                <h1 style="color:#fff;margin:0;font-size:28px;font-weight:600;">Thank You for Your Purchase!</h1>
-                <p style="color:#94a3b8;margin:12px 0 0;font-size:16px;">${planName}</p>
-              </div>
-              
-              <!-- Content -->
-              <div style="padding:32px;">
-                
-                <!-- License Keys -->
-                <div style="margin-bottom:32px;">
-                  <h2 style="color:#fff;font-size:18px;margin:0 0 16px;font-weight:600;">Your License Key${numKeys > 1 ? 's' : ''}</h2>
-                  ${keysHtml}
-                  <p style="color:#64748b;font-size:13px;margin:12px 0 0;">Keep ${numKeys > 1 ? 'these keys' : 'this key'} safe. You'll need ${numKeys > 1 ? 'them' : 'it'} to activate your software.</p>
-                </div>
-                
-                <!-- Download Section -->
-                <div style="background:#1e293b;border-radius:8px;padding:24px;margin-bottom:32px;">
-                  <h2 style="color:#fff;font-size:18px;margin:0 0 16px;font-weight:600;">Download Your App</h2>
-                  <div style="display:flex;gap:12px;flex-wrap:wrap;">
-                    <a href="https://localpasswordvault.com/download/windows" style="display:inline-block;background:#5B82B8;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:500;font-size:14px;">Windows</a>
-                    <a href="https://localpasswordvault.com/download/macos" style="display:inline-block;background:#5B82B8;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:500;font-size:14px;">macOS</a>
-                    <a href="https://localpasswordvault.com/download/linux" style="display:inline-block;background:#5B82B8;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:500;font-size:14px;">Linux</a>
-                  </div>
-                </div>
-                
-                <!-- Instructions -->
-                <div style="margin-bottom:32px;">
-                  <h2 style="color:#fff;font-size:18px;margin:0 0 12px;font-weight:600;">Getting Started</h2>
-                  <ol style="color:#94a3b8;margin:0;padding-left:20px;line-height:1.8;">
-                    <li>Download the installer for your operating system</li>
-                    <li>Run the installer and follow the prompts</li>
-                    <li>When prompted, enter your license key</li>
-                    <li>Create your master password and start securing your data!</li>
-                  </ol>
-                </div>
-                
-              </div>
-              
-              <!-- Footer -->
-              <div style="background:#0f172a;border-top:1px solid #1e293b;padding:24px 32px;text-align:center;">
-                <p style="color:#64748b;font-size:13px;margin:0;">
-                  Need help? Contact <a href="mailto:support@localpasswordvault.com" style="color:#5B82B8;text-decoration:none;">support@localpasswordvault.com</a>
-                </p>
-                <p style="color:#475569;font-size:12px;margin:12px 0 0;">
-                  © ${new Date().getFullYear()} Local Password Vault. All rights reserved.
-                </p>
-              </div>
-              
-            </div>
-          </body>
-          </html>
-        `
-      });
-      console.log(`✅ Email sent to ${email}`);
-    } catch (emailErr) {
-      console.error('Email send error:', emailErr);
-      // Don't fail the webhook if email fails
-    }
-
-    console.log(`✅ License(s) generated for ${email}: ${licenseKeys.join(', ')}`);
-  }
-
-  res.json({ received: true });
-});
-
-// ============================================
-// 404 Handler
-// ============================================
-app.use((req, res) => {
-  res.status(404).json({ success: false, error: 'Endpoint not found' });
-});
-
-// ============================================
-// Error Handler
-// ============================================
-app.use((err, req, res, next) => {
-  console.error('Server error:', err);
-  res.status(500).json({ success: false, error: 'Internal server error' });
-});
-
-// ============================================
-// START SERVER
-// ============================================
-app.listen(PORT, () => {
-  console.log(`🚀 Local Password Vault API running on port ${PORT}`);
-  console.log(`📍 Health check: http://localhost:${PORT}/`);
-});
-```
-
-Save: `Ctrl+X`, then `Y`, then `Enter`
-
-### 2.6 Create .env File
-
-```bash
+# Create environment file
+cp env.example .env
 nano .env
 ```
 
-Paste and fill in your values:
+### 2.3 Configure Environment Variables
+
+Edit `.env` with your values:
 
 ```env
-PORT=3000
+NODE_ENV=production
+PORT=3001
 
-# Supabase (from Supabase Dashboard → Settings → API)
+# Generate: openssl rand -base64 32
+JWT_SECRET=[64-CHAR-RANDOM-STRING]
+
+# Stripe (from Stripe Dashboard → Developers → API keys)
+STRIPE_SECRET_KEY=sk_live_YOUR_SECRET_KEY
+STRIPE_WEBHOOK_SECRET=whsec_YOUR_WEBHOOK_SECRET
+
+# Stripe Price IDs (from Stripe Dashboard → Products → Prices)
+STRIPE_PRICE_PERSONAL=price_xxxxx
+STRIPE_PRICE_FAMILY=price_xxxxx
+STRIPE_PRICE_LLV_PERSONAL=price_xxxxx
+STRIPE_PRICE_LLV_FAMILY=price_xxxxx
+
+# Brevo Transactional API (from Brevo → Settings → SMTP & API → API Keys)
+BREVO_API_KEY=xkeysib-YOUR_API_KEY
+
+# Supabase (from Step 1.3)
 SUPABASE_URL=https://YOUR-PROJECT-ID.supabase.co
 SUPABASE_SERVICE_KEY=eyJhbGc...YOUR-SERVICE-ROLE-KEY
 
-# Stripe (from Stripe Dashboard → Developers → API keys)
-STRIPE_SECRET_KEY=sk_live_YOUR-SECRET-KEY
-STRIPE_WEBHOOK_SECRET=whsec_YOUR-WEBHOOK-SECRET
+# Email addresses
+FROM_EMAIL=noreply@localpasswordvault.com
+SUPPORT_EMAIL=support@localpasswordvault.com
 
-# Brevo SMTP (from Brevo → SMTP & API)
-BREVO_SMTP_USER=YOUR-BREVO-LOGIN
-BREVO_SMTP_PASS=YOUR-BREVO-SMTP-KEY
+# Website
+WEBSITE_URL=https://localpasswordvault.com
 ```
 
-Save: `Ctrl+X`, then `Y`, then `Enter`
-
-### 2.7 Install Dependencies & Start
+### 2.4 Start Server
 
 ```bash
-# Install Node packages
-npm install
-
 # Start with PM2
-pm2 start server.js --name lpv-api
+pm2 start server.js --name vault-api
 
 # Save PM2 process list (auto-restart on reboot)
 pm2 save
 pm2 startup
-```
 
-### 2.8 Verify API is Running
-
-```bash
-curl http://localhost:3000/
-```
-
-Should return:
-```json
-{"status":"ok","service":"Local Password Vault API","version":"1.0.0"}
+# Check status
+pm2 status
+pm2 logs vault-api
 ```
 
 ---
 
-## Step 3: Nginx Configuration
+## Step 3: Configure Nginx
 
 ### 3.1 Create Nginx Config
 
 ```bash
-nano /etc/nginx/sites-available/lpv-api
+nano /etc/nginx/sites-available/vault-api
 ```
 
 Paste:
@@ -534,10 +177,19 @@ Paste:
 ```nginx
 server {
     listen 80;
-    server_name server.localpasswordvault.com;
+    server_name api.localpasswordvault.com;
+    return 301 https://$server_name$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name api.localpasswordvault.com;
+
+    ssl_certificate /etc/letsencrypt/live/api.localpasswordvault.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/api.localpasswordvault.com/privkey.pem;
 
     location / {
-        proxy_pass http://localhost:3000;
+        proxy_pass http://localhost:3001;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -550,102 +202,172 @@ server {
 }
 ```
 
-Save: `Ctrl+X`, then `Y`, then `Enter`
-
-### 3.2 Enable Site & Restart Nginx
+### 3.2 Enable Site
 
 ```bash
-# Create symbolic link
-ln -s /etc/nginx/sites-available/lpv-api /etc/nginx/sites-enabled/
-
-# Test nginx config
+ln -s /etc/nginx/sites-available/vault-api /etc/nginx/sites-enabled/
 nginx -t
-
-# Restart nginx
 systemctl restart nginx
 ```
 
-### 3.3 Set Up SSL (HTTPS)
+### 3.3 Install SSL Certificate
 
 ```bash
-# Install Certbot
-apt install certbot python3-certbot-nginx -y
-
-# Get SSL certificate
-certbot --nginx -d server.localpasswordvault.com
+apt install -y certbot python3-certbot-nginx
+certbot --nginx -d api.localpasswordvault.com
 ```
-
-Follow the prompts to complete SSL setup.
 
 ---
 
-## Step 4: Stripe Webhook Setup
+## Step 4: Configure Stripe
 
-### 4.1 In Stripe Dashboard
+### 4.1 Create Products in Stripe
 
-1. Go to **Developers** → **Webhooks**
+Go to [Stripe Dashboard → Products](https://dashboard.stripe.com/products) and create:
+
+| Product | Price | Type | Price ID Variable |
+|---------|-------|------|-------------------|
+| Personal Vault (LPV) | $49.00 | One-time | `STRIPE_PRICE_PERSONAL` |
+| Family Vault (LPV) | $79.00 | One-time | `STRIPE_PRICE_FAMILY` |
+| Local Legacy Vault - Personal | $49.00 | One-time | `STRIPE_PRICE_LLV_PERSONAL` |
+| Local Legacy Vault - Family | $129.00 | One-time | `STRIPE_PRICE_LLV_FAMILY` |
+
+Copy each Price ID and add to `.env`.
+
+### 4.2 Configure Webhook
+
+1. Go to [Stripe Dashboard → Developers → Webhooks](https://dashboard.stripe.com/webhooks)
 2. Click **Add endpoint**
-3. Enter URL: `https://server.localpasswordvault.com/stripe-webhook`
+3. Enter URL: `https://api.localpasswordvault.com/api/webhooks/stripe`
 4. Select events:
    - `checkout.session.completed`
 5. Click **Add endpoint**
-6. Copy the **Signing secret** (starts with `whsec_`)
-7. Update `.env` file with this secret
-
-### 4.2 Test Webhook
-
-In Stripe Dashboard → Webhooks → Your endpoint → **Send test webhook**
+6. Copy **Signing secret** (starts with `whsec_`)
+7. Add to `.env` as `STRIPE_WEBHOOK_SECRET`
+8. Restart server: `pm2 restart vault-api`
 
 ---
 
-## Step 5: DNS Configuration
+## Step 5: Configure Brevo Email
 
-Make sure `server.localpasswordvault.com` points to your Linode IP:
+1. Go to [Brevo Dashboard](https://app.brevo.com)
+2. Navigate to **Settings** → **SMTP & API** → **API Keys**
+3. Click **Generate a new API key**
+4. Name: `Local Password Vault Backend`
+5. Permissions: **Send emails**
+6. Copy the API key (starts with `xkeysib-`)
+7. Add to `.env` as `BREVO_API_KEY`
 
-| Type | Name   | Value          |
-|------|--------|----------------|
-| A    | server | 96.126.126.18  |
+**Note:** The backend uses Brevo's Transactional API (not SMTP). This is more reliable and doesn't require SMTP credentials.
 
 ---
 
-## Step 6: Testing
+## Step 6: DNS Configuration
 
-### Test Health Check
+Add DNS A record pointing to your Linode IP:
+
+| Type | Name | Value |
+|------|------|-------|
+| A | api | [YOUR_LINODE_IP] |
+
+---
+
+## Step 7: Test Deployment
+
+### Health Check
+
 ```bash
-curl https://server.localpasswordvault.com/
+curl https://api.localpasswordvault.com/health
 ```
 
-### Test License Validation
-```bash
-curl -X POST https://server.localpasswordvault.com/api/licenses/validate \
-  -H "Content-Type: application/json" \
-  -d '{"licenseKey":"TEST-1234-5678-9ABC"}'
-```
-
-Expected response (for invalid key):
+Expected response:
 ```json
-{"success":false,"error":"Invalid license key"}
+{"status":"ok","timestamp":"2025-01-09T...","version":"1.0.0"}
+```
+
+### Test Trial Signup
+
+```bash
+curl -X POST https://api.localpasswordvault.com/api/trial/signup \
+  -H "Content-Type: application/json" \
+  -d '{"email": "test@example.com"}'
+```
+
+Check that email was sent via Brevo.
+
+---
+
+## Step 8: Set Up Trial Email Automation
+
+The system sends automated emails for trial expiration. Set up a daily cron job:
+
+```bash
+# Edit crontab
+crontab -e
+
+# Add this line (runs daily at 9 AM)
+0 9 * * * cd /path/to/Vault/backend && /usr/bin/node jobs/trialEmails.js >> /var/log/trial-emails.log 2>&1
+```
+
+Or use PM2:
+
+```bash
+pm2 start backend/jobs/trialEmails.js --name trial-emails --cron "0 9 * * *" --no-autorestart
+pm2 save
 ```
 
 ---
 
-## Monitoring & Logs
+## API Endpoints Reference
 
-### View API Logs
-```bash
-pm2 logs lpv-api
-```
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/health` | GET | Server status check |
+| `/api/licenses/validate` | POST | Legacy JWT-based license validation |
+| `/api/lpv/license/activate` | POST | Modern license activation with device binding |
+| `/api/lpv/license/transfer` | POST | Transfer license to new device |
+| `/api/trial/signup` | POST | Start 7-day free trial |
+| `/api/checkout/session` | POST | Create Stripe checkout (single product) |
+| `/api/checkout/bundle` | POST | Create Stripe checkout (bundle with discount) |
+| `/api/checkout/products` | GET | List available products |
+| `/api/webhooks/stripe` | POST | Handle Stripe payment webhooks |
 
-### View Nginx Logs
+---
+
+## Monitoring
+
+### View Logs
+
 ```bash
+# API logs
+pm2 logs vault-api
+
+# Nginx logs
 tail -f /var/log/nginx/error.log
 tail -f /var/log/nginx/access.log
 ```
 
-### Restart API
+### Restart Services
+
 ```bash
-pm2 restart lpv-api
+# Restart API
+pm2 restart vault-api
+
+# Restart Nginx
+systemctl restart nginx
 ```
+
+---
+
+## Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| Email not sending | Verify `BREVO_API_KEY` in `.env` |
+| Webhook failing | Check `STRIPE_WEBHOOK_SECRET` matches Stripe Dashboard |
+| 502 Bad Gateway | Check `pm2 status` - server may not be running |
+| Database errors | Verify Supabase credentials and schema is run |
+| SSL errors | Run `certbot renew` |
 
 ---
 
@@ -653,22 +375,13 @@ pm2 restart lpv-api
 
 - [ ] SSL certificate installed (HTTPS)
 - [ ] Firewall configured (only ports 80, 443, 22 open)
-- [ ] Environment variables secured (not in git)
+- [ ] Environment variables secured (`.env` not in git)
 - [ ] PM2 running with auto-restart
 - [ ] Regular backups of Supabase data
-
----
-
-## Pricing Plans Reference
-
-| Plan           | Price | License Keys | Devices |
-|----------------|-------|--------------|---------|
-| Personal Vault | $49   | 1            | 1       |
-| Family Vault   | $79   | 5            | 5       |
+- [ ] Brevo API key has minimal required permissions
 
 ---
 
 ## Support
 
-For issues with this setup, contact the development team.
-
+For issues, contact: support@localpasswordvault.com
