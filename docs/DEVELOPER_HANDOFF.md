@@ -1,5 +1,7 @@
 # Tasks to Complete
 
+**Note:** This system uses HMAC-SHA256 signed license files (not JWT tokens) for offline validation.
+
 ## Phase 1: Backend Deployment
 
 ### 1.1 Deploy Backend to Server
