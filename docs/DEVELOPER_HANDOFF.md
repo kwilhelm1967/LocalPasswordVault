@@ -1,4 +1,4 @@
-# Tasks to Complete
+# Deployment Tasks
 
 **Note:** This system uses HMAC-SHA256 signed license files (not JWT tokens) for offline validation.
 
@@ -58,7 +58,7 @@ openssl rand -hex 32
 ## Phase 2: Payment & Email Configuration
 
 ### 2.1 Stripe Configuration
-- [ ] Create Stripe products (if not done):
+- [ ] Create Stripe products:
   - Personal Vault ($49) - Get Price ID
   - Family Vault ($79) - Get Price ID
   - LLV Personal ($49) - Get Price ID
@@ -211,7 +211,7 @@ openssl rand -hex 32
 
 ## Phase 5: Pre-Launch Checklist
 
-**Complete before accepting first real customer:**
+**Before accepting first real customer:**
 
 ### Infrastructure
 - [ ] Backend API deployed and accessible
