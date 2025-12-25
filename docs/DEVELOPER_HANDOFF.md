@@ -65,84 +65,64 @@ This document outlines what's **already implemented** and what **remains** for a
 
 ### Critical Issues
 
-#### 1. **JWT Token Usage Mismatch** 🔴 HIGH PRIORITY
+#### 1. **Family Plan max_devices Bug** 🔴 HIGH PRIORITY
 
 **Problem:**
-- Backend endpoint `/api/licenses/validate` generates JWT tokens for offline validation
-- Frontend uses `/api/lpv/license/activate` which does NOT return JWT tokens
-- Frontend relies on local license files for offline validation (not JWT)
+- Family plans are being created with `max_devices: 1` instead of `5` in webhook handler
+- This prevents family plans from activating on multiple devices
 
-**Current State:**
-- `backend/routes/lpv-licenses.js` - Returns `{ status, mode, plan_type }` (NO JWT)
-- `backend/routes/licenses.js` - Returns `{ success, data: { token, ... } }` (HAS JWT)
+**Location:** `backend/routes/webhooks.js:151`
 
-**Decision Needed:**
-- **Option A:** Update `/api/lpv/license/activate` to return JWT token (recommended)
-- **Option B:** Keep local license file approach (current implementation)
-- **Option C:** Use JWT for offline validation instead of local files
-
-**Files to Modify:**
-- `backend/routes/lpv-licenses.js` - Add JWT generation
-- `src/utils/licenseService.ts` - Store and validate JWT tokens
-- `src/utils/licenseService.ts` - Add JWT validation for offline checks
-
-**Recommended Fix:**
+**Fix:**
 ```javascript
-// In backend/routes/lpv-licenses.js - after successful activation
-const token = jwt.sign(
-  {
-    licenseKey: normalizedKey,
-    planType: license.plan_type,
-    hardwareHash: device_id,
-    maxDevices: license.max_devices,
-    activatedAt: new Date().toISOString(),
-  },
-  process.env.JWT_SECRET,
-  { expiresIn: '365d' }
-);
+// Change from:
+max_devices: 1,
 
-return res.json({
-  status: 'activated',
-  mode: 'first_activation',
-  plan_type: license.plan_type,
-  token, // ADD THIS
-});
+// To:
+max_devices: product.maxDevices, // Use product.maxDevices (1 or 5)
 ```
 
-#### 2. **Offline JWT Validation** 🔴 HIGH PRIORITY
+**Status:** ✅ FIXED - See commit history
 
-**Problem:**
-- JWT tokens are generated but not validated offline
-- Frontend needs to verify JWT signature locally (without API call)
-- JWT secret must be shared between backend and frontend (or use public key)
+---
 
-**Current State:**
-- JWT tokens are generated with `JWT_SECRET` (symmetric key)
-- Frontend cannot verify signature without the secret
-- Local license file validation is used instead
+### Completed Features (No Action Needed)
 
-**Solution Options:**
+#### ✅ **Privacy-First License System**
+- **Status:** COMPLETE
+- **Implementation:** Signed license files with HMAC-SHA256
+- **Location:** `backend/services/licenseSigner.js`, `src/utils/licenseValidator.ts`
+- **Note:** JWT approach was replaced with signed license files for better privacy
 
-**Option A: Symmetric Key (Simpler, Less Secure)**
-- Share `JWT_SECRET` in frontend build (not recommended for production)
-- Use environment variable that gets bundled
+#### ✅ **Family Plan Device Management UI**
+- **Status:** COMPLETE
+- **Implementation:** DeviceManagementScreen component
+- **Location:** `src/components/DeviceManagementScreen.tsx`
+- **Note:** Privacy-first approach - shows local device only
 
-**Option B: Asymmetric Key (More Secure)**
-- Backend signs with private key
-- Frontend verifies with public key
-- Public key can be safely bundled
+#### ✅ **Bundle Purchase Handling**
+- **Status:** COMPLETE
+- **Implementation:** Multiple key handling in PurchaseSuccessPage
+- **Location:** `src/components/PurchaseSuccessPage.tsx`
+- **Note:** Handles bundle purchases with multiple keys
 
-**Option C: Keep Local File Approach (Current)**
-- Continue using local license files
-- Remove JWT generation from backend
-- Simplify to device_id matching only
+#### ✅ **Enhanced Error Handling**
+- **Status:** COMPLETE
+- **Implementation:** Comprehensive error messages with troubleshooting tips
+- **Location:** `src/components/LicenseScreen.tsx`
+- **Note:** All error scenarios covered
 
-**Files to Modify:**
-- `src/utils/licenseService.ts` - Add JWT verification
-- `src/utils/safeUtils.ts` - Add JWT signature verification
-- `backend/routes/lpv-licenses.js` - Return JWT token
+#### ✅ **License Status Dashboard**
+- **Status:** COMPLETE
+- **Implementation:** Full status dashboard with device info
+- **Location:** `src/components/LicenseStatusDashboard.tsx`
+- **Note:** Shows license details, device binding, and privacy guarantee
 
-#### 3. **Family Plan Device Management** 🟡 MEDIUM PRIORITY
+---
+
+### Optional Enhancements
+
+#### 2. **Device Management Backend Integration** 🟡 OPTIONAL
 
 **Problem:**
 - Family plans support 5 devices

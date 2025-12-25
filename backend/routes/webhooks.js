@@ -148,7 +148,7 @@ async function handleCheckoutCompleted(session) {
         stripe_payment_id: fullSession.payment_intent?.id || null,
         stripe_checkout_session_id: session.id,
         amount_paid: lineItemAmount / numKeys,
-        max_devices: 1,
+        max_devices: product.maxDevices, // Use product maxDevices (1 for personal, 5 for family)
       });
       
       productKeys.push(licenseKey);
