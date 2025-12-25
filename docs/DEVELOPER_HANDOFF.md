@@ -1,49 +1,10 @@
-# Developer Handoff: Deployment & Activation
+# Developer Handoff: What's Left to Do
 
 ## Overview
 
-This document outlines exactly what needs to be done to deploy the current system and get it ready for users. All core features are complete - this focuses on deployment, configuration, and verification.
+This document lists only the tasks that need to be completed to deploy the system and get it ready for users.
 
-**Key Architecture:** The system uses **signed license files** (HMAC-SHA256) for offline validation. When a license is activated or transferred, the backend returns a signed license file that is stored locally and validated offline without any network calls.
-
----
-
-## ✅ What's Already Complete
-
-### Backend (100% Complete)
-- License key generation (all product types)
-- Stripe integration (single and bundle purchases)
-- Database schema (Supabase PostgreSQL)
-- API endpoints (activation, transfer, status, trial)
-- Signed license file generation (HMAC-SHA256)
-- Email service integration (Brevo)
-- Webhook handling for purchases
-
-### Frontend (100% Complete)
-- Device fingerprint generation
-- License service (activation, transfer, validation)
-- UI components (activation screen, transfer dialog, error handling)
-- Device management screen (100% offline)
-- Bundle purchase handling (fetches all keys from session)
-- License status dashboard
-- Trial activation and expiration handling
-- 100% offline operation after activation
-
-**Key Files:**
-- `backend/routes/lpv-licenses.js` - Activation endpoints
-- `backend/services/licenseSigner.js` - HMAC-SHA256 signing
-- `src/utils/licenseService.ts` - License logic
-- `src/utils/licenseValidator.ts` - Offline validation
-- `src/components/LicenseScreen.tsx` - Activation UI
-- `src/components/PurchaseSuccessPage.tsx` - Bundle purchase handling
-
----
-
-## 🎯 What's Left to Do
-
-**⚠️ IMPORTANT: See `docs/ACTIVATION_AND_FIRST_USER.md` for complete step-by-step deployment guide.**
-
-This section lists the specific tasks that must be completed to deploy the system.
+**For complete step-by-step instructions, see:** `docs/ACTIVATION_AND_FIRST_USER.md`
 
 ---
 
@@ -81,11 +42,6 @@ API_URL=<api-url>
 openssl rand -hex 32
 ```
 
-**Files Needed:**
-- `backend/server.js`
-- `backend/.env` (create from `backend/env.example`)
-- PM2 configuration
-
 **Reference:** `docs/PRODUCTION_LAUNCH_GUIDE.md` - Step 2
 
 ---
@@ -97,10 +53,6 @@ openssl rand -hex 32
 2. Configure SSL certificate (Let's Encrypt)
 3. Set up reverse proxy for API domain (api.localpasswordvault.com)
 4. Test health endpoint: `curl https://api.localpasswordvault.com/health`
-
-**Files Needed:**
-- Nginx configuration file
-- SSL certificate files
 
 **Reference:** `docs/PRODUCTION_LAUNCH_GUIDE.md` - Step 2
 
@@ -116,10 +68,6 @@ openssl rand -hex 32
    - Service Role Key (NOT anon key)
 4. Add to backend `.env` file
 5. Test connection from backend server
-
-**Files Needed:**
-- `backend/database/schema.sql` - Database schema
-- Supabase project URL and Service Role Key
 
 **Reference:** `docs/PRODUCTION_LAUNCH_GUIDE.md` - Step 1
 
@@ -151,10 +99,6 @@ openssl rand -hex 32
    - Verify webhook received and processed
    - Check backend logs for webhook processing
 
-**Files to Update:**
-- `backend/.env` - Add Stripe live keys and webhook secret
-- Frontend environment config - Add Stripe live publishable key
-
 **Reference:** `docs/PRODUCTION_LAUNCH_GUIDE.md` - Step 3
 
 ---
@@ -167,9 +111,6 @@ openssl rand -hex 32
 3. Verify sender email address in Brevo
 4. Add API key to backend `.env` as `BREVO_API_KEY`
 5. Test email sending
-
-**Files to Update:**
-- `backend/.env` - Add `BREVO_API_KEY`, `FROM_EMAIL`, `SUPPORT_EMAIL`
 
 **Reference:** `docs/PRODUCTION_LAUNCH_GUIDE.md` - Step 4
 
@@ -194,11 +135,6 @@ openssl rand -hex 32
 **Linux:**
 1. Run: `npm run dist:linux`
 2. Test AppImage on clean Linux machine
-
-**Files Generated:**
-- Windows: `dist/Local Password Vault Setup X.X.X.exe`
-- macOS: `dist/Local Password Vault-X.X.X.dmg`
-- Linux: `dist/Local Password Vault-X.X.X.AppImage`
 
 **Reference:** `docs/PRODUCTION_LAUNCH_GUIDE.md` - Step 5
 
@@ -258,14 +194,6 @@ openssl rand -hex 32
    - [ ] Activate trial key in app
    - [ ] Verify trial works
    - [ ] Verify trial expiration detected offline
-
-**Files to Test:**
-- `src/utils/licenseService.ts` - License activation
-- `src/utils/licenseValidator.ts` - Offline validation
-- `src/components/LicenseScreen.tsx` - Activation UI
-- `src/components/PurchaseSuccessPage.tsx` - Bundle handling
-- `backend/routes/lpv-licenses.js` - Backend activation endpoint
-- `backend/routes/webhooks.js` - Stripe webhook handling
 
 ---
 
@@ -359,52 +287,6 @@ openssl rand -hex 32
 
 ---
 
-## 📝 Architecture Reference
-
-**Note:** This section is for reference only - all features described here are already implemented and complete.
-
-### Current Implementation
-
-**Backend:**
-- Supabase (PostgreSQL) for data storage
-- Stripe for payments
-- Brevo for emails
-- HMAC-SHA256 signed license files for offline validation
-- License activation endpoints return signed license files
-
-**Frontend:**
-- Electron app
-- Local signed license file storage and validation
-- Device fingerprint for binding
-- Offline-first design (zero network calls after activation)
-- All validation happens locally using Web Crypto API
-
-### Key Design Principles
-
-1. **Offline-First:** App works 100% offline after activation
-2. **Device Binding:** License tied to device fingerprint (SHA-256 hash)
-3. **Transfer Support:** 3 transfers per year allowed
-4. **Privacy-First:** No user data transmitted, only license key + device hash at activation
-5. **Signed Files:** All validation uses HMAC-SHA256 signed license files
-
-### Security Model
-
-- Device fingerprint is SHA-256 hash (one-way, cannot be reversed)
-- License files signed with HMAC-SHA256 using backend secret
-- License files verified locally using Web Crypto API (no server calls)
-- License keys validated against database only at initial activation
-- Zero network traffic after activation (100% offline operation)
-
-### Family Plan Model (✅ Implemented)
-
-- Family plan purchase generates 5 separate license keys
-- Each key can be activated on 1 device only
-- Keys cannot be shared or reused on multiple devices
-- Each key behaves like a personal license (single device binding)
-- **Status:** Fully implemented and working
-
----
-
 ## 📞 Reference Documents
 
 - **`docs/ACTIVATION_AND_FIRST_USER.md`** - ⭐ **START HERE** - Complete step-by-step deployment guide
@@ -417,4 +299,4 @@ openssl rand -hex 32
 ---
 
 **Last Updated:** January 2025  
-**Status:** Core features complete - Deployment tasks remaining
+**Status:** Deployment tasks remaining
