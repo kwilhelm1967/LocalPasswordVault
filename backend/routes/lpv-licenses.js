@@ -84,7 +84,7 @@ router.post('/activate', async (req, res) => {
     }
     
     // Look up the license in database
-    const license = db.licenses.findByKey.get(normalizedKey);
+    const license = await db.licenses.findByKey(normalizedKey);
     
     if (!license) {
       return res.status(404).json({ 
@@ -106,19 +106,26 @@ router.post('/activate', async (req, res) => {
     // Case 1: First activation (no device bound yet)
     if (!license.is_activated || !license.hardware_hash) {
       // Activate on this device
-      db.licenses.activate.run({
+      await db.licenses.activate({
         license_key: normalizedKey,
         hardware_hash: device_id,
       });
       
-      // Update activation count
-      db.run(`
-        UPDATE licenses 
-        SET activation_count = COALESCE(activation_count, 0) + 1,
-            last_activated_at = datetime('now'),
-            current_device_id = ?
-        WHERE license_key = ?
-      `, [device_id, normalizedKey]);
+      // Update activation count and current device
+      const { data: current } = await db.supabase
+        .from('licenses')
+        .select('activation_count')
+        .eq('license_key', normalizedKey)
+        .single();
+      
+      await db.supabase
+        .from('licenses')
+        .update({
+          activation_count: (current?.activation_count || 0) + 1,
+          last_activated_at: new Date().toISOString(),
+          current_device_id: device_id
+        })
+        .eq('license_key', normalizedKey);
       
       return res.json({
         status: 'activated',
@@ -130,11 +137,10 @@ router.post('/activate', async (req, res) => {
     // Case 2: Same device re-activation
     if (license.hardware_hash === device_id || license.current_device_id === device_id) {
       // Update last activation time
-      db.run(`
-        UPDATE licenses 
-        SET last_activated_at = datetime('now')
-        WHERE license_key = ?
-      `, [normalizedKey]);
+      await db.supabase
+        .from('licenses')
+        .update({ last_activated_at: new Date().toISOString() })
+        .eq('license_key', normalizedKey);
       
       return res.json({
         status: 'activated',
@@ -211,7 +217,7 @@ router.post('/transfer', async (req, res) => {
     const normalizedKey = normalizeKey(license_key);
     
     // Look up the license in database
-    const license = db.licenses.findByKey.get(normalizedKey);
+    const license = await db.licenses.findByKey(normalizedKey);
     
     if (!license) {
       return res.status(404).json({ 
@@ -248,17 +254,24 @@ router.post('/transfer', async (req, res) => {
     }
     
     // Perform the transfer
-    const result = db.run(`
-      UPDATE licenses 
-      SET hardware_hash = ?,
-          current_device_id = ?,
-          transfer_count = COALESCE(transfer_count, 0) + 1,
-          last_transfer_at = datetime('now'),
-          last_activated_at = datetime('now')
-      WHERE license_key = ?
-    `, [new_device_id, new_device_id, normalizedKey]);
+    const { data: current } = await db.supabase
+      .from('licenses')
+      .select('transfer_count')
+      .eq('license_key', normalizedKey)
+      .single();
     
-    if (result.changes === 0) {
+    const { error: updateError } = await db.supabase
+      .from('licenses')
+      .update({
+        hardware_hash: new_device_id,
+        current_device_id: new_device_id,
+        transfer_count: (current?.transfer_count || 0) + 1,
+        last_transfer_at: new Date().toISOString(),
+        last_activated_at: new Date().toISOString()
+      })
+      .eq('license_key', normalizedKey);
+    
+    if (updateError) {
       return res.status(500).json({
         status: 'error',
         error: 'Failed to update license'
@@ -283,7 +296,7 @@ router.post('/transfer', async (req, res) => {
  * 
  * Check license status (for diagnostics)
  */
-router.get('/status/:key', (req, res) => {
+router.get('/status/:key', async (req, res) => {
   try {
     const normalizedKey = normalizeKey(req.params.key);
     
@@ -291,7 +304,7 @@ router.get('/status/:key', (req, res) => {
       return res.status(400).json({ valid: false, error: 'Invalid format' });
     }
     
-    const license = db.licenses.findByKey.get(normalizedKey);
+    const license = await db.licenses.findByKey(normalizedKey);
     
     if (!license) {
       return res.status(404).json({ valid: false, error: 'Not found' });

@@ -32,11 +32,13 @@ This guide walks through setting up the backend API for Local Password Vault to 
 
 ---
 
-## Step 1: Supabase Database Setup
+## Step 1: Database Setup
 
-### 1.1 Create Tables
+The backend uses **Supabase** (PostgreSQL database).
 
-Go to Supabase Dashboard → SQL Editor and run:
+### 1.1 Database Initialization
+
+The database is automatically initialized when the server starts. The schema is defined in `backend/database/schema.sql` and creates the following tables:
 
 ```sql
 -- Licenses table

@@ -56,7 +56,7 @@ router.post('/signup', async (req, res) => {
     const normalizedEmail = email.toLowerCase().trim();
     
     // Check if email already has a trial
-    const existingTrial = db.trials.findByEmail.get(normalizedEmail);
+    const existingTrial = await db.trials.findByEmail(normalizedEmail);
     
     if (existingTrial) {
       // Check if trial is still valid
@@ -93,9 +93,9 @@ router.post('/signup', async (req, res) => {
     }
     
     // Check if email already has a purchased license
-    const existingLicense = db.licenses.findByEmail.get(normalizedEmail);
+    const existingLicense = await db.licenses.findByEmail(normalizedEmail);
     
-    if (existingLicense) {
+    if (existingLicense && existingLicense.length > 0) {
       return res.status(400).json({ 
         success: false, 
         error: 'You already have a license. Please use your existing license key.',
@@ -112,14 +112,14 @@ router.post('/signup', async (req, res) => {
     
     // Save to database
     try {
-      db.trials.create.run({
+      await db.trials.create({
         email: normalizedEmail,
         trial_key: trialKey,
         expires_at: expiresAt.toISOString(),
       });
     } catch (dbError) {
       // Handle unique constraint violation (race condition)
-      if (dbError.code === 'SQLITE_CONSTRAINT_UNIQUE') {
+      if (dbError.code === '23505' || dbError.message?.includes('unique')) {
         return res.status(400).json({ 
           success: false, 
           error: 'Trial already exists for this email' 

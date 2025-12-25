@@ -78,7 +78,7 @@ User Purchase Flow:
 Before starting, ensure you have:
 
 - [ ] **Linode Server** - API hosting (or alternative VPS)
-- [ ] **Supabase Account** - Database (or SQLite on server)
+- [ ] **Supabase Account** - Database
 - [ ] **Stripe Account** - Payment processing
 - [ ] **Brevo Account** - Email delivery
 - [ ] **GitHub Account** - Code repository
@@ -96,53 +96,37 @@ Before starting, ensure you have:
 
 ---
 
-## Step 1: Database Setup
+## Step 1: Database Setup (Supabase)
 
-### Option A: SQLite (Recommended for Simplicity)
+1. **Log into Supabase Dashboard:** https://app.supabase.com
 
-**Location:** Backend server (`/var/www/lpv-api/database/vault.db`)
+2. **Create a new project** (if you don't have one):
+   - Click "New Project"
+   - Choose organization
+   - Enter project name: `local-password-vault`
+   - Set database password (save this securely!)
+   - Choose region closest to your server
+   - Click "Create new project"
 
-1. **SSH into your Linode server:**
-   ```bash
-   ssh root@your-server-ip
-   ```
+3. **Wait for project to be ready** (2-3 minutes)
 
-2. **Create database directory:**
-   ```bash
-   mkdir -p /var/www/lpv-api/database
-   cd /var/www/lpv-api/database
-   ```
+4. **Go to SQL Editor** in Supabase Dashboard
 
-3. **Create the database schema:**
-   ```bash
-   # Copy schema.sql from the repo
-   sqlite3 vault.db < schema.sql
-   ```
+5. **Run the database schema:**
+   - Open `backend/database/schema.sql` from the repository
+   - Convert SQLite syntax to PostgreSQL:
+     - `INTEGER PRIMARY KEY` → `SERIAL PRIMARY KEY`
+     - `DATETIME` → `TIMESTAMP`
+     - `TEXT` → `TEXT` (same)
+     - `BOOLEAN` → `BOOLEAN` (same)
+   - Paste and execute in SQL Editor
 
-4. **Verify tables created:**
-   ```bash
-   sqlite3 vault.db ".tables"
-   # Should show: customers, licenses, trials, device_activations, webhook_events
-   ```
-
-5. **Set permissions:**
-   ```bash
-   chmod 644 vault.db
-   chown www-data:www-data vault.db
-   ```
-
-### Option B: Supabase (PostgreSQL)
-
-1. **Log into Supabase Dashboard**
-2. **Go to SQL Editor**
-3. **Run the schema (convert SQLite to PostgreSQL):**
-   ```sql
-   -- Convert schema.sql to PostgreSQL syntax
-   -- Main changes: INTEGER → SERIAL, DATETIME → TIMESTAMP
-   -- See backend/database/schema.sql for full schema
-   ```
-
-4. **Note the connection string** for `.env` file
+6. **Get connection details:**
+   - Go to Settings → API
+   - Copy:
+     - **Project URL** (e.g., `https://xxxxx.supabase.co`)
+     - **Service Role Key** (starts with `eyJhbGc...`) - Use this for backend, NOT the anon key
+   - Save these for `.env` file
 
 ---
 
@@ -209,11 +193,9 @@ Before starting, ensure you have:
    PORT=3001
    JWT_SECRET=your-64-character-random-string-here-generate-with-openssl-rand-hex-32
    
-   # Database (SQLite)
-   DB_PATH=./database/vault.db
-   
-   # OR Database (Supabase PostgreSQL)
-   # DATABASE_URL=postgresql://user:password@host:5432/dbname
+   # Supabase (Database)
+   SUPABASE_URL=https://YOUR-PROJECT-ID.supabase.co
+   SUPABASE_SERVICE_KEY=eyJhbGc...YOUR-SERVICE-ROLE-KEY
    
    # Stripe
    STRIPE_SECRET_KEY=sk_live_xxxxxxxxxxxxx
@@ -1427,13 +1409,18 @@ UNIQUE(license_id, hardware_hash)  -- One activation per device
 
 ### Database Backup
 
-```bash
-# SQLite backup
-cp /var/www/lpv-api/database/vault.db /backup/vault-$(date +%Y%m%d).db
+Supabase automatically backs up your database. You can also:
 
-# Or set up automated backups
-0 2 * * * cp /var/www/lpv-api/database/vault.db /backup/vault-$(date +\%Y\%m\%d).db
-```
+1. **Manual backup via Supabase Dashboard:**
+   - Go to Database → Backups
+   - Click "Download backup"
+
+2. **Automated backups:**
+   - Supabase Pro plan includes daily backups
+   - Or use pg_dump via cron job:
+   ```bash
+   0 2 * * * pg_dump $DATABASE_URL > /backup/vault-$(date +\%Y\%m\%d).sql
+   ```
 
 ---
 

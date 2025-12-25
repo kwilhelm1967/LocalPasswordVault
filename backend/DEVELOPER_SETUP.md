@@ -7,7 +7,7 @@
 | Server | Linode |
 | Email | Brevo |
 | Payments | Stripe |
-| Database | SQLite (included) |
+| Database | Supabase |
 
 ---
 
@@ -52,6 +52,11 @@ STRIPE_WEBHOOK_SECRET=[YOUR_WEBHOOK_SECRET]
 # Create a new API key with "Send emails" permission
 # RECOMMENDED: Use Transactional API (more reliable than SMTP)
 BREVO_API_KEY=xkeysib-[YOUR_API_KEY_HERE]
+
+# Supabase (from Supabase Dashboard → Settings → API)
+# Use the service_role key (NOT anon key) for backend operations
+SUPABASE_URL=https://YOUR-PROJECT-ID.supabase.co
+SUPABASE_SERVICE_KEY=eyJhbGc...YOUR-SERVICE-ROLE-KEY
 
 # Sender info
 FROM_EMAIL=noreply@localpasswordvault.com
@@ -308,7 +313,7 @@ backend/
 │   ├── email.js           # Brevo email sending
 │   └── licenseGenerator.js
 ├── database/
-│   ├── db.js              # SQLite database
+│   ├── db.js              # Supabase database connection
 │   └── schema.sql         # Table definitions
 └── templates/
     ├── purchase-email.html

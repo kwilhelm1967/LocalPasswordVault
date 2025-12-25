@@ -9,7 +9,7 @@ Backend server for Local Password Vault. Handles license key management, trial s
 | Server | Linode |
 | Email | Brevo |
 | Payments | Stripe |
-| Database | SQLite |
+| Database | Supabase |
 
 ## Quick Start
 
@@ -43,6 +43,11 @@ STRIPE_PRICE_LLV_FAMILY=[price_id_for_llv_family]
 # Brevo (Transactional API - Recommended)
 # Get API key from: Brevo → Settings → SMTP & API → API Keys
 BREVO_API_KEY=xkeysib-your-api-key-here
+
+# Supabase (Database)
+# Get from: Supabase Dashboard → Settings → API
+SUPABASE_URL=https://YOUR-PROJECT-ID.supabase.co
+SUPABASE_SERVICE_KEY=eyJhbGc...YOUR-SERVICE-ROLE-KEY
 
 # Email addresses
 FROM_EMAIL=noreply@localpasswordvault.com
@@ -82,7 +87,7 @@ backend/
 │   ├── email.js           # Brevo email
 │   └── licenseGenerator.js
 ├── database/
-│   ├── db.js              # SQLite connection
+│   ├── db.js              # Supabase connection
 │   └── schema.sql         # Tables
 └── templates/
     ├── bundle-email.html

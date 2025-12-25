@@ -1,46 +1,27 @@
 /**
  * Database Connection and Initialization
- * Uses SQLite for simplicity - can be swapped for PostgreSQL in production
+ * Uses Supabase (PostgreSQL)
  */
 
-const Database = require('better-sqlite3');
-const fs = require('fs');
-const path = require('path');
+const { createClient } = require('@supabase/supabase-js');
 
-// Database file path
-const DB_PATH = process.env.DATABASE_PATH || path.join(__dirname, 'vault.db');
+// Initialize Supabase client
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
 
-// Create database connection
-const db = new Database(DB_PATH);
+if (!supabaseUrl || !supabaseServiceKey) {
+  throw new Error('Missing Supabase configuration. Set SUPABASE_URL and SUPABASE_SERVICE_KEY in .env');
+}
 
-// Enable WAL mode for better performance
-db.pragma('journal_mode = WAL');
+const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 /**
  * Initialize database tables from schema
+ * Note: Schema should be run manually in Supabase SQL Editor
  */
-function initialize() {
-  const schemaPath = path.join(__dirname, 'schema.sql');
-  const schema = fs.readFileSync(schemaPath, 'utf-8');
-  
-  // Execute schema (split by semicolons and run each statement)
-  const statements = schema
-    .split(';')
-    .map(s => s.trim())
-    .filter(s => s.length > 0 && !s.startsWith('--'));
-  
-  for (const statement of statements) {
-    try {
-      db.exec(statement);
-    } catch (error) {
-      // Ignore "table already exists" errors
-      if (!error.message.includes('already exists')) {
-        console.error('Schema error:', error.message);
-      }
-    }
-  }
-  
-  console.log('✓ Database initialized');
+async function initialize() {
+  console.log('✓ Supabase connection initialized');
+  console.log('⚠ Note: Run schema.sql manually in Supabase SQL Editor');
 }
 
 // =============================================================================
@@ -48,23 +29,50 @@ function initialize() {
 // =============================================================================
 
 const customers = {
-  create: db.prepare(`
-    INSERT INTO customers (email, stripe_customer_id, name)
-    VALUES (@email, @stripe_customer_id, @name)
-  `),
+  async create({ email, stripe_customer_id, name }) {
+    const { data, error } = await supabase
+      .from('customers')
+      .insert({ email, stripe_customer_id, name })
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  },
   
-  findByEmail: db.prepare(`
-    SELECT * FROM customers WHERE email = ?
-  `),
+  async findByEmail(email) {
+    const { data, error } = await supabase
+      .from('customers')
+      .select('*')
+      .eq('email', email)
+      .single();
+    
+    if (error && error.code !== 'PGRST116') throw error; // PGRST116 = not found
+    return data;
+  },
   
-  findByStripeId: db.prepare(`
-    SELECT * FROM customers WHERE stripe_customer_id = ?
-  `),
+  async findByStripeId(stripe_customer_id) {
+    const { data, error } = await supabase
+      .from('customers')
+      .select('*')
+      .eq('stripe_customer_id', stripe_customer_id)
+      .single();
+    
+    if (error && error.code !== 'PGRST116') throw error;
+    return data;
+  },
   
-  updateStripeId: db.prepare(`
-    UPDATE customers SET stripe_customer_id = @stripe_customer_id, updated_at = CURRENT_TIMESTAMP
-    WHERE email = @email
-  `),
+  async updateStripeId({ email, stripe_customer_id }) {
+    const { data, error } = await supabase
+      .from('customers')
+      .update({ stripe_customer_id, updated_at: new Date().toISOString() })
+      .eq('email', email)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  },
 };
 
 // =============================================================================
@@ -72,45 +80,114 @@ const customers = {
 // =============================================================================
 
 const licenses = {
-  create: db.prepare(`
-    INSERT INTO licenses (
-      license_key, plan_type, product_type, customer_id, email, 
-      stripe_payment_id, stripe_checkout_session_id, amount_paid, max_devices
-    )
-    VALUES (
-      @license_key, @plan_type, @product_type, @customer_id, @email,
-      @stripe_payment_id, @stripe_checkout_session_id, @amount_paid, @max_devices
-    )
-  `),
+  async create({
+    license_key, plan_type, product_type, customer_id, email,
+    stripe_payment_id, stripe_checkout_session_id, amount_paid, max_devices
+  }) {
+    const { data, error } = await supabase
+      .from('licenses')
+      .insert({
+        license_key,
+        plan_type,
+        product_type,
+        customer_id,
+        email,
+        stripe_payment_id,
+        stripe_checkout_session_id,
+        amount_paid,
+        max_devices
+      })
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  },
   
-  findByKey: db.prepare(`
-    SELECT * FROM licenses WHERE license_key = ? AND status = 'active'
-  `),
+  async findByKey(license_key) {
+    const { data, error } = await supabase
+      .from('licenses')
+      .select('*')
+      .eq('license_key', license_key)
+      .eq('status', 'active')
+      .single();
+    
+    if (error && error.code !== 'PGRST116') throw error;
+    return data;
+  },
   
-  findByEmail: db.prepare(`
-    SELECT * FROM licenses WHERE email = ? AND status = 'active'
-  `),
+  async findByEmail(email) {
+    const { data, error } = await supabase
+      .from('licenses')
+      .select('*')
+      .eq('email', email)
+      .eq('status', 'active');
+    
+    if (error) throw error;
+    return data;
+  },
   
-  findBySessionId: db.prepare(`
-    SELECT * FROM licenses WHERE stripe_checkout_session_id = ?
-  `),
+  async findBySessionId(stripe_checkout_session_id) {
+    const { data, error } = await supabase
+      .from('licenses')
+      .select('*')
+      .eq('stripe_checkout_session_id', stripe_checkout_session_id)
+      .single();
+    
+    if (error && error.code !== 'PGRST116') throw error;
+    return data;
+  },
   
-  activate: db.prepare(`
-    UPDATE licenses 
-    SET is_activated = TRUE, hardware_hash = @hardware_hash, 
-        activated_at = CURRENT_TIMESTAMP, activated_devices = activated_devices + 1,
-        updated_at = CURRENT_TIMESTAMP
-    WHERE license_key = @license_key
-  `),
+  async activate({ license_key, hardware_hash }) {
+    // First get current value to increment
+    const { data: current } = await supabase
+      .from('licenses')
+      .select('activated_devices')
+      .eq('license_key', license_key)
+      .single();
+    
+    const { data, error } = await supabase
+      .from('licenses')
+      .update({
+        is_activated: true,
+        hardware_hash,
+        activated_at: new Date().toISOString(),
+        activated_devices: (current?.activated_devices || 0) + 1,
+        updated_at: new Date().toISOString()
+      })
+      .eq('license_key', license_key)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  },
   
-  getActivatedDevices: db.prepare(`
-    SELECT activated_devices, max_devices FROM licenses WHERE license_key = ?
-  `),
+  async getActivatedDevices(license_key) {
+    const { data, error } = await supabase
+      .from('licenses')
+      .select('activated_devices, max_devices')
+      .eq('license_key', license_key)
+      .single();
+    
+    if (error) throw error;
+    return data;
+  },
   
-  revoke: db.prepare(`
-    UPDATE licenses SET status = 'revoked', updated_at = CURRENT_TIMESTAMP
-    WHERE license_key = ?
-  `),
+  async revoke(license_key) {
+    const { data, error } = await supabase
+      .from('licenses')
+      .update({
+        status: 'revoked',
+        updated_at: new Date().toISOString()
+      })
+      .eq('license_key', license_key)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  },
 };
 
 // =============================================================================
@@ -118,30 +195,68 @@ const licenses = {
 // =============================================================================
 
 const trials = {
-  create: db.prepare(`
-    INSERT INTO trials (email, trial_key, expires_at)
-    VALUES (@email, @trial_key, @expires_at)
-  `),
+  async create({ email, trial_key, expires_at }) {
+    const { data, error } = await supabase
+      .from('trials')
+      .insert({ email, trial_key, expires_at })
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  },
   
-  findByEmail: db.prepare(`
-    SELECT * FROM trials WHERE email = ?
-  `),
+  async findByEmail(email) {
+    const { data, error } = await supabase
+      .from('trials')
+      .select('*')
+      .eq('email', email)
+      .single();
+    
+    if (error && error.code !== 'PGRST116') throw error;
+    return data;
+  },
   
-  findByKey: db.prepare(`
-    SELECT * FROM trials WHERE trial_key = ?
-  `),
+  async findByKey(trial_key) {
+    const { data, error } = await supabase
+      .from('trials')
+      .select('*')
+      .eq('trial_key', trial_key)
+      .single();
+    
+    if (error && error.code !== 'PGRST116') throw error;
+    return data;
+  },
   
-  activate: db.prepare(`
-    UPDATE trials 
-    SET is_activated = TRUE, hardware_hash = @hardware_hash, activated_at = CURRENT_TIMESTAMP
-    WHERE trial_key = @trial_key
-  `),
+  async activate({ trial_key, hardware_hash }) {
+    const { data, error } = await supabase
+      .from('trials')
+      .update({
+        is_activated: true,
+        hardware_hash,
+        activated_at: new Date().toISOString()
+      })
+      .eq('trial_key', trial_key)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  },
   
-  markConverted: db.prepare(`
-    UPDATE trials 
-    SET is_converted = TRUE, converted_license_id = @license_id
-    WHERE email = @email
-  `),
+  async markConverted({ email, license_id }) {
+    const { data, error } = await supabase
+      .from('trials')
+      .update({
+        is_converted: true,
+        converted_license_id: license_id
+      })
+      .eq('email', email)
+      .select();
+    
+    if (error) throw error;
+    return data;
+  },
 };
 
 // =============================================================================
@@ -149,32 +264,66 @@ const trials = {
 // =============================================================================
 
 const deviceActivations = {
-  create: db.prepare(`
-    INSERT INTO device_activations (license_id, hardware_hash, device_name)
-    VALUES (@license_id, @hardware_hash, @device_name)
-  `),
+  async create({ license_id, hardware_hash, device_name }) {
+    const { data, error } = await supabase
+      .from('device_activations')
+      .insert({ license_id, hardware_hash, device_name })
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  },
   
-  findByLicenseAndHash: db.prepare(`
-    SELECT * FROM device_activations 
-    WHERE license_id = ? AND hardware_hash = ? AND is_active = TRUE
-  `),
+  async findByLicenseAndHash(license_id, hardware_hash) {
+    const { data, error } = await supabase
+      .from('device_activations')
+      .select('*')
+      .eq('license_id', license_id)
+      .eq('hardware_hash', hardware_hash)
+      .eq('is_active', true)
+      .single();
+    
+    if (error && error.code !== 'PGRST116') throw error;
+    return data;
+  },
   
-  countByLicense: db.prepare(`
-    SELECT COUNT(*) as count FROM device_activations 
-    WHERE license_id = ? AND is_active = TRUE
-  `),
+  async countByLicense(license_id) {
+    const { count, error } = await supabase
+      .from('device_activations')
+      .select('*', { count: 'exact', head: true })
+      .eq('license_id', license_id)
+      .eq('is_active', true);
+    
+    if (error) throw error;
+    return { count: count || 0 };
+  },
   
-  updateLastSeen: db.prepare(`
-    UPDATE device_activations 
-    SET last_seen_at = CURRENT_TIMESTAMP
-    WHERE license_id = @license_id AND hardware_hash = @hardware_hash
-  `),
+  async updateLastSeen({ license_id, hardware_hash }) {
+    const { data, error } = await supabase
+      .from('device_activations')
+      .update({ last_seen_at: new Date().toISOString() })
+      .eq('license_id', license_id)
+      .eq('hardware_hash', hardware_hash)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  },
   
-  deactivate: db.prepare(`
-    UPDATE device_activations 
-    SET is_active = FALSE
-    WHERE license_id = ? AND hardware_hash = ?
-  `),
+  async deactivate(license_id, hardware_hash) {
+    const { data, error } = await supabase
+      .from('device_activations')
+      .update({ is_active: false })
+      .eq('license_id', license_id)
+      .eq('hardware_hash', hardware_hash)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  },
 };
 
 // =============================================================================
@@ -182,44 +331,70 @@ const deviceActivations = {
 // =============================================================================
 
 const webhookEvents = {
-  create: db.prepare(`
-    INSERT INTO webhook_events (stripe_event_id, event_type, payload)
-    VALUES (@stripe_event_id, @event_type, @payload)
-  `),
+  async create({ stripe_event_id, event_type, payload }) {
+    const { data, error } = await supabase
+      .from('webhook_events')
+      .insert({
+        stripe_event_id,
+        event_type,
+        payload: typeof payload === 'string' ? payload : JSON.stringify(payload)
+      })
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  },
   
-  exists: db.prepare(`
-    SELECT 1 FROM webhook_events WHERE stripe_event_id = ?
-  `),
+  async exists(stripe_event_id) {
+    const { data, error } = await supabase
+      .from('webhook_events')
+      .select('id')
+      .eq('stripe_event_id', stripe_event_id)
+      .single();
+    
+    if (error && error.code !== 'PGRST116') throw error;
+    return !!data;
+  },
   
-  markProcessed: db.prepare(`
-    UPDATE webhook_events 
-    SET processed = TRUE
-    WHERE stripe_event_id = ?
-  `),
+  async markProcessed(stripe_event_id) {
+    const { data, error } = await supabase
+      .from('webhook_events')
+      .update({ processed: true })
+      .eq('stripe_event_id', stripe_event_id)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  },
   
-  markError: db.prepare(`
-    UPDATE webhook_events 
-    SET error_message = ?
-    WHERE stripe_event_id = ?
-  `),
+  async markError(stripe_event_id, error_message) {
+    const { data, error } = await supabase
+      .from('webhook_events')
+      .update({ error_message })
+      .eq('stripe_event_id', stripe_event_id)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  },
 };
 
 /**
  * Execute a raw SQL query with parameters
- * Used for dynamic queries that can't be prepared
+ * Note: Supabase doesn't support raw SQL directly from client
+ * Use the query builder methods above instead
+ * This function is kept for compatibility but should be refactored
  */
-function run(sql, params = []) {
-  try {
-    const stmt = db.prepare(sql);
-    return stmt.run(...params);
-  } catch (error) {
-    console.error('SQL execution error:', error);
-    throw error;
-  }
+async function run(sql, params = []) {
+  console.warn('db.run() called with raw SQL. Consider using query builder methods instead.');
+  throw new Error('Raw SQL execution not supported with Supabase. Use query builder methods.');
 }
 
 module.exports = {
-  db,
+  supabase,
   initialize,
   run,
   customers,
@@ -228,4 +403,3 @@ module.exports = {
   deviceActivations,
   webhookEvents,
 };
-
