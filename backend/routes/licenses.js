@@ -3,6 +3,19 @@ const jwt = require('jsonwebtoken');
 const db = require('../database/db');
 const { normalizeKey, isValidFormat } = require('../services/licenseGenerator');
 
+/**
+ * LEGACY LICENSE VALIDATION ENDPOINT
+ * 
+ * ⚠️ DEPRECATED: This endpoint uses JWT tokens for backward compatibility only.
+ * 
+ * Main LPV activation endpoints use signed license files (HMAC-SHA256):
+ * - POST /api/lpv/license/activate - Returns signed license file
+ * - POST /api/lpv/license/transfer - Returns signed license file
+ * - POST /api/lpv/license/trial/activate - Returns signed trial file
+ * 
+ * This endpoint should NOT be used for new implementations.
+ * It is kept only for backward compatibility with legacy clients.
+ */
 const router = express.Router();
 
 router.post('/validate', async (req, res) => {
@@ -116,15 +129,18 @@ router.post('/validate', async (req, res) => {
       isNewActivation = true;
     }
     
+    // LEGACY ENDPOINT: This endpoint still uses JWT for backward compatibility
+    // Main LPV activation endpoints use signed license files (HMAC-SHA256)
+    // This endpoint is deprecated and should not be used for new implementations
     if (!process.env.JWT_SECRET) {
-      console.error('CRITICAL: JWT_SECRET not configured');
+      console.error('CRITICAL: JWT_SECRET not configured (required for legacy endpoint)');
       return res.status(500).json({ 
         success: false, 
         error: 'Server configuration error' 
       });
     }
 
-    // Generate JWT for offline validation
+    // Generate JWT for offline validation (legacy only)
     const token = jwt.sign(
       {
         licenseKey: normalizedKey,

@@ -251,8 +251,10 @@ PORT=3001
 SUPABASE_URL=https://xxxxx.supabase.co
 SUPABASE_SERVICE_KEY=eyJhbGc...
 
-# Secrets (generate these)
-JWT_SECRET=<generate: openssl rand -base64 64>
+# License Signing Secret (Required - generate: openssl rand -hex 32)
+# Used to sign license files and trial files for offline validation
+# All validation uses HMAC-SHA256 signed files (not JWT)
+# Same secret must be set in frontend VITE_LICENSE_SIGNING_SECRET
 LICENSE_SIGNING_SECRET=<generate: openssl rand -hex 32>
 
 # Stripe (LIVE keys from Stripe Dashboard)

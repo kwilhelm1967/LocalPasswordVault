@@ -38,14 +38,7 @@ const REQUIRED_VARS = {
     message: 'Must be a valid Supabase service role key',
   },
 
-  // JWT
-  JWT_SECRET: {
-    required: true,
-    validate: (value) => value.length >= 32,
-    message: 'Must be at least 32 characters long',
-  },
-
-  // License Signing
+  // License Signing (replaces JWT - all validation uses signed files)
   LICENSE_SIGNING_SECRET: {
     required: true,
     validate: (value) => value.length >= 32,

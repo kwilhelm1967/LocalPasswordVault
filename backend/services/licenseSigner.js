@@ -12,7 +12,7 @@ const crypto = require('crypto');
  * - Secret key stored only on server
  */
 
-const SIGNING_SECRET = process.env.LICENSE_SIGNING_SECRET || process.env.JWT_SECRET;
+const SIGNING_SECRET = process.env.LICENSE_SIGNING_SECRET;
 
 if (!SIGNING_SECRET) {
   console.warn('⚠️  LICENSE_SIGNING_SECRET not set. License files will not be signed.');

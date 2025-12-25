@@ -31,7 +31,7 @@ This is a comprehensive, actionable checklist to ensure everything is ready for 
 - [ ] All required `.env` variables set:
   - [ ] `NODE_ENV=production`
   - [ ] `PORT=3001`
-  - [ ] `JWT_SECRET` (64-character random string)
+  - [ ] `LICENSE_SIGNING_SECRET` (64-character hex string - used for signed license/trial files)
   - [ ] `SUPABASE_URL`
   - [ ] `SUPABASE_SERVICE_KEY`
   - [ ] `STRIPE_SECRET_KEY` (LIVE key, not test)
@@ -367,4 +367,6 @@ This is a comprehensive, actionable checklist to ensure everything is ready for 
 
 **Last Updated:** January 2025  
 **Next Review:** Before next major release
+
+
 

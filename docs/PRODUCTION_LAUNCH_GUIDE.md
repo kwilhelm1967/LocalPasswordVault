@@ -189,7 +189,10 @@ Before starting, ensure you have:
    # Server
    NODE_ENV=production
    PORT=3001
-   JWT_SECRET=your-64-character-random-string-here-generate-with-openssl-rand-hex-32
+   # License Signing Secret (Required - generate: openssl rand -hex 32)
+   # Used to sign license files and trial files for offline validation
+   # All validation uses HMAC-SHA256 signed files (not JWT)
+   LICENSE_SIGNING_SECRET=your-64-character-hex-secret-here
    
    # Supabase (Database)
    SUPABASE_URL=https://YOUR-PROJECT-ID.supabase.co
@@ -214,10 +217,11 @@ Before starting, ensure you have:
    API_URL=https://api.localpasswordvault.com
    ```
 
-5. **Generate JWT_SECRET:**
+5. **Generate LICENSE_SIGNING_SECRET:**
    ```bash
    openssl rand -hex 32
-   # Copy the output to JWT_SECRET in .env
+   # Copy the output to LICENSE_SIGNING_SECRET in .env
+   # Also set the same value in frontend .env as VITE_LICENSE_SIGNING_SECRET
    ```
 
 6. **Test the server:**
@@ -1261,7 +1265,7 @@ UNIQUE(license_id, hardware_hash)  -- One activation per device
 4. Check device fingerprint generation in app
 5. Verify device_id is being sent in request body
 6. Check backend logs for errors: `pm2 logs lpv-api`
-7. Verify JWT_SECRET is set
+7. Verify LICENSE_SIGNING_SECRET is set (and matches frontend VITE_LICENSE_SIGNING_SECRET)
 8. Check database connection
 
 ### Issue: Device Binding Not Working

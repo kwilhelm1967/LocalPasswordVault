@@ -16,7 +16,7 @@ import { PasswordEntry, Category, RawPasswordEntry } from "../types";
 import { CategoryIcon } from "./CategoryIcon";
 import { EntryForm } from "./EntryForm";
 import { storageService } from "../utils/storage";
-import { safeParseJWT } from "../utils/safeUtils";
+import { trialService } from "../utils/trialService";
 import { devError } from "../utils/devLog";
 
 interface ElectronFloatingPanelProps {
@@ -77,46 +77,9 @@ export const ElectronFloatingPanel: React.FC<ElectronFloatingPanelProps> = ({
       };
     }
 
-    // Check license token for trial status
-    if (licenseToken) {
-      const tokenData = safeParseJWT<{ isTrial?: boolean; trialExpiryDate?: string }>(licenseToken);
-      if (tokenData?.isTrial && tokenData.trialExpiryDate) {
-        const now = new Date();
-        const expiryDate = new Date(tokenData.trialExpiryDate);
-        const isExpired = now >= expiryDate;
-
-        return {
-          hasTrialBeenUsed: true,
-          isExpired,
-          isTrialActive: !isExpired,
-          daysRemaining: isExpired ? 0 : Math.max(0, Math.floor((expiryDate.getTime() - now.getTime()) / (24 * 60 * 60 * 1000))),
-          startDate: new Date(localStorage.getItem('trial_start_date') || now.toISOString()),
-          endDate: expiryDate,
-        };
-      }
-    }
-
-    // Fallback to local trial calculation
-    const trialStartDate = localStorage.getItem('trial_start_date');
-    if (trialStartDate) {
-      const startDate = new Date(trialStartDate);
-      const trialDurationMs = 7 * 24 * 60 * 60 * 1000; // 7 days
-      const expiryDate = new Date(startDate.getTime() + trialDurationMs);
-      const now = new Date();
-      const isExpired = now >= expiryDate;
-
-      return {
-        hasTrialBeenUsed: true,
-        isExpired,
-        isTrialActive: !isExpired,
-        daysRemaining: isExpired ? 0 : Math.max(0, Math.floor((expiryDate.getTime() - now.getTime()) / (24 * 60 * 60 * 1000))),
-        startDate,
-        endDate: expiryDate,
-      };
-    }
-
+    // Fallback: return default values (trial info will be loaded asynchronously)
     return {
-      hasTrialBeenUsed: true,
+      hasTrialBeenUsed: false,
       isExpired: false,
       isTrialActive: false,
       daysRemaining: 0,
@@ -127,8 +90,8 @@ export const ElectronFloatingPanel: React.FC<ElectronFloatingPanelProps> = ({
 
   // Check trial status and update state
   useEffect(() => {
-    const checkTrialStatus = () => {
-      const trialInfo = getTrialInfoFromLocalStorage();
+    const checkTrialStatus = async () => {
+      const trialInfo = await getTrialInfoFromLocalStorage();
       setIsTrialExpired(trialInfo.isExpired);
 
       if (trialInfo.isExpired) {

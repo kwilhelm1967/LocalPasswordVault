@@ -55,10 +55,10 @@ PORT=3001
 SUPABASE_URL=https://YOUR-PROJECT-ID.supabase.co
 SUPABASE_SERVICE_KEY=eyJhbGc...YOUR-SERVICE-ROLE-KEY
 
-# JWT Secret (generate: openssl rand -base64 64)
-JWT_SECRET=your-64-character-secret-here
-
-# License Signing Secret (generate: openssl rand -hex 32)
+# License Signing Secret (Required - generate: openssl rand -hex 32)
+# Used to sign license files and trial files for offline validation
+# All validation uses HMAC-SHA256 signed files (not JWT)
+# Same secret must be set in frontend VITE_LICENSE_SIGNING_SECRET
 LICENSE_SIGNING_SECRET=your-64-character-hex-secret-here
 
 # Stripe (LIVE keys)

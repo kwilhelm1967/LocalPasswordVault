@@ -1,6 +1,8 @@
 import { generateHardwareFingerprint } from "./hardwareFingerprint";
-import { safeParseJWT } from "./safeUtils";
-import { devError } from "./devLog";
+import { verifyLicenseSignature } from "./licenseValidator";
+import { devError, devLog } from "./devLog";
+import { apiClient, ApiError } from "./apiClient";
+import { getLPVDeviceFingerprint } from "./deviceFingerprint";
 
 export interface TrialInfo {
   isTrialActive: boolean;
@@ -28,26 +30,24 @@ export interface WarningPopupState {
   timeRemaining: string;
 }
 
-export interface BackendTrialStatus {
-  isTrial: boolean;
-  isActive: boolean;
-  isExpired: boolean;
-  daysRemaining: number;
-  hoursRemaining: number;
-  minutesRemaining: number;
-  expiresAt: string | null;
-  timeRemaining: string;
-  licenseKey: string;
-  planName: string;
-  trialDuration: string;
+/**
+ * Signed trial file structure (same as license files)
+ */
+export interface SignedTrialFile {
+  trial_key: string;
+  device_id: string;
+  plan_type: 'trial';
+  start_date: string;
+  expires_at: string;
+  product_type?: string;
+  signature: string;
+  signed_at: string;
 }
 
 export class TrialService {
   private static instance: TrialService;
-  private static readonly TRIAL_START_KEY = "trial_start_date";
+  private static readonly TRIAL_FILE_STORAGE = "lpv_trial_file";
   private static readonly TRIAL_USED_KEY = "trial_used";
-  private static readonly TRIAL_LICENSE_KEY = "trial_license_key";
-  private static readonly LICENSE_TOKEN_KEY = "license_token";
   private static readonly WARNING_POPUP_1_SHOWN_KEY = "warning_popup_1_shown";
   private static readonly WARNING_POPUP_2_SHOWN_KEY = "warning_popup_2_shown";
   private expirationCallbacks: (() => void)[] = [];
@@ -63,83 +63,155 @@ export class TrialService {
   }
 
   /**
-   * Start the trial period - now backend-dependent
+   * Activate trial with signed trial file from backend
    */
-  async startTrial(licenseKey: string, hardwareHash: string): Promise<TrialInfo> {
-    
-    // Store trial metadata with enhanced security
-    const activationTime = new Date().toISOString();
-    localStorage.setItem(TrialService.TRIAL_START_KEY, activationTime);
-    localStorage.setItem(TrialService.TRIAL_USED_KEY, "true");
-    localStorage.setItem(TrialService.TRIAL_LICENSE_KEY, licenseKey);
+  async activateTrial(trialKey: string): Promise<{
+    success: boolean;
+    error?: string;
+    trialInfo?: TrialInfo;
+  }> {
+    try {
+      const cleanKey = trialKey.replace(/[^A-Z0-9-]/g, "");
+      const deviceId = await getLPVDeviceFingerprint();
 
-    // Store hardware hash for verification
-    localStorage.setItem('trial_hardware_hash', hardwareHash);
+      // Development mode: create unsigned trial file
+      if (import.meta.env.DEV) {
+        const startDate = new Date().toISOString();
+        const expiresAt = new Date();
+        expiresAt.setDate(expiresAt.getDate() + 7);
+        
+        const trialFile: SignedTrialFile = {
+          trial_key: cleanKey,
+          device_id: deviceId,
+          plan_type: 'trial',
+          start_date: startDate,
+          expires_at: expiresAt.toISOString(),
+          product_type: 'lpv',
+          signature: '',
+          signed_at: new Date().toISOString(),
+        };
+        
+        this.saveTrialFile(trialFile);
+        localStorage.setItem(TrialService.TRIAL_USED_KEY, "true");
+        
+        const trialInfo = await this.getTrialInfo();
+        return { success: true, trialInfo };
+      }
 
-    // Create secure session storage for trial data
-    const trialSession = {
-      licenseKey,
-      hardwareHash,
-      activationTime,
-      initialized: true
-    };
-    sessionStorage.setItem('trial_session', JSON.stringify(trialSession));
+      // Call trial activation API
+      const response = await apiClient.post<{
+        status: string;
+        trial_file?: SignedTrialFile;
+        expires_at?: string;
+        error?: string;
+      }>(
+        "/api/lpv/license/trial/activate",
+        {
+          trial_key: cleanKey,
+          device_id: deviceId,
+        },
+        {
+          retries: 2,
+          timeout: 10000,
+        }
+      );
 
-    // Development logging disabled to prevent unnecessary API calls
-    // The trial now works offline using the JWT token
-    // if (import.meta.env.DEV) {
-    //   this.startDevelopmentLogging(licenseKey, hardwareHash);
-    // }
+      const result = response.data;
 
-    // Get initial trial status from backend
-    const trialInfo = await this.getTrialInfo();
-    return trialInfo;
+      if (result.status === "expired") {
+        return {
+          success: false,
+          error: result.error || "This trial has expired. Please purchase a license to continue.",
+        };
+      }
+
+      if (result.status === "invalid") {
+        return {
+          success: false,
+          error: result.error || "Invalid trial key. Please check your email for the correct key.",
+        };
+      }
+
+      if (result.status === "activated" && result.trial_file) {
+        // Verify signature
+        const isValid = await verifyLicenseSignature(result.trial_file);
+        if (!isValid) {
+          return {
+            success: false,
+            error: "Invalid trial file signature. Please contact support.",
+          };
+        }
+
+        // Save signed trial file
+        this.saveTrialFile(result.trial_file);
+        localStorage.setItem(TrialService.TRIAL_USED_KEY, "true");
+
+        const trialInfo = await this.getTrialInfo();
+        return { success: true, trialInfo };
+      }
+
+      return {
+        success: false,
+        error: result.error || "Trial activation failed",
+      };
+
+    } catch (error) {
+      devError("Trial activation error:", error);
+
+      if (error && typeof error === "object" && "code" in error) {
+        const apiError = error as ApiError;
+        if (apiError.code === "NETWORK_ERROR" || apiError.code === "REQUEST_TIMEOUT") {
+          return {
+            success: false,
+            error: "Unable to connect to license server. Please check your internet connection.",
+          };
+        }
+        return {
+          success: false,
+          error: apiError.message || "Trial activation failed",
+        };
+      }
+
+      return { success: false, error: "Trial activation failed" };
+    }
   }
 
   /**
-   * Get current trial information - now backend-dependent
+   * Start the trial period (legacy method - now calls activateTrial)
+   */
+  async startTrial(licenseKey: string, hardwareHash: string): Promise<TrialInfo> {
+    const result = await this.activateTrial(licenseKey);
+    if (result.success && result.trialInfo) {
+      return result.trialInfo;
+    }
+    // Return empty trial info on failure
+    return {
+      isTrialActive: false,
+      daysRemaining: 0,
+      hoursRemaining: 0,
+      minutesRemaining: 0,
+      secondsRemaining: 0,
+      isExpired: false,
+      startDate: null,
+      endDate: null,
+      hasTrialBeenUsed: false,
+      timeRemaining: 'No trial activated',
+      trialDurationDisplay: 'None',
+      licenseKey: null,
+      securityHash: null,
+      activationTime: null,
+      lastChecked: new Date(),
+    };
+  }
+
+  /**
+   * Get current trial information from signed trial file
    */
   async getTrialInfo(): Promise<TrialInfo> {
-    const hasTrialBeenUsed = localStorage.getItem(TrialService.TRIAL_USED_KEY) === "true";
-    const licenseKey = localStorage.getItem(TrialService.TRIAL_LICENSE_KEY);
-    const licenseToken = localStorage.getItem(TrialService.LICENSE_TOKEN_KEY);
-    const storedHardwareHash = localStorage.getItem('trial_hardware_hash');
-
-    // If we have a license token, try Quick JWT parse first (more reliable)
-    if (licenseToken) {
-      const quickResult = this.quickJWTParse();
-      if (quickResult) {
-        return quickResult;
-      }
-
-      const tokenData = safeParseJWT<{ planType?: string }>(licenseToken);
-      if (tokenData?.planType && tokenData.planType !== 'trial') {
-        // Clear any remaining trial data
-        localStorage.removeItem(TrialService.TRIAL_USED_KEY);
-        localStorage.removeItem(TrialService.TRIAL_LICENSE_KEY);
-        localStorage.removeItem(TrialService.TRIAL_START_KEY);
-        return {
-          isTrialActive: false,
-          daysRemaining: 0,
-          hoursRemaining: 0,
-          minutesRemaining: 0,
-          secondsRemaining: 0,
-          isExpired: false,
-          startDate: null,
-          endDate: null,
-          hasTrialBeenUsed: false,
-          timeRemaining: 'No trial needed',
-          trialDurationDisplay: 'None',
-          licenseKey: null,
-          securityHash: null,
-          activationTime: null,
-          lastChecked: new Date(),
-        };
-      }
-    }
-
-    if (!hasTrialBeenUsed || !licenseKey) {
-      // No trial started yet
+    const trialFile = this.getTrialFile();
+    
+    if (!trialFile) {
+      const hasTrialBeenUsed = localStorage.getItem(TrialService.TRIAL_USED_KEY) === "true";
       return {
         isTrialActive: false,
         daysRemaining: 0,
@@ -149,8 +221,8 @@ export class TrialService {
         isExpired: false,
         startDate: null,
         endDate: null,
-        hasTrialBeenUsed: false,
-        timeRemaining: 'No trial activated',
+        hasTrialBeenUsed,
+        timeRemaining: hasTrialBeenUsed ? 'Trial expired or invalid' : 'No trial activated',
         trialDurationDisplay: 'None',
         licenseKey: null,
         securityHash: null,
@@ -159,10 +231,33 @@ export class TrialService {
       };
     }
 
-    // Verify hardware hash matches
-    const currentHardwareHash = await generateHardwareFingerprint();
-    if (storedHardwareHash && storedHardwareHash !== currentHardwareHash) {
-      devError('Hardware hash mismatch detected');
+    // Verify signature (async)
+    const isValid = await verifyLicenseSignature(trialFile);
+    if (!isValid) {
+      devError('Invalid trial file signature');
+      return {
+        isTrialActive: false,
+        daysRemaining: 0,
+        hoursRemaining: 0,
+        minutesRemaining: 0,
+        secondsRemaining: 0,
+        isExpired: true,
+        startDate: null,
+        endDate: null,
+        hasTrialBeenUsed: true,
+        timeRemaining: 'Trial file invalid - signature verification failed',
+        trialDurationDisplay: 'Invalid',
+        licenseKey: trialFile.trial_key,
+        securityHash: null,
+        activationTime: null,
+        lastChecked: new Date(),
+      };
+    }
+
+    // Verify device binding
+    const currentDeviceId = await getLPVDeviceFingerprint();
+    if (trialFile.device_id !== currentDeviceId) {
+      devError('Device mismatch detected for trial');
       return {
         isTrialActive: false,
         daysRemaining: 0,
@@ -175,206 +270,95 @@ export class TrialService {
         hasTrialBeenUsed: true,
         timeRemaining: 'Trial invalidated - device changed',
         trialDurationDisplay: 'Invalid',
-        licenseKey: licenseKey,
+        licenseKey: trialFile.trial_key,
         securityHash: null,
         activationTime: null,
         lastChecked: new Date(),
       };
     }
 
-    // If we have a license token, use it for trial status (offline capable)
-    if (licenseToken) {
-      try {
-        const tokenParts = licenseToken.split('.');
-        if (tokenParts.length !== 3) {
-          throw new Error('Invalid JWT format - expected 3 parts');
-        }
+    // Calculate expiration from signed start_date (prevents tampering)
+    const startDate = new Date(trialFile.start_date);
+    const expiresAt = new Date(trialFile.expires_at);
+    const now = new Date();
+    
+    // Use the signed start_date to calculate expiration
+    // This ensures the trial expires exactly 7 days after the signed start date
+    // regardless of system clock manipulation
+    const isExpired = now >= expiresAt;
+    const isActive = !isExpired;
 
-        const tokenData = JSON.parse(atob(tokenParts[1])); // Decode JWT payload
+    // Calculate remaining time
+    const remainingMs = Math.max(0, expiresAt.getTime() - now.getTime());
+    const daysRemaining = Math.floor(remainingMs / (24 * 60 * 60 * 1000));
+    const hoursRemaining = Math.floor((remainingMs % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
+    const minutesRemaining = Math.floor((remainingMs % (60 * 60 * 1000)) / (60 * 1000));
+    const secondsRemaining = Math.floor((remainingMs % (60 * 1000)) / 1000);
 
-        if (tokenData.isTrial && tokenData.trialExpiryDate) {
-          const now = new Date();
-          const expiryDate = new Date(tokenData.trialExpiryDate);
-          const isExpired = now >= expiryDate; // Use >= to include exact expiry time
-          const isActive = !isExpired;
-
-
-          // Calculate remaining time with seconds precision
-          const remainingMs = Math.max(0, expiryDate.getTime() - now.getTime());
-          const daysRemaining = Math.floor(remainingMs / (24 * 60 * 60 * 1000));
-          const hoursRemaining = Math.floor((remainingMs % (24 * 60 * 60 * 1000)) / (60 * 60 * 1000));
-          const minutesRemaining = Math.floor((remainingMs % (60 * 60 * 1000)) / (60 * 1000));
-          const secondsRemaining = Math.floor((remainingMs % (60 * 1000)) / 1000);
-
-          let timeRemaining;
-          if (isExpired) {
-            timeRemaining = 'Trial expired';
-          } else if (daysRemaining > 0) {
-            timeRemaining = `${daysRemaining}d ${hoursRemaining}h ${minutesRemaining}m ${secondsRemaining}s`;
-          } else if (hoursRemaining > 0) {
-            timeRemaining = `${hoursRemaining}h ${minutesRemaining}m ${secondsRemaining}s`;
-          } else if (minutesRemaining > 0) {
-            timeRemaining = `${minutesRemaining}m ${secondsRemaining}s`;
-          } else {
-            timeRemaining = `${secondsRemaining}s`;
-          }
-
-          return {
-            isTrialActive: isActive,
-            daysRemaining,
-            hoursRemaining,
-            minutesRemaining,
-            secondsRemaining,
-            isExpired,
-            startDate: new Date(localStorage.getItem(TrialService.TRIAL_START_KEY) || now.toISOString()),
-            endDate: expiryDate,
-            hasTrialBeenUsed: true,
-            timeRemaining,
-            trialDurationDisplay: tokenData.trialDurationDisplay || 'Unknown',
-            licenseKey: licenseKey,
-            securityHash: tokenData.securityHash || null,
-            activationTime: tokenData.activationTime ? new Date(tokenData.activationTime) : null,
-            lastChecked: new Date(),
-            warningPopup1Timestamp: tokenData.warningPopup1Timestamp || null,
-            warningPopup2Timestamp: tokenData.warningPopup2Timestamp || null,
-          };
-        }
-      } catch (error) {
-        // JWT parsing failed, continue to fallback logic
-      }
+    let timeRemaining: string;
+    if (isExpired) {
+      timeRemaining = 'Trial expired';
+    } else if (daysRemaining > 0) {
+      timeRemaining = `${daysRemaining}d ${hoursRemaining}h ${minutesRemaining}m ${secondsRemaining}s`;
+    } else if (hoursRemaining > 0) {
+      timeRemaining = `${hoursRemaining}h ${minutesRemaining}m ${secondsRemaining}s`;
+    } else if (minutesRemaining > 0) {
+      timeRemaining = `${minutesRemaining}m ${secondsRemaining}s`;
+    } else {
+      timeRemaining = `${secondsRemaining}s`;
     }
 
-    // Fallback: If we have trial data but no license token, check if trial should be expired
-    const trialStartDate = localStorage.getItem(TrialService.TRIAL_START_KEY);
-    const storedExpiryTime = localStorage.getItem('trial_expiry_time');
-    if (trialStartDate || storedExpiryTime) {
-      const startDate = trialStartDate ? new Date(trialStartDate) : new Date();
-      
-      // Use stored expiry time if available, otherwise calculate
-      let expiryDate: Date;
-      if (storedExpiryTime) {
-        expiryDate = new Date(storedExpiryTime);
-      } else {
-        // 7 days trial duration
-        const trialDurationMs = 7 * 24 * 60 * 60 * 1000; // 7 days
-        expiryDate = new Date(startDate.getTime() + trialDurationMs);
-      }
-      
-      const now = new Date();
-      const isExpired = now >= expiryDate;
+    const trialDurationDisplay = daysRemaining > 0 
+      ? `${daysRemaining} day${daysRemaining !== 1 ? 's' : ''}`
+      : hoursRemaining > 0
+      ? `${hoursRemaining} hour${hoursRemaining !== 1 ? 's' : ''}`
+      : `${minutesRemaining} minute${minutesRemaining !== 1 ? 's' : ''}`;
 
-
-      return {
-        isTrialActive: !isExpired,
-        daysRemaining: isExpired ? 0 : Math.max(0, Math.floor((expiryDate.getTime() - now.getTime()) / (24 * 60 * 60 * 1000))),
-        hoursRemaining: isExpired ? 0 : Math.max(0, Math.floor((expiryDate.getTime() - now.getTime()) / (60 * 60 * 1000))),
-        minutesRemaining: isExpired ? 0 : Math.max(0, Math.floor((expiryDate.getTime() - now.getTime()) / (60 * 1000))),
-        secondsRemaining: isExpired ? 0 : Math.max(0, Math.floor((expiryDate.getTime() - now.getTime()) / 1000)),
-        isExpired,
-        startDate,
-        endDate: expiryDate,
-        hasTrialBeenUsed: true,
-        timeRemaining: isExpired ? 'Trial expired' : `Checking trial status...`,
-        trialDurationDisplay: storedExpiryTime ? 'Custom' : (import.meta.env.DEV ? '1 hour' : '7 days'),
-        licenseKey: licenseKey,
-        securityHash: null,
-        activationTime: startDate,
-        lastChecked: new Date(),
-      };
-    }
-
-    // Try quick JWT parse as a fallback before final fallback
-    const quickResult = this.quickJWTParse();
-    if (quickResult) {
-      return quickResult;
-    }
-
-    // Final fallback with no start date
-    const fallbackResult = {
-      isTrialActive: false,
-      daysRemaining: 0,
-      hoursRemaining: 0,
-      minutesRemaining: 0,
-      secondsRemaining: 0,
-      isExpired: false,
-      startDate: new Date(localStorage.getItem(TrialService.TRIAL_START_KEY) || ''),
-      endDate: null,
+    return {
+      isTrialActive: isActive,
+      daysRemaining,
+      hoursRemaining,
+      minutesRemaining,
+      secondsRemaining,
+      isExpired,
+      startDate,
+      endDate: expiresAt,
       hasTrialBeenUsed: true,
-      timeRemaining: 'Checking trial status...',
-      trialDurationDisplay: 'Unknown',
-      licenseKey: licenseKey,
-      securityHash: null,
-      activationTime: null,
+      timeRemaining,
+      trialDurationDisplay,
+      licenseKey: trialFile.trial_key,
+      securityHash: trialFile.device_id,
+      activationTime: startDate,
       lastChecked: new Date(),
+      warningPopup1Timestamp: localStorage.getItem(TrialService.WARNING_POPUP_1_SHOWN_KEY),
+      warningPopup2Timestamp: localStorage.getItem(TrialService.WARNING_POPUP_2_SHOWN_KEY),
     };
-
-
-    return fallbackResult;
   }
 
   /**
-   * Quick JWT parse for debugging - bypass all logic
+   * Get signed trial file from storage
    */
-  quickJWTParse(): TrialInfo | null {
+  private getTrialFile(): SignedTrialFile | null {
     try {
-      const licenseToken = localStorage.getItem(TrialService.LICENSE_TOKEN_KEY);
-      if (!licenseToken) {
-        return null;
-      }
-
-      const tokenData = safeParseJWT<{
-        isTrial?: boolean;
-        trialExpiryDate?: string;
-        activationTime?: string;
-        warningPopup1Timestamp?: string;
-        warningPopup2Timestamp?: string;
-      }>(licenseToken);
-
-      if (!tokenData?.isTrial || !tokenData.trialExpiryDate) {
-        return null;
-      }
-
-      const now = new Date();
-      const expiryDate = new Date(tokenData.trialExpiryDate);
-      const isExpired = now >= expiryDate;
-      const isActive = !isExpired;
-
-      const remainingMs = Math.max(0, expiryDate.getTime() - now.getTime());
-      const minutesRemaining = Math.floor(remainingMs / (60 * 1000));
-      const secondsRemaining = Math.floor((remainingMs % (60 * 1000)) / 1000);
-
-      const timeRemaining = isExpired ? 'Trial expired' : `${minutesRemaining}m ${secondsRemaining}s`;
-
-      return {
-        isTrialActive: isActive,
-        daysRemaining: 0,
-        hoursRemaining: 0,
-        minutesRemaining,
-        secondsRemaining,
-        isExpired,
-        startDate: tokenData.activationTime ? new Date(tokenData.activationTime) : new Date(),
-        endDate: expiryDate,
-        hasTrialBeenUsed: true,
-        timeRemaining,
-        trialDurationDisplay: tokenData.trialDurationDisplay || 'minutes',
-        licenseKey: tokenData.licenseKey || null,
-        securityHash: tokenData.securityHash || null,
-        activationTime: tokenData.activationTime ? new Date(tokenData.activationTime) : null,
-        lastChecked: new Date(),
-        warningPopup1Timestamp: tokenData.warningPopup1Timestamp || null,
-        warningPopup2Timestamp: tokenData.warningPopup2Timestamp || null,
-      };
+      const stored = localStorage.getItem(TrialService.TRIAL_FILE_STORAGE);
+      if (!stored) return null;
+      return JSON.parse(stored) as SignedTrialFile;
     } catch (error) {
-      devError('QUICK JWT PARSE ERROR:', error);
+      devError('Failed to parse trial file:', error);
       return null;
     }
   }
 
-  // Backend API method removed - trial status is now determined from JWT token
-  // async getTrialStatusFromBackend() - removed to prevent 404 errors
-
-  // Development logging methods removed to prevent unnecessary API calls
-  // The trial now works offline using JWT token validation
+  /**
+   * Save signed trial file to storage
+   */
+  private saveTrialFile(trialFile: SignedTrialFile): void {
+    try {
+      localStorage.setItem(TrialService.TRIAL_FILE_STORAGE, JSON.stringify(trialFile));
+    } catch (error) {
+      devError('Failed to save trial file:', error);
+    }
+  }
 
   /**
    * Check if trial has expired
@@ -390,8 +374,6 @@ export class TrialService {
   async checkAndHandleExpiration(): Promise<boolean> {
     const trialInfo = await this.getTrialInfo();
 
-
-
     // If trial is not used or not expired, no need to check further
     if (!trialInfo.hasTrialBeenUsed || !trialInfo.isExpired) {
       // Reset expiration confirmation if trial is somehow valid again
@@ -405,7 +387,6 @@ export class TrialService {
     // If expiration is confirmed, limit further checking
     if (this.expirationConfirmed) {
       this.expirationConfirmationCount++;
-
 
       // Only verify 2-3 times after initial confirmation
       if (this.expirationConfirmationCount >= 3) {
@@ -464,12 +445,10 @@ export class TrialService {
    * Reset trial (for testing purposes only)
    */
   resetTrial(): void {
-    localStorage.removeItem(TrialService.TRIAL_START_KEY);
+    localStorage.removeItem(TrialService.TRIAL_FILE_STORAGE);
     localStorage.removeItem(TrialService.TRIAL_USED_KEY);
-    localStorage.removeItem(TrialService.TRIAL_LICENSE_KEY);
-    localStorage.removeItem(TrialService.LICENSE_TOKEN_KEY);
-
-    // Development logging removed - no longer needed
+    localStorage.removeItem(TrialService.WARNING_POPUP_1_SHOWN_KEY);
+    localStorage.removeItem(TrialService.WARNING_POPUP_2_SHOWN_KEY);
 
     // Reset expiration tracking
     this.expirationConfirmed = false;
@@ -480,23 +459,21 @@ export class TrialService {
    * End trial manually (when user purchases license)
    */
   endTrial(): void {
-    // Keep the trial data but mark it as used
-    // This prevents starting another trial
+    // Clear trial file
+    localStorage.removeItem(TrialService.TRIAL_FILE_STORAGE);
+    // Keep the trial used flag to prevent starting another trial
     localStorage.setItem(TrialService.TRIAL_USED_KEY, "true");
-
-    // Development logging removed - no longer needed
 
     // Trigger expiration callbacks since trial ended
     this.triggerExpirationCallbacks();
-
   }
 
   /**
-   * Get trial progress as percentage (0-100) - calculated from backend data
+   * Get trial progress as percentage (0-100)
    */
   async getTrialProgress(): Promise<number> {
     const trialInfo = await this.getTrialInfo();
-
+    
     if (!trialInfo.hasTrialBeenUsed || !trialInfo.startDate || !trialInfo.endDate) {
       return 0;
     }
@@ -505,252 +482,93 @@ export class TrialService {
       return 100;
     }
 
-    const totalTime = trialInfo.endDate.getTime() - trialInfo.startDate.getTime();
-    const elapsed = new Date().getTime() - trialInfo.startDate.getTime();
-    return Math.round(Math.min(100, Math.max(0, (elapsed / totalTime) * 100)));
+    const totalDuration = trialInfo.endDate.getTime() - trialInfo.startDate.getTime();
+    const elapsed = Date.now() - trialInfo.startDate.getTime();
+    const progress = Math.min(100, Math.max(0, (elapsed / totalDuration) * 100));
+    
+    return progress;
   }
 
   /**
-   * Add callback for trial expiration
+   * Register callback for trial expiration
    */
-  addExpirationCallback(callback: () => void): void {
+  onExpiration(callback: () => void): void {
     this.expirationCallbacks.push(callback);
   }
 
   /**
-   * Remove expiration callback
+   * Unregister expiration callback
    */
-  removeExpirationCallback(callback: () => void): void {
-    const index = this.expirationCallbacks.indexOf(callback);
-    if (index > -1) {
-      this.expirationCallbacks.splice(index, 1);
-    }
+  offExpiration(callback: () => void): void {
+    this.expirationCallbacks = this.expirationCallbacks.filter(cb => cb !== callback);
   }
 
   /**
-   * Trigger all expiration callbacks
+   * Register callback for warning popups
+   */
+  onWarningPopup(callback: (state: WarningPopupState) => void): void {
+    this.warningPopupCallbacks.push(callback);
+  }
+
+  /**
+   * Unregister warning popup callback
+   */
+  offWarningPopup(callback: (state: WarningPopupState) => void): void {
+    this.warningPopupCallbacks = this.warningPopupCallbacks.filter(cb => cb !== callback);
+  }
+
+  /**
+   * Trigger expiration callbacks
    */
   private triggerExpirationCallbacks(): void {
     this.expirationCallbacks.forEach(callback => {
       try {
         callback();
       } catch (error) {
-        devError("Error in expiration callback:", error);
+        devError('Error in expiration callback:', error);
       }
     });
   }
 
   /**
-   * Add callback for warning popup changes
+   * Check and trigger warning popups
    */
-  addWarningPopupCallback(callback: (state: WarningPopupState) => void): void {
-    this.warningPopupCallbacks.push(callback);
-  }
+  async checkAndTriggerWarningPopups(): Promise<void> {
+    const trialInfo = await this.getTrialInfo();
 
-  /**
-   * Remove warning popup callback
-   */
-  removeWarningPopupCallback(callback: (state: WarningPopupState) => void): void {
-    const index = this.warningPopupCallbacks.indexOf(callback);
-    if (index > -1) {
-      this.warningPopupCallbacks.splice(index, 1);
+    if (!trialInfo.hasTrialBeenUsed || !trialInfo.isTrialActive || trialInfo.isExpired) {
+      return;
     }
-  }
 
-  /**
-   * Trigger all warning popup callbacks
-   */
-  private triggerWarningPopupCallbacks(state: WarningPopupState): void {
-    this.warningPopupCallbacks.forEach(callback => {
-      try {
-        callback(state);
-      } catch (error) {
-        devError("Error in warning popup callback:", error);
-      }
-    });
-  }
+    const daysRemaining = trialInfo.daysRemaining;
+    const hoursRemaining = trialInfo.hoursRemaining;
+    const hasShownWarning1 = localStorage.getItem(TrialService.WARNING_POPUP_1_SHOWN_KEY) !== null;
+    const hasShownWarning2 = localStorage.getItem(TrialService.WARNING_POPUP_2_SHOWN_KEY) !== null;
 
-  /**
-   * Check if warning popup should be shown
-   */
-  async checkWarningPopups(): Promise<void> {
-    try {
-      const trialInfo = await this.getTrialInfo();
+    const state: WarningPopupState = {
+      shouldShowExpiringWarning: daysRemaining <= 1 && !hasShownWarning1,
+      shouldShowFinalWarning: hoursRemaining <= 24 && daysRemaining === 0 && !hasShownWarning2,
+      timeRemaining: trialInfo.timeRemaining,
+    };
 
-      // Don't show warnings if trial is not active or already expired
-      if (!trialInfo.isTrialActive || trialInfo.isExpired || !trialInfo.endDate) {
-        return;
-      }
-
-      const now = new Date();
-      const popup1Shown = localStorage.getItem(TrialService.WARNING_POPUP_1_SHOWN_KEY) === 'true';
-      const popup2Shown = localStorage.getItem(TrialService.WARNING_POPUP_2_SHOWN_KEY) === 'true';
-
-      // Check first warning popup (2 minutes before)
-      if (!popup1Shown && trialInfo.warningPopup1Timestamp) {
-        const popup1Time = new Date(trialInfo.warningPopup1Timestamp);
-        if (now >= popup1Time) {
-          localStorage.setItem(TrialService.WARNING_POPUP_1_SHOWN_KEY, 'true');
-          this.triggerWarningPopupCallbacks({
-            shouldShowExpiringWarning: true,
-            shouldShowFinalWarning: false,
-            timeRemaining: trialInfo.timeRemaining,
-          });
-          return;
-        }
-      }
-
-      // Check second warning popup (1 minute before)
-      if (!popup2Shown && trialInfo.warningPopup2Timestamp) {
-        const popup2Time = new Date(trialInfo.warningPopup2Timestamp);
-        if (now >= popup2Time) {
-          localStorage.setItem(TrialService.WARNING_POPUP_2_SHOWN_KEY, 'true');
-          this.triggerWarningPopupCallbacks({
-            shouldShowExpiringWarning: false,
-            shouldShowFinalWarning: true,
-            timeRemaining: trialInfo.timeRemaining,
-          });
-        }
-      }
-    } catch (error) {
-      devError('Error checking warning popups:', error);
+    if (state.shouldShowExpiringWarning) {
+      localStorage.setItem(TrialService.WARNING_POPUP_1_SHOWN_KEY, new Date().toISOString());
     }
-  }
 
-  /**
-   * Reset warning popup state (for testing)
-   */
-  resetWarningPopups(): void {
-    localStorage.removeItem(TrialService.WARNING_POPUP_1_SHOWN_KEY);
-    localStorage.removeItem(TrialService.WARNING_POPUP_2_SHOWN_KEY);
-  }
+    if (state.shouldShowFinalWarning) {
+      localStorage.setItem(TrialService.WARNING_POPUP_2_SHOWN_KEY, new Date().toISOString());
+    }
 
-  /**
-   * Check if specific warning popup has been shown
-   */
-  hasWarningPopupBeenShown(popupNumber: 1 | 2): boolean {
-    const key = popupNumber === 1
-      ? TrialService.WARNING_POPUP_1_SHOWN_KEY
-      : TrialService.WARNING_POPUP_2_SHOWN_KEY;
-    return localStorage.getItem(key) === 'true';
-  }
-
-  /**
-   * Debug method to log current trial status and warning times
-   */
-  async logTrialStatus(): Promise<void> {
-    // Development-only trial status logging
-    if (!import.meta.env.DEV) return;
-    
-    try {
-      await this.getTrialInfo();
-    } catch {
-      // Silent in production
+    if (state.shouldShowExpiringWarning || state.shouldShowFinalWarning) {
+      this.warningPopupCallbacks.forEach(callback => {
+        try {
+          callback(state);
+        } catch (error) {
+          devError('Error in warning popup callback:', error);
+        }
+      });
     }
   }
 }
 
 export const trialService = TrialService.getInstance();
-
-/**
- * Main Process Communication Helpers for Trial Validation
- * These functions help synchronize trial status between renderer and main process
- */
-
-/**
- * Check if trial is expired via main process
- * This provides an additional security layer by validating trial status in the main process
- */
-export async function checkTrialExpiredInMainProcess(): Promise<boolean> {
-  try {
-    if (window.electronAPI?.isTrialExpired) {
-      return await window.electronAPI.isTrialExpired();
-    }
-
-    // Fallback to local check if main process API not available
-    return await trialService.isTrialExpired();
-  } catch (error) {
-    devError('Error checking trial status in main process:', error);
-    return true; // Assume expired for security
-  }
-}
-
-/**
- * Get detailed trial status from main process
- */
-export async function getTrialStatusFromMainProcess(): Promise<{
-  hasTrial: boolean;
-  isExpired: boolean;
-  canUnlock: boolean;
-  expiryTime?: string;
-}> {
-  try {
-    if (window.electronAPI?.checkTrialStatus) {
-      return await window.electronAPI.checkTrialStatus();
-    }
-
-    // Fallback to local check if main process API not available
-    const trialInfo = await trialService.getTrialInfo();
-    return {
-      hasTrial: trialInfo.hasTrialBeenUsed,
-      isExpired: trialInfo.isExpired,
-      canUnlock: !trialInfo.isExpired,
-      expiryTime: trialInfo.endDate?.toISOString()
-    };
-  } catch (error) {
-    devError('Error getting trial status from main process:', error);
-    return {
-      hasTrial: false,
-      isExpired: true,
-      canUnlock: false
-    };
-  }
-}
-
-/**
- * Sync trial status to main process for consistent enforcement
- * This ensures the main process has the same trial data as renderer
- */
-export async function syncTrialStatusToMainProcess(): Promise<boolean> {
-  try {
-    const trialInfo = await trialService.getTrialInfo();
-
-    // Save trial info to file system for main process access
-    if (window.electronAPI?.saveTrialInfo) {
-      return await window.electronAPI.saveTrialInfo({
-        hasTrial: trialInfo.hasTrialBeenUsed,
-        isExpired: trialInfo.isExpired,
-        expiryTime: trialInfo.endDate?.toISOString(),
-        hasValidLicense: trialInfo.licenseKey && !trialInfo.isTrialActive
-      });
-    }
-
-    return false;
-  } catch (error) {
-    devError('Error syncing trial status to main process:', error);
-    return false;
-  }
-}
-
-/**
- * Validate trial status across both processes
- * Returns true if trial is valid in both renderer and main process
- */
-export async function validateTrialStatusAcrossProcesses(): Promise<boolean> {
-  try {
-    // Check trial status in renderer
-    const rendererTrialInfo = await trialService.getTrialInfo();
-
-    // Check trial status in main process
-    const mainProcessStatus = await getTrialStatusFromMainProcess();
-
-    // Both processes must agree that trial is valid
-    const rendererValid = !rendererTrialInfo.isExpired || !rendererTrialInfo.hasTrialBeenUsed;
-    const mainProcessValid = mainProcessStatus.canUnlock;
-
-    return rendererValid && mainProcessValid;
-  } catch (error) {
-    devError('Error validating trial status across processes:', error);
-    return false; // Assume invalid for security
-  }
-}

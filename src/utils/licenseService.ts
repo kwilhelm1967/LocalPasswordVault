@@ -237,8 +237,8 @@ export class LicenseService {
 
     // For trial licenses, check expiration (local only, no network)
     if (type === 'trial') {
-      // Trial expiration is handled by trialService locally
-      // No JWT or network calls needed
+      // Trial expiration is handled by trialService using signed trial files
+      // No network calls needed - uses signed trial file with cryptographically signed start_date
     }
 
     // For non-trial licenses, validate device binding locally
@@ -289,6 +289,28 @@ export class LicenseService {
       
       if (!isValidFormat) {
         return { success: false, error: "This is not a valid license key." };
+      }
+
+      // Check if this is a trial key (starts with TRIA-)
+      if (cleanKey.startsWith('TRIA-')) {
+        // Route to trial activation
+        const result = await trialService.activateTrial(cleanKey);
+        if (result.success && result.trialInfo) {
+          // Update localStorage to mark as trial
+          localStorage.setItem(LicenseService.LICENSE_KEY_STORAGE, cleanKey);
+          localStorage.setItem(LicenseService.LICENSE_TYPE_STORAGE, 'trial');
+          localStorage.setItem(LicenseService.LICENSE_ACTIVATED_STORAGE, new Date().toISOString());
+          
+          return {
+            success: true,
+            licenseType: 'trial',
+            status: 'activated'
+          };
+        }
+        return {
+          success: false,
+          error: result.error || 'Trial activation failed'
+        };
       }
 
       // Get device fingerprint

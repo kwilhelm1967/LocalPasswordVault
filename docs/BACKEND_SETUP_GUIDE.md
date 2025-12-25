@@ -119,8 +119,11 @@ Edit `.env` with your values:
 NODE_ENV=production
 PORT=3001
 
-# Generate: openssl rand -base64 32
-JWT_SECRET=[64-CHAR-RANDOM-STRING]
+# License Signing Secret (Required - generate: openssl rand -hex 32)
+# Used to sign license files and trial files for offline validation
+# All validation uses HMAC-SHA256 signed files (not JWT)
+# Same secret must be set in frontend VITE_LICENSE_SIGNING_SECRET
+LICENSE_SIGNING_SECRET=[64-CHAR-HEX-STRING]
 
 # Stripe (from Stripe Dashboard → Developers → API keys)
 STRIPE_SECRET_KEY=sk_live_YOUR_SECRET_KEY

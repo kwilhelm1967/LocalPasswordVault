@@ -41,8 +41,11 @@ nano .env
 NODE_ENV=production
 PORT=3001
 
-# Generate random string (run: openssl rand -base64 32)
-JWT_SECRET=[PASTE_RANDOM_STRING]
+# License Signing Secret (Required - generate: openssl rand -hex 32)
+# Used to sign license files and trial files for offline validation
+# All validation uses HMAC-SHA256 signed files (not JWT)
+# Same secret must be set in frontend VITE_LICENSE_SIGNING_SECRET
+LICENSE_SIGNING_SECRET=[PASTE_HEX_STRING]
 
 # Stripe (from Stripe Dashboard → Developers → API keys)
 STRIPE_SECRET_KEY=[YOUR_STRIPE_SECRET_KEY]

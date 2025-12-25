@@ -323,6 +323,117 @@ router.post('/transfer', async (req, res) => {
   }
 });
 
+router.post('/trial/activate', async (req, res) => {
+  try {
+    const { trial_key, device_id } = req.body;
+    
+    if (!trial_key) {
+      return res.status(400).json({ 
+        status: 'invalid',
+        error: 'Trial key is required' 
+      });
+    }
+    
+    if (!device_id) {
+      return res.status(400).json({ 
+        status: 'invalid',
+        error: 'Device ID is required' 
+      });
+    }
+
+    if (!/^[a-f0-9]{64}$/i.test(device_id)) {
+      return res.status(400).json({ 
+        status: 'invalid',
+        error: 'Invalid device ID format' 
+      });
+    }
+    
+    const normalizedKey = normalizeKey(trial_key);
+    
+    if (!isValidFormat(normalizedKey)) {
+      return res.status(400).json({ 
+        status: 'invalid',
+        error: 'Invalid trial key format' 
+      });
+    }
+    
+    // Check if trial exists
+    const trial = await db.trials.findByKey(normalizedKey);
+    
+    if (!trial) {
+      return res.status(404).json({ 
+        status: 'invalid',
+        error: 'Trial key not found' 
+      });
+    }
+    
+    // Check if trial is expired
+    const expiresAt = new Date(trial.expires_at);
+    const now = new Date();
+    
+    if (now >= expiresAt) {
+      return res.json({ 
+        status: 'expired',
+        error: 'This trial has expired' 
+      });
+    }
+    
+    // Mark trial as activated if not already
+    if (!trial.is_activated) {
+      await db.supabase
+        .from('trials')
+        .update({ is_activated: true, activated_at: new Date().toISOString() })
+        .eq('trial_key', normalizedKey);
+    }
+    
+    // Generate signed trial file for offline validation
+    const startDate = trial.activated_at || new Date().toISOString();
+    let trialFile;
+    try {
+      trialFile = signLicenseFile({
+        trial_key: normalizedKey,
+        device_id: device_id,
+        plan_type: 'trial',
+        start_date: startDate,
+        expires_at: trial.expires_at,
+        product_type: 'lpv',
+      });
+    } catch (signError) {
+      logger.error('Failed to sign trial file', signError, {
+        trialKey: normalizedKey,
+        operation: 'trial_signing',
+      });
+      // Continue without signature (fallback for development)
+      trialFile = {
+        trial_key: normalizedKey,
+        device_id: device_id,
+        plan_type: 'trial',
+        start_date: startDate,
+        expires_at: trial.expires_at,
+        product_type: 'lpv',
+        signature: '',
+        signed_at: new Date().toISOString(),
+      };
+    }
+    
+    return res.json({
+      status: 'activated',
+      trial_file: trialFile,
+      expires_at: trial.expires_at,
+    });
+    
+  } catch (error) {
+    logger.error('Trial activation error', error, {
+      trialKey: req.body?.trial_key,
+      operation: 'trial_activation',
+    });
+    res.status(500).json({ 
+      status: 'error',
+      error: 'Trial activation failed' 
+    });
+  }
+});
+
 router.get('/status/:key', async (req, res) => {
   try {
     const normalizedKey = normalizeKey(req.params.key);

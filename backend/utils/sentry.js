@@ -60,7 +60,8 @@ function initSentry() {
             'secret',
             'token',
             'stripe_secret',
-            'jwt_secret',
+            'jwt_secret', // Legacy endpoint only
+            'license_signing_secret',
           ];
           
           sensitiveKeys.forEach(key => {

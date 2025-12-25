@@ -30,7 +30,12 @@ See `DEVELOPER_SETUP.md` for complete setup instructions.
 ```
 NODE_ENV=production
 PORT=3001
-JWT_SECRET=[64-char-random-string]
+
+# License Signing Secret (Required - generate: openssl rand -hex 32)
+# Used to sign license files and trial files for offline validation
+# All validation uses HMAC-SHA256 signed files (not JWT)
+# Same secret must be set in frontend VITE_LICENSE_SIGNING_SECRET
+LICENSE_SIGNING_SECRET=[64-char-hex-string]
 
 # Stripe
 STRIPE_SECRET_KEY=[your-stripe-secret-key]

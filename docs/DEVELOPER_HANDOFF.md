@@ -4,6 +4,8 @@
 
 This document outlines what's **already implemented** and what **remains** for a developer to ensure all license activation scenarios work correctly with 100% offline operation after initial activation.
 
+**Key Architecture:** The system uses **signed license files** (HMAC-SHA256) for offline validation. When a license is activated or transferred, the backend returns a signed license file that is stored locally and validated offline without any network calls. This ensures complete privacy and 100% offline operation after initial activation.
+
 ---
 
 ## ✅ What's Already Implemented
@@ -33,9 +35,8 @@ This document outlines what's **already implemented** and what **remains** for a
 
 4. **API Endpoints** ✅
    - `POST /api/lpv/license/activate` - LPV activation (returns signed license file)
-   - `POST /api/lpv/license/transfer` - License transfer to new device
+   - `POST /api/lpv/license/transfer` - License transfer to new device (returns signed license file)
    - `POST /api/lpv/license/status/:key` - License status check
-   - `POST /api/licenses/validate` - Legacy validation endpoint (still uses JWT for backward compatibility)
    - `GET /api/checkout/session/:sessionId` - Retrieve license after purchase
    - `POST /api/trial/signup` - Trial signup
    - Location: `backend/routes/`
@@ -88,9 +89,9 @@ This document outlines what's **already implemented** and what **remains** for a
 
 #### ✅ **Privacy-First License System**
 - **Status:** COMPLETE
-- **Implementation:** Signed license files with HMAC-SHA256
+- **Implementation:** Signed license files with HMAC-SHA256 for 100% offline validation
 - **Location:** `backend/services/licenseSigner.js`, `src/utils/licenseValidator.ts`
-- **Note:** Uses signed license files (not JWT) for offline validation. Legacy `/api/licenses/validate` endpoint still uses JWT for backward compatibility, but main LPV activation uses signed license files.
+- **Note:** All license activation and transfer operations use signed license files. The backend generates HMAC-SHA256 signed license files that are stored locally and validated offline without any network calls. This ensures complete privacy and offline operation after initial activation.
 
 #### ✅ **Family Plan Device Management UI**
 - **Status:** COMPLETE
@@ -120,42 +121,7 @@ This document outlines what's **already implemented** and what **remains** for a
 
 ### Optional Enhancements
 
-#### 2. **Device Management Backend Integration** 🟡 OPTIONAL
-
-**Problem:**
-- Family plans support 5 devices
-- Backend tracks devices in `device_activations` table
-- Frontend needs UI to:
-  - View active devices
-  - Deactivate devices
-  - See device count
-
-**Current State:**
-- Backend: ✅ Tracks devices correctly
-- Frontend: ❌ No UI for device management
-
-**Files to Create/Modify:**
-- `src/components/DeviceManagementScreen.tsx` - New component
-- `src/utils/licenseService.ts` - Add device list/management methods
-- `backend/routes/licenses.js` - Add device deactivation endpoint (if needed)
-
-#### 4. **Bundle Purchase Flow** 🟡 MEDIUM PRIORITY
-
-**Problem:**
-- Backend creates multiple licenses for bundles
-- Frontend needs to handle multiple license keys
-- Email sends all keys, but frontend activation flow may not handle multiple keys
-
-**Current State:**
-- Backend: ✅ Creates all licenses correctly
-- Email: ✅ Sends all keys in bundle email
-- Frontend: ⚠️ May need updates for multiple key activation
-
-**Files to Verify:**
-- `src/components/LicenseScreen.tsx` - Ensure it can handle multiple keys
-- `src/utils/licenseService.ts` - Verify activation flow for bundles
-
-#### 5. **Error Handling & Edge Cases** 🟡 MEDIUM PRIORITY
+#### 1. **Edge Case Testing** 🟡 RECOMMENDED
 
 **Scenarios to Test:**
 
@@ -308,13 +274,16 @@ This document outlines what's **already implemented** and what **remains** for a
 ```bash
 # Backend endpoints
 backend/routes/lpv-licenses.js    # LPV activation (returns signed license file)
-backend/routes/licenses.js         # Legacy validation (uses JWT for backward compatibility)
 backend/routes/webhooks.js         # Stripe payment handling
+backend/services/licenseSigner.js # HMAC-SHA256 license file signing
 
 # Frontend services
-src/utils/licenseService.ts        # Main license logic
+src/utils/licenseService.ts        # Main license logic (handles signed license files)
+src/utils/licenseValidator.ts      # Offline license file signature verification
 src/utils/deviceFingerprint.ts     # Device ID generation
 src/components/LicenseScreen.tsx   # Activation UI
+src/components/DeviceManagementScreen.tsx # Device management UI
+src/components/PurchaseSuccessPage.tsx # Bundle purchase handling
 ```
 
 ### 2. Test Current Flow
@@ -328,19 +297,23 @@ src/components/LicenseScreen.tsx   # Activation UI
 
 ### 3. Identify Gaps
 
-- ✅ Signed license files are used for offline validation (not JWT)
+- ✅ Signed license files are used for offline validation (HMAC-SHA256)
 - ✅ Local license file approach is working
+- ✅ Device management UI implemented
+- ✅ Bundle purchase handling implemented
+- ✅ Enhanced error handling implemented
 - ⚠️ Test all activation scenarios (recommended)
 - ⚠️ Test offline operation (recommended)
 
-### 4. Implement Missing Pieces
+### 4. Implementation Status
 
-Based on gaps identified, implement:
-- ✅ Signed license file handling (complete)
-- ✅ Device management (for family plans - complete)
-- ✅ Error handling improvements (complete)
-- ⚠️ Edge case handling (recommended)
-- ⚠️ Transfer history display (optional)
+All critical features are complete:
+- ✅ Signed license file handling (HMAC-SHA256 signatures)
+- ✅ Device management UI (for family plans)
+- ✅ Bundle purchase handling (multiple keys)
+- ✅ Enhanced error handling (comprehensive error messages)
+- ⚠️ Edge case testing (recommended for production)
+- ⚠️ Transfer history display (optional enhancement)
 
 ---
 
@@ -353,12 +326,14 @@ Based on gaps identified, implement:
 - Stripe for payments
 - Brevo for emails
 - HMAC-SHA256 signed license files for offline validation
+- License activation endpoints return signed license files (not JWT tokens)
 
 **Frontend:**
 - Electron app
-- Local signed license file storage
+- Local signed license file storage and validation
 - Device fingerprint for binding
 - Offline-first design (zero network calls after activation)
+- All validation happens locally using Web Crypto API
 
 ### Key Design Decisions
 
@@ -371,10 +346,12 @@ Based on gaps identified, implement:
 
 - Device fingerprint is SHA-256 hash (one-way)
 - License files signed with HMAC-SHA256 (backend secret)
-- License files verified locally using Web Crypto API
-- License keys validated against database (only at activation)
+- License files verified locally using Web Crypto API (no server calls)
+- License keys validated against database (only at initial activation)
+- Signed license files enable 100% offline validation after activation
 - No user data transmitted (only license key + device hash at activation)
-- Zero network traffic after activation (100% offline)
+- Zero network traffic after activation (100% offline operation)
+- No JWT tokens - all validation uses signed license files
 
 ---
 

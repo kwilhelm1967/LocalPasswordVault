@@ -1272,7 +1272,6 @@ export const LandingPage: React.FC = () => {
                 "Built-in 2FA for everyone",
                 "License transfer per device",
                 "Free updates forever",
-                "Priority support",
               ]}
               ctaText="Buy Family Pack"
               onCta={() => {}}

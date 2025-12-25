@@ -20,6 +20,8 @@ process.env.FROM_EMAIL = 'test@example.com';
 process.env.SUPPORT_EMAIL = 'support@example.com';
 process.env.WEBSITE_URL = 'https://test.example.com';
 process.env.API_URL = 'https://api.test.example.com';
+// JWT_SECRET only needed for legacy /api/licenses/validate endpoint (backward compatibility)
+// Main LPV endpoints use LICENSE_SIGNING_SECRET for signed files
 process.env.JWT_SECRET = 'test-jwt-secret-64-characters-long-for-testing-purposes-only';
 process.env.LICENSE_SIGNING_SECRET = 'test-license-signing-secret';
 
