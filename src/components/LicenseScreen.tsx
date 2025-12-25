@@ -23,6 +23,7 @@ import { ExpiredTrialScreen } from "./ExpiredTrialScreen";
 import { KeyActivationScreen } from "./KeyActivationScreen";
 import { RecoveryOptionsScreen } from "./RecoveryOptionsScreen";
 import { LicenseTransferDialog } from "./LicenseTransferDialog";
+import { DeviceManagementScreen } from "./DeviceManagementScreen";
 
 interface LicenseScreenProps {
   onLicenseValid: () => void;
@@ -52,6 +53,9 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
   // License transfer state (for device mismatch)
   const [showTransferDialog, setShowTransferDialog] = useState(false);
   const [pendingTransferKey, setPendingTransferKey] = useState<string>("");
+  
+  // Device management state (for family plans)
+  const [showDeviceManagement, setShowDeviceManagement] = useState(false);
   
 
   const updateAppStatus = useCallback(async () => {
@@ -219,6 +223,8 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
           onLicenseValid();
         }
         setShowEula(false);
+        setError(null);
+        setLicenseKey("");
 
         // Show floating button again when license is successfully activated
         if (window.electronAPI?.showFloatingButton) {
@@ -235,30 +241,31 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
           { status: result.status }
         );
       } else {
-        // Enhanced error messages based on the new flow specifications
+        // Enhanced error messages with clear, actionable guidance
         let enhancedError = result.error || "License activation failed";
+        let errorType: 'network' | 'invalid' | 'revoked' | 'device' | 'generic' = 'generic';
 
-        if (result.error?.includes("fetch")) {
-          enhancedError =
-            "Unable to connect to license server. Please check your internet connection and try again.";
-        } else if (result.error?.includes("409")) {
-          enhancedError =
-            "This key is already activated on another device. You need to purchase an additional key.";
-        } else if (result.error?.includes("404")) {
-          enhancedError =
-            "This is not a valid lifetime key.";
-        } else if (result.error?.includes("trial") && result.error?.includes("expir")) {
-          enhancedError =
-            "This key was for your trial. To continue, purchase a lifetime key.";
-        } else if (result.error?.includes("trial") && result.error?.includes("once")) {
-          enhancedError =
-            "This key was for your trial. To continue, purchase a lifetime key.";
-        } else if (result.error?.includes("validation")) {
-          enhancedError =
-            "This is not a valid lifetime key.";
+        if (result.error?.includes("fetch") || result.error?.includes("Unable to connect")) {
+          enhancedError = "Unable to connect to license server. Please check your internet connection and try again.";
+          errorType = 'network';
+        } else if (result.error?.includes("409") || result.error?.includes("already activated")) {
+          enhancedError = "This license is already activated on another device. Use the transfer option to move it to this device.";
+          errorType = 'device';
+        } else if (result.error?.includes("404") || result.error?.includes("not found") || result.error?.includes("not a valid")) {
+          enhancedError = "This is not a valid license key. Please check the key and try again.";
+          errorType = 'invalid';
+        } else if (result.error?.includes("revoked")) {
+          enhancedError = "This license has been revoked. Please contact support for assistance.";
+          errorType = 'revoked';
+        } else if (result.error?.includes("trial")) {
+          enhancedError = "This key was for your trial. To continue, purchase a lifetime license key.";
+          errorType = 'invalid';
+        } else if (result.error?.includes("signature")) {
+          enhancedError = "License file verification failed. Please contact support.";
+          errorType = 'invalid';
         } else if (result.error?.includes("network")) {
-          enhancedError =
-            "Network error occurred. Please check your connection and try again.";
+          enhancedError = "Network error occurred. Please check your connection and try again.";
+          errorType = 'network';
         }
 
         setError(enhancedError);
@@ -414,6 +421,19 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
           <p className="text-lg">Loading license screen...</p>
         </div>
       </div>
+    );
+  }
+
+  // Device Management Screen (for family plans)
+  if (showDeviceManagement) {
+    const localLicense = licenseService.getLocalLicenseFile();
+    const maxDevices = localLicense?.max_devices || 5;
+    return (
+      <DeviceManagementScreen
+        onBack={() => setShowDeviceManagement(false)}
+        licenseKey={localLicense?.license_key || ''}
+        maxDevices={maxDevices}
+      />
     );
   }
 
@@ -604,9 +624,35 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
                       style={{ backgroundColor: 'rgba(217, 119, 6, 0.1)', border: '1px solid rgba(217, 119, 6, 0.4)' }}
                     >
                       <XCircle className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: '#D97706' }} />
-                      <div>
-                        <p className="text-xs font-semibold mb-0.5" style={{ color: '#D97706' }}>Warning</p>
-                        <p className="text-xs text-slate-200">{error}</p>
+                      <div className="flex-1">
+                        <p className="text-xs font-semibold mb-0.5" style={{ color: '#D97706' }}>Activation Error</p>
+                        <p className="text-xs text-slate-200 mb-2">{error}</p>
+                        {error.includes("connect") && (
+                          <div className="mt-2 p-2 rounded text-xs" style={{ backgroundColor: 'rgba(0, 0, 0, 0.2)' }}>
+                            <p className="text-slate-300">Troubleshooting:</p>
+                            <ul className="list-disc list-inside text-slate-400 mt-1 space-y-0.5">
+                              <li>Check your internet connection</li>
+                              <li>Try again in a few moments</li>
+                              <li>Contact support if problem persists</li>
+                            </ul>
+                          </div>
+                        )}
+                        {error.includes("already activated") && (
+                          <div className="mt-2 p-2 rounded text-xs" style={{ backgroundColor: 'rgba(0, 0, 0, 0.2)' }}>
+                            <p className="text-slate-300">Solution:</p>
+                            <p className="text-slate-400 mt-1">Use the transfer option to move this license to your current device.</p>
+                          </div>
+                        )}
+                        {error.includes("not a valid") && (
+                          <div className="mt-2 p-2 rounded text-xs" style={{ backgroundColor: 'rgba(0, 0, 0, 0.2)' }}>
+                            <p className="text-slate-300">Check:</p>
+                            <ul className="list-disc list-inside text-slate-400 mt-1 space-y-0.5">
+                              <li>License key format: XXXX-XXXX-XXXX-XXXX</li>
+                              <li>No spaces or special characters</li>
+                              <li>Copy the key exactly as provided</li>
+                            </ul>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}

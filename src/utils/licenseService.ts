@@ -675,6 +675,41 @@ export class LicenseService {
   isValidDeviceId(deviceId: string): boolean {
     return isValidDeviceId(deviceId);
   }
+
+  /**
+   * Check if current license is a family plan
+   */
+  isFamilyPlan(): boolean {
+    const type = localStorage.getItem(LicenseService.LICENSE_TYPE_STORAGE);
+    return type === 'family' || type === 'llv_family';
+  }
+
+  /**
+   * Get max devices for current license
+   */
+  getMaxDevices(): number {
+    const localLicense = this.getLocalLicenseFile();
+    return localLicense?.max_devices || 1;
+  }
+
+  /**
+   * Get current device info
+   */
+  async getCurrentDeviceInfo(): Promise<{
+    deviceId: string;
+    deviceName: string;
+  } | null> {
+    const deviceId = await this.getDeviceId();
+    if (!deviceId) return null;
+
+    const ua = navigator.userAgent;
+    let deviceName = 'Unknown Device';
+    if (ua.includes('Windows')) deviceName = 'Windows Device';
+    else if (ua.includes('Mac')) deviceName = 'Mac Device';
+    else if (ua.includes('Linux')) deviceName = 'Linux Device';
+
+    return { deviceId, deviceName };
+  }
 }
 
 export const licenseService = LicenseService.getInstance();

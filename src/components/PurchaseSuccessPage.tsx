@@ -144,6 +144,8 @@ export const PurchaseSuccessPage: React.FC = () => {
   };
 
   const handleCopyAllKeys = async () => {
+    if (licenseKeys.length === 0) return;
+    
     const allKeys = licenseKeys.join("\n");
     try {
       await navigator.clipboard.writeText(allKeys);
