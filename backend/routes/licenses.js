@@ -93,8 +93,8 @@ router.post('/validate', async (req, res) => {
     if (license.is_activated) {
       // License already activated - check if same device or different
       
-      // For family plans, check device count
-      if (license.plan_type === 'family') {
+      // For family plans, check device count (both LPV and LLV family)
+      if (license.plan_type === 'family' || license.plan_type === 'llv_family') {
         // Check if this hardware is already activated
         const existingDevice = await db.deviceActivations.findByLicenseAndHash(
           license.id, 

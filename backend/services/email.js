@@ -101,18 +101,20 @@ async function sendEmailViaBrevo({ to, subject, html, text }) {
  * @param {Object} options
  * @param {string} options.to - Recipient email
  * @param {string} options.licenseKey - The license key
- * @param {string} options.planType - 'personal' or 'family'
+ * @param {string} options.planType - 'personal', 'family', 'llv_personal', or 'llv_family'
  * @param {number} options.amount - Amount paid in cents
  */
 async function sendPurchaseEmail({ to, licenseKey, planType, amount }) {
   const planNames = {
     personal: 'Personal Vault',
     family: 'Family Vault',
+    llv_personal: 'Local Legacy Vault - Personal',
+    llv_family: 'Local Legacy Vault - Family',
   };
   
   const planName = planNames[planType] || 'License';
   const amountFormatted = `$${(amount / 100).toFixed(2)}`;
-  const maxDevices = planType === 'family' ? '5' : '1';
+  const maxDevices = (planType === 'family' || planType === 'llv_family') ? '5' : '1';
   
   const html = loadTemplate('purchase-confirmation-email', {
     LICENSE_KEY: licenseKey,

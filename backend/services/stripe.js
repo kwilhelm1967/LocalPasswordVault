@@ -71,7 +71,7 @@ function getProductByPriceId(priceId) {
 /**
  * Create a Stripe Checkout Session
  * 
- * @param {string} planType - 'personal' or 'family'
+ * @param {string} planType - 'personal', 'family', 'llv_personal', or 'llv_family'
  * @param {string} customerEmail - Customer's email address
  * @param {string} successUrl - URL to redirect after successful payment
  * @param {string} cancelUrl - URL to redirect if payment is cancelled

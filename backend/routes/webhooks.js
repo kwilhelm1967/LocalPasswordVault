@@ -101,10 +101,10 @@ router.post('/stripe', express.raw({ type: 'application/json' }), async (req, re
 async function handleCheckoutCompleted(session) {
   console.log('Processing checkout session:', session.id);
   
-  // Check if we already processed this session
-  const existingLicense = await db.licenses.findBySessionId(session.id);
-  if (existingLicense) {
-    console.log('License already exists for session:', session.id);
+  // Check if we already processed this session (handles bundles with multiple licenses)
+  const existingLicenses = await db.licenses.findAllBySessionId(session.id);
+  if (existingLicenses && existingLicenses.length > 0) {
+    console.log(`License(s) already exist for session: ${session.id} (${existingLicenses.length} license(s))`);
     return;
   }
   
@@ -243,7 +243,7 @@ async function handleCheckoutCompleted(session) {
       await sendPurchaseEmail({
         to: customerEmail,
         licenseKey: licenses[0].keys[0],
-        planName: licenses[0].productName,
+        planType: licenses[0].planType,
         amount: licenses[0].amount,
       });
       console.log(`Purchase email sent to ${customerEmail}`);

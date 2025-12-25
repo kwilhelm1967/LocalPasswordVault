@@ -136,6 +136,7 @@ const licenses = {
   },
   
   async findBySessionId(stripe_checkout_session_id) {
+    // Returns single license (for single purchases)
     const { data, error } = await supabase
       .from('licenses')
       .select('*')
@@ -144,6 +145,18 @@ const licenses = {
     
     if (error && error.code !== 'PGRST116') throw error;
     return data;
+  },
+  
+  async findAllBySessionId(stripe_checkout_session_id) {
+    // Returns all licenses for a session (for bundles)
+    const { data, error } = await supabase
+      .from('licenses')
+      .select('*')
+      .eq('stripe_checkout_session_id', stripe_checkout_session_id)
+      .order('created_at', { ascending: true });
+    
+    if (error) throw error;
+    return data || [];
   },
   
   async activate({ license_key, hardware_hash }) {

@@ -31,11 +31,12 @@ router.post('/session', async (req, res) => {
   try {
     const { planType, email } = req.body;
     
-    // Validate plan type
-    if (!planType || !['personal', 'family'].includes(planType)) {
+    // Validate plan type - supports all products (LPV and LLV)
+    const validPlanTypes = ['personal', 'family', 'llv_personal', 'llv_family'];
+    if (!planType || !validPlanTypes.includes(planType)) {
       return res.status(400).json({ 
         success: false, 
-        error: 'Invalid plan type. Must be "personal" or "family".' 
+        error: `Invalid plan type. Must be one of: ${validPlanTypes.join(', ')}` 
       });
     }
     
@@ -89,10 +90,10 @@ router.get('/session/:sessionId', async (req, res) => {
     // Import db here to avoid circular dependency
     const db = require('../database/db');
     
-    // Look up license by session ID
-    const license = await db.licenses.findBySessionId(sessionId);
+    // Look up all licenses by session ID (handles bundles)
+    const licenses = await db.licenses.findAllBySessionId(sessionId);
     
-    if (!license) {
+    if (!licenses || licenses.length === 0) {
       // License not yet created - webhook may still be processing
       return res.status(404).json({ 
         success: false, 
@@ -101,17 +102,37 @@ router.get('/session/:sessionId', async (req, res) => {
       });
     }
     
-    // Return license details
-    res.json({
-      success: true,
-      data: {
-        licenseKey: license.license_key,
-        planType: license.plan_type,
-        email: license.email,
-        maxDevices: license.max_devices,
-        createdAt: license.created_at,
-      },
-    });
+    // Return license details (single or multiple for bundles)
+    if (licenses.length === 1) {
+      // Single purchase
+      res.json({
+        success: true,
+        data: {
+          licenseKey: licenses[0].license_key,
+          planType: licenses[0].plan_type,
+          email: licenses[0].email,
+          maxDevices: licenses[0].max_devices,
+          createdAt: licenses[0].created_at,
+        },
+      });
+    } else {
+      // Bundle purchase - return all license keys
+      res.json({
+        success: true,
+        isBundle: true,
+        data: {
+          licenses: licenses.map(license => ({
+            licenseKey: license.license_key,
+            planType: license.plan_type,
+            productType: license.product_type,
+            maxDevices: license.max_devices,
+          })),
+          email: licenses[0].email,
+          totalKeys: licenses.length,
+          createdAt: licenses[0].created_at,
+        },
+      });
+    }
     
   } catch (error) {
     console.error('Get session error:', error);
