@@ -1,6 +1,7 @@
 const express = require('express');
 const db = require('../database/db');
 const { normalizeKey, isValidFormat } = require('../services/licenseGenerator');
+const { signLicenseFile } = require('../services/licenseSigner');
 
 const router = express.Router();
 const MAX_TRANSFERS_PER_YEAR = 3;
@@ -78,10 +79,21 @@ router.post('/activate', async (req, res) => {
         })
         .eq('license_key', normalizedKey);
       
+      // Generate signed license file for offline validation
+      const licenseFile = signLicenseFile({
+        license_key: normalizedKey,
+        device_id: device_id,
+        plan_type: license.plan_type,
+        max_devices: license.max_devices,
+        activated_at: new Date().toISOString(),
+        product_type: license.product_type || 'lpv',
+      });
+      
       return res.json({
         status: 'activated',
         mode: 'first_activation',
         plan_type: license.plan_type,
+        license_file: licenseFile,
       });
     }
     
@@ -92,10 +104,21 @@ router.post('/activate', async (req, res) => {
         .update({ last_activated_at: new Date().toISOString() })
         .eq('license_key', normalizedKey);
       
+      // Return signed license file for offline validation
+      const licenseFile = signLicenseFile({
+        license_key: normalizedKey,
+        device_id: device_id,
+        plan_type: license.plan_type,
+        max_devices: license.max_devices,
+        activated_at: license.activated_at || new Date().toISOString(),
+        product_type: license.product_type || 'lpv',
+      });
+      
       return res.json({
         status: 'activated',
         mode: 'same_device',
         plan_type: license.plan_type,
+        license_file: licenseFile,
       });
     }
     
@@ -199,8 +222,20 @@ router.post('/transfer', async (req, res) => {
       });
     }
     
+    // Return signed license file after transfer
+    const updatedLicense = await db.licenses.findByKey(normalizedKey);
+    const licenseFile = signLicenseFile({
+      license_key: normalizedKey,
+      device_id: new_device_id,
+      plan_type: updatedLicense.plan_type,
+      max_devices: updatedLicense.max_devices,
+      activated_at: new Date().toISOString(),
+      product_type: updatedLicense.product_type || 'lpv',
+    });
+    
     res.json({
       status: 'transferred',
+      license_file: licenseFile,
     });
     
   } catch (error) {

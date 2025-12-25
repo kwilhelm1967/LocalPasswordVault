@@ -16,7 +16,7 @@
 import environment from "../config/environment";
 import { trialService, TrialInfo } from "./trialService";
 import { getLPVDeviceFingerprint, isValidDeviceId } from "./deviceFingerprint";
-import { safeParseJWT } from "./safeUtils";
+import { verifyLicenseSignature } from "./licenseValidator";
 import { devError } from "./devLog";
 
 export type LicenseType = "personal" | "family" | "trial";
@@ -38,13 +38,17 @@ export interface AppLicenseStatus {
 
 /**
  * Local license file structure
- * Written after successful activation for offline validation
+ * Signed by server and stored locally for offline validation
  */
 export interface LocalLicenseFile {
   license_key: string;
   device_id: string;
+  plan_type: LicenseType;
+  max_devices: number;
   activated_at: string;
-  plan_type?: LicenseType;
+  product_type?: string;
+  signature: string;
+  signed_at: string;
 }
 
 /**
@@ -167,12 +171,19 @@ export class LicenseService {
 
   /**
    * Validate license locally (offline check)
-   * Returns true if local license matches current device
+   * Returns true if local license matches current device and signature is valid
    */
   async validateLocalLicense(): Promise<{ valid: boolean; requiresTransfer: boolean }> {
     const localLicense = this.getLocalLicenseFile();
     
     if (!localLicense) {
+      return { valid: false, requiresTransfer: false };
+    }
+
+    // Verify signature (prevents tampering)
+    const isValidSignature = await verifyLicenseSignature(localLicense);
+    if (!isValidSignature) {
+      devError('License file signature verification failed');
       return { valid: false, requiresTransfer: false };
     }
 
@@ -205,25 +216,10 @@ export class LicenseService {
       };
     }
 
-    // For trial licenses, check expiration
+    // For trial licenses, check expiration (local only, no network)
     if (type === 'trial') {
-      const storedData = localStorage.getItem('license_token');
-      if (storedData) {
-        const tokenData = safeParseJWT<{ trialExpiryDate?: string }>(storedData);
-        if (tokenData?.trialExpiryDate) {
-          const trialExpiryDate = new Date(tokenData.trialExpiryDate);
-          if (new Date() > trialExpiryDate) {
-            this.removeLicense();
-            trialService.endTrial();
-            return {
-              isValid: false,
-              type: null,
-              key: null,
-              activatedDate: null,
-            };
-          }
-        }
-      }
+      // Trial expiration is handled by trialService locally
+      // No JWT or network calls needed
     }
 
     // For non-trial licenses, validate device binding locally
@@ -334,13 +330,30 @@ export class LicenseService {
       if (result.status === "activated") {
         const licenseType: LicenseType = result.plan_type || 'personal';
         
-        // Save local license file for offline validation
-        this.saveLocalLicenseFile({
-          license_key: cleanKey,
-          device_id: deviceId,
-          activated_at: new Date().toISOString(),
-          plan_type: licenseType,
-        });
+        // Verify and save signed license file from server
+        if (result.license_file) {
+          const isValid = await verifyLicenseSignature(result.license_file);
+          if (!isValid) {
+            return {
+              success: false,
+              error: "Invalid license file signature. Please contact support."
+            };
+          }
+          
+          // Save signed license file for offline validation
+          this.saveLocalLicenseFile(result.license_file);
+        } else {
+          // Fallback: create unsigned file (for development or legacy)
+          this.saveLocalLicenseFile({
+            license_key: cleanKey,
+            device_id: deviceId,
+            plan_type: licenseType,
+            max_devices: 1,
+            activated_at: new Date().toISOString(),
+            signature: '',
+            signed_at: new Date().toISOString(),
+          });
+        }
 
         // Update localStorage
         localStorage.setItem(LicenseService.LICENSE_KEY_STORAGE, cleanKey);
@@ -413,12 +426,31 @@ export class LicenseService {
       const result: TransferResponse = await response.json();
 
       if (result.status === "transferred") {
-        // Update local license file
-        this.saveLocalLicenseFile({
-          license_key: cleanKey,
-          device_id: deviceId,
-          activated_at: new Date().toISOString(),
-        });
+        // Verify and save signed license file from server
+        if (result.license_file) {
+          const isValid = await verifyLicenseSignature(result.license_file);
+          if (!isValid) {
+            return {
+              success: false,
+              error: "Invalid license file signature. Please contact support."
+            };
+          }
+          
+          // Save signed license file
+          this.saveLocalLicenseFile(result.license_file);
+        } else {
+          // Fallback for development
+          const localLicense = this.getLocalLicenseFile();
+          this.saveLocalLicenseFile({
+            license_key: cleanKey,
+            device_id: deviceId,
+            plan_type: localLicense?.plan_type || 'personal',
+            max_devices: localLicense?.max_devices || 1,
+            activated_at: new Date().toISOString(),
+            signature: '',
+            signed_at: new Date().toISOString(),
+          });
+        }
 
         // Update localStorage
         localStorage.setItem(LicenseService.LICENSE_KEY_STORAGE, cleanKey);
@@ -487,10 +519,15 @@ export class LicenseService {
     licenseKey: string,
     deviceId: string
   ): Promise<{ success: boolean; error?: string; status?: string }> {
+    const localLicense = this.getLocalLicenseFile();
     this.saveLocalLicenseFile({
       license_key: licenseKey,
       device_id: deviceId,
+      plan_type: localLicense?.plan_type || 'personal',
+      max_devices: localLicense?.max_devices || 1,
       activated_at: new Date().toISOString(),
+      signature: '',
+      signed_at: new Date().toISOString(),
     });
 
     localStorage.setItem(LicenseService.DEVICE_ID_STORAGE, deviceId);
