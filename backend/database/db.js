@@ -369,6 +369,22 @@ const deviceActivations = {
     return { count: count || 0 };
   },
   
+  async findAllByLicense(license_id) {
+    const startTime = Date.now();
+    const { data, error } = await supabase
+      .from('device_activations')
+      .select('*')
+      .eq('license_id', license_id)
+      .eq('is_active', true)
+      .order('last_seen_at', { ascending: false });
+    
+    const duration = Date.now() - startTime;
+    performanceMonitor.trackDatabaseQuery('select', 'device_activations', duration);
+    
+    if (error) throw error;
+    return data || [];
+  },
+  
   async updateLastSeen({ license_id, hardware_hash }) {
     const startTime = Date.now();
     const { data, error } = await supabase

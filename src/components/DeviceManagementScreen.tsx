@@ -9,7 +9,6 @@ import {
   AlertCircle,
   RefreshCw,
   ArrowLeft,
-  Trash2,
 } from "lucide-react";
 import { licenseService } from "../utils/licenseService";
 import { devError } from "../utils/devLog";
@@ -45,9 +44,8 @@ export const DeviceManagementScreen: React.FC<DeviceManagementScreenProps> = ({
   maxDevices,
 }) => {
   const [devices, setDevices] = useState<Device[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [deactivatingId, setDeactivatingId] = useState<string | null>(null);
 
   useEffect(() => {
     loadDevices();
@@ -57,26 +55,34 @@ export const DeviceManagementScreen: React.FC<DeviceManagementScreenProps> = ({
     setIsLoading(true);
     setError(null);
     try {
-      // For now, we'll show devices from local license file
-      // In a full implementation, this would call an API endpoint
-      // But since we're privacy-first, we only show what's in the local file
-      const localLicense = licenseService.getLocalLicenseFile();
-      if (localLicense) {
-        // Simulate device list (in real implementation, this would come from backend)
-        // For privacy-first approach, we only show current device
-        const currentDevice: Device = {
-          id: 'current',
-          hardware_hash: localLicense.device_id,
-          device_name: getDeviceName(),
-          last_seen_at: new Date().toISOString(),
-          is_active: true,
-          is_current_device: true,
-        };
-        setDevices([currentDevice]);
+      // Get device info from local license file (100% offline - no API calls)
+      // All data comes from locally stored signed license file
+      const localDeviceInfo = licenseService.getLocalDeviceInfo();
+      const currentDeviceInfo = await licenseService.getCurrentDeviceInfo();
+      
+      if (!localDeviceInfo || !currentDeviceInfo) {
+        setError('Unable to retrieve device information. Please ensure your license is activated.');
+        return;
       }
+      
+      // Verify current device matches license file (security check)
+      const deviceMatches = localDeviceInfo.deviceId === currentDeviceInfo.deviceId;
+      
+      // Show current device with info from local license file
+      // All data is local - no network calls
+      const currentDevice: Device = {
+        id: localDeviceInfo.deviceId,
+        hardware_hash: localDeviceInfo.deviceId,
+        device_name: currentDeviceInfo.deviceName,
+        last_seen_at: localDeviceInfo.activatedAt, // Use activation date from license file
+        is_active: deviceMatches, // Active if device matches license
+        is_current_device: true,
+      };
+      
+      setDevices([currentDevice]);
     } catch (err) {
       devError('Failed to load devices:', err);
-      setError('Failed to load device list');
+      setError('Failed to load device information');
     } finally {
       setIsLoading(false);
     }
@@ -104,30 +110,6 @@ export const DeviceManagementScreen: React.FC<DeviceManagementScreenProps> = ({
     return <Monitor className="w-5 h-5" />;
   };
 
-  const handleDeactivateDevice = async (deviceId: string) => {
-    if (!confirm('Are you sure you want to deactivate this device? You will need to reactivate it to use the license on this device again.')) {
-      return;
-    }
-
-    setDeactivatingId(deviceId);
-    try {
-      // In a full implementation, this would call backend API
-      // For privacy-first approach, we only manage local device
-      if (deviceId === 'current') {
-        // Deactivating current device means removing license
-        licenseService.removeLicense();
-        onBack();
-      } else {
-        // Remove from list
-        setDevices(devices.filter(d => d.id !== deviceId));
-      }
-    } catch (err) {
-      devError('Failed to deactivate device:', err);
-      setError('Failed to deactivate device');
-    } finally {
-      setDeactivatingId(null);
-    }
-  };
 
   const formatDate = (dateString: string): string => {
     try {
@@ -161,10 +143,10 @@ export const DeviceManagementScreen: React.FC<DeviceManagementScreenProps> = ({
           </button>
           <div>
             <h1 className="text-2xl font-bold" style={{ color: colors.warmIvory }}>
-              Device Management
+              Device Information
             </h1>
             <p className="text-sm text-slate-400 mt-1">
-              Manage devices for your Family Plan license
+              View your current device information
             </p>
           </div>
         </div>
@@ -181,10 +163,10 @@ export const DeviceManagementScreen: React.FC<DeviceManagementScreenProps> = ({
             <Monitor className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: colors.steelBlue400 }} />
             <div>
               <p className="text-sm font-medium" style={{ color: colors.warmIvory }}>
-                Family Plan: {devices.length} / {maxDevices} devices
+                Current Device Information
               </p>
               <p className="text-xs text-slate-400 mt-1">
-                You can activate this license on up to {maxDevices} devices. Each device must be activated separately.
+                This screen shows information about the current device. Family Plan licenses work by providing separate keys for each device.
               </p>
             </div>
           </div>
@@ -292,28 +274,18 @@ export const DeviceManagementScreen: React.FC<DeviceManagementScreenProps> = ({
                         )}
                       </div>
                       <p className="text-xs text-slate-400 mb-1">
-                        Last seen: {formatDate(device.last_seen_at)}
+                        Activated: {formatDate(device.last_seen_at)}
                       </p>
-                      <p className="text-xs font-mono text-slate-500 truncate">
-                        {device.hardware_hash.substring(0, 16)}...
+                      <p className="text-xs font-mono text-slate-500 truncate mb-1">
+                        Device ID: {device.hardware_hash.substring(0, 16)}...
                       </p>
+                      {licenseKey && (
+                        <p className="text-xs font-mono text-slate-500 truncate">
+                          License: {licenseKey.substring(0, 12)}...
+                        </p>
+                      )}
                     </div>
                   </div>
-                  {!device.is_current_device && (
-                    <button
-                      onClick={() => handleDeactivateDevice(device.id)}
-                      disabled={deactivatingId === device.id}
-                      className="p-2 rounded-lg hover:bg-red-900/20 transition-colors disabled:opacity-50"
-                      style={{ color: colors.errorRed }}
-                      title="Deactivate device"
-                    >
-                      {deactivatingId === device.id ? (
-                        <RefreshCw className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <Trash2 className="w-4 h-4" />
-                      )}
-                    </button>
-                  )}
                 </div>
               </div>
             ))}
@@ -329,9 +301,9 @@ export const DeviceManagementScreen: React.FC<DeviceManagementScreenProps> = ({
           }}
         >
           <p className="text-xs text-slate-400">
-            <strong className="text-slate-300">Note:</strong> Device management is currently limited to local devices only.
-            To activate this license on additional devices, enter the license key on each device.
-            Each device must activate separately using the same license key.
+            <strong className="text-slate-300">Note:</strong> This app works 100% offline after activation.
+            Family Plan licenses provide separate keys for each device. To use on additional devices,
+            activate a separate key on each device.
           </p>
         </div>
       </div>

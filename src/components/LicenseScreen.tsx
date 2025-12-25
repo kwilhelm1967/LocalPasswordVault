@@ -256,19 +256,19 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
           enhancedError = "This license is already activated on another device. Use the transfer option to move it to this device.";
           errorType = 'device';
         } else if (result.error?.includes("404") || result.error?.includes("not found") || result.error?.includes("not a valid")) {
-          enhancedError = "This is not a valid license key. Please check the key and try again.";
+          enhancedError = "This license key is not valid. Please check that you entered it correctly (format: XXXX-XXXX-XXXX-XXXX). If you believe this is an error, contact support@LocalPasswordVault.com";
           errorType = 'invalid';
         } else if (result.error?.includes("revoked")) {
-          enhancedError = "This license has been revoked. Please contact support for assistance.";
+          enhancedError = "This license has been revoked. If you believe this is an error, please contact support@LocalPasswordVault.com for assistance.";
           errorType = 'revoked';
         } else if (result.error?.includes("trial")) {
-          enhancedError = "This key was for your trial. To continue, purchase a lifetime license key.";
+          enhancedError = "This key was for your trial period. To continue using the app, please purchase a lifetime license key at LocalPasswordVault.com";
           errorType = 'invalid';
-        } else if (result.error?.includes("signature")) {
-          enhancedError = "License file verification failed. Please contact support.";
+        } else if (result.error?.includes("signature") || result.error?.includes("verification failed")) {
+          enhancedError = "License verification failed. The license file appears to be corrupted. Please try activating again, or contact support@LocalPasswordVault.com if the problem persists.";
           errorType = 'invalid';
         } else if (result.error?.includes("network")) {
-          enhancedError = "Network error occurred. Please check your connection and try again.";
+          enhancedError = "Network error occurred. Please check your internet connection and try again. Internet access is required for initial activation only.";
           errorType = 'network';
         }
 
@@ -401,10 +401,10 @@ export const LicenseScreen: React.FC<LicenseScreenProps> = ({
         analyticsService.trackLicenseActivated(trialKey.trim(), 'trial');
         onLicenseValid();
       } else {
-        setTrialKeyError(result.error || 'Invalid trial key');
+        setTrialKeyError(result.error || 'Invalid trial key. Please check your email for the correct trial key (format: TRIA-XXXX-XXXX-XXXX-XXXX).');
       }
     } catch (err) {
-      setTrialKeyError('Failed to activate trial key. Please try again.');
+      setTrialKeyError('Failed to activate trial key. Please check your internet connection and try again. If the problem persists, contact support@LocalPasswordVault.com');
     } finally {
       setIsActivatingTrial(false);
     }

@@ -121,14 +121,14 @@ export class TrialService {
       if (result.status === "expired") {
         return {
           success: false,
-          error: result.error || "This trial has expired. Please purchase a license to continue.",
+          error: result.error || "This trial has expired. Your 7-day trial period has ended. Please purchase a license to continue using Local Password Vault.",
         };
       }
 
       if (result.status === "invalid") {
         return {
           success: false,
-          error: result.error || "Invalid trial key. Please check your email for the correct key.",
+          error: result.error || "Invalid trial key. Please check your email for the correct trial key (format: TRIA-XXXX-XXXX-XXXX-XXXX). If you can't find it, contact support@LocalPasswordVault.com",
         };
       }
 
@@ -138,7 +138,7 @@ export class TrialService {
         if (!isValid) {
           return {
             success: false,
-            error: "Invalid trial file signature. Please contact support.",
+            error: "Trial activation verification failed. The trial file appears to be corrupted. Please try again, or contact support@LocalPasswordVault.com if the problem persists.",
           };
         }
 
@@ -152,7 +152,7 @@ export class TrialService {
 
       return {
         success: false,
-        error: result.error || "Trial activation failed",
+        error: result.error || "Trial activation failed. Please check your trial key and internet connection, then try again. If the problem persists, contact support@LocalPasswordVault.com",
       };
 
     } catch (error) {
@@ -163,16 +163,19 @@ export class TrialService {
         if (apiError.code === "NETWORK_ERROR" || apiError.code === "REQUEST_TIMEOUT") {
           return {
             success: false,
-            error: "Unable to connect to license server. Please check your internet connection.",
+            error: "Unable to connect to license server. Please check your internet connection and try again. Internet access is required for trial activation.",
           };
         }
         return {
           success: false,
-          error: apiError.message || "Trial activation failed",
+          error: apiError.message || "Trial activation failed. Please try again, or contact support@LocalPasswordVault.com if the problem persists.",
         };
       }
 
-      return { success: false, error: "Trial activation failed" };
+      return { 
+        success: false, 
+        error: "Trial activation failed. Please check your internet connection and try again. If the problem continues, contact support@LocalPasswordVault.com"
+      };
     }
   }
 

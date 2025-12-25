@@ -288,7 +288,10 @@ export class LicenseService {
       const isValidFormat = /^[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4,5}$/.test(cleanKey);
       
       if (!isValidFormat) {
-        return { success: false, error: "This is not a valid license key." };
+        return { 
+          success: false, 
+          error: "Invalid license key format. Please check that your key follows the format: XXXX-XXXX-XXXX-XXXX (no spaces or special characters)." 
+        };
       }
 
       // Check if this is a trial key (starts with TRIA-)
@@ -309,7 +312,7 @@ export class LicenseService {
         }
         return {
           success: false,
-          error: result.error || 'Trial activation failed'
+          error: result.error || "Trial activation failed. Please check your trial key and try again. If the problem persists, contact support@LocalPasswordVault.com"
         };
       }
 
@@ -354,16 +357,24 @@ export class LicenseService {
           success: false,
           requiresTransfer: true,
           status: "device_mismatch",
-          error: "This license is active on another device. Transfer required."
+          error: "This license is already active on another device. You'll need to transfer it to this device to continue."
         };
       }
 
       // Handle invalid/revoked
-      if (result.status === "invalid" || result.status === "revoked") {
+      if (result.status === "invalid") {
         return {
           success: false,
           status: result.status,
-          error: result.error || "This is not a valid license key."
+          error: result.error || "This license key is not valid. Please check that you entered it correctly. If you believe this is an error, contact support@LocalPasswordVault.com"
+        };
+      }
+      
+      if (result.status === "revoked") {
+        return {
+          success: false,
+          status: result.status,
+          error: "This license has been revoked. If you believe this is an error, please contact support@LocalPasswordVault.com for assistance."
         };
       }
 
@@ -377,7 +388,7 @@ export class LicenseService {
           if (!isValid) {
             return {
               success: false,
-              error: "Invalid license file signature. Please contact support."
+              error: "License verification failed. The license file appears to be corrupted or invalid. Please try activating again, or contact support@LocalPasswordVault.com if the problem persists."
             };
           }
           
@@ -416,7 +427,7 @@ export class LicenseService {
 
       return { 
         success: false, 
-        error: result.error || "Activation failed" 
+        error: result.error || "License activation failed. Please check your internet connection and try again. If the problem continues, contact support@LocalPasswordVault.com"
       };
 
     } catch (error) {
@@ -428,16 +439,19 @@ export class LicenseService {
         if (apiError.code === "NETWORK_ERROR" || apiError.code === "REQUEST_TIMEOUT") {
           return {
             success: false,
-            error: "Unable to connect to license server. Please check your internet connection and try again.",
+            error: "Unable to connect to license server. Please check your internet connection and try again. The app requires internet access for initial activation only.",
           };
         }
         return {
           success: false,
-          error: apiError.message || "License activation failed",
+          error: apiError.message || "License activation failed. Please try again, or contact support@LocalPasswordVault.com if the problem persists.",
         };
       }
 
-      return { success: false, error: "License activation failed" };
+      return { 
+        success: false, 
+        error: "License activation failed. Please check your internet connection and try again. If the problem continues, contact support@LocalPasswordVault.com"
+      };
     }
   }
 
@@ -482,7 +496,7 @@ export class LicenseService {
           if (!isValid) {
             return {
               success: false,
-              error: "Invalid license file signature. Please contact support."
+              error: "License transfer verification failed. The license file appears to be corrupted. Please try again, or contact support@LocalPasswordVault.com if the problem persists."
             };
           }
           
@@ -514,13 +528,13 @@ export class LicenseService {
         return {
           success: false,
           status: "transfer_limit_reached",
-          error: "Your license has reached its automatic transfer limit. Please contact support so we can help you move it to your new computer."
+          error: "Your license has reached its automatic transfer limit (3 transfers per year). Please contact support@LocalPasswordVault.com and we'll help you move it to your new computer."
         };
       }
 
       return {
         success: false,
-        error: result.error || "Transfer failed"
+        error: result.error || "License transfer failed. Please check your internet connection and try again. If the problem continues, contact support@LocalPasswordVault.com"
       };
 
     } catch (error) {
@@ -532,16 +546,19 @@ export class LicenseService {
         if (apiError.code === "NETWORK_ERROR" || apiError.code === "REQUEST_TIMEOUT") {
           return {
             success: false,
-            error: "Unable to connect to license server. Please check your internet connection.",
+            error: "Unable to connect to license server. Please check your internet connection and try again. Internet access is required for license transfers.",
           };
         }
         return {
           success: false,
-          error: apiError.message || "License transfer failed",
+          error: apiError.message || "License transfer failed. Please try again, or contact support@LocalPasswordVault.com if the problem persists.",
         };
       }
 
-      return { success: false, error: "License transfer failed" };
+      return { 
+        success: false, 
+        error: "License transfer failed. Please check your internet connection and try again. If the problem continues, contact support@LocalPasswordVault.com"
+      };
     }
   }
 
@@ -706,7 +723,10 @@ export class LicenseService {
    */
   async refreshLicenseStatus(): Promise<{ success: boolean; error?: string }> {
     const key = localStorage.getItem(LicenseService.LICENSE_KEY_STORAGE);
-    if (!key) return { success: false, error: "No license found" };
+    if (!key) return { 
+      success: false, 
+      error: "No license found. Please activate your license key to continue using the app." 
+    };
 
     const localValidation = await this.validateLocalLicense();
     if (localValidation.valid) {
@@ -714,7 +734,10 @@ export class LicenseService {
     }
     
     if (localValidation.requiresTransfer) {
-      return { success: false, error: "Device mismatch - transfer required" };
+      return { 
+        success: false, 
+        error: "Your license is bound to a different device. You'll need to transfer it to this device to continue." 
+      };
     }
 
     return { success: true };
@@ -768,6 +791,32 @@ export class LicenseService {
 
     return { deviceId, deviceName };
   }
+
+  /**
+   * Get detailed device information from local license file (100% offline)
+   * Returns device info stored in the signed license file
+   */
+  getLocalDeviceInfo(): {
+    deviceId: string;
+    licenseKey: string;
+    planType: LicenseType;
+    activatedAt: string;
+    maxDevices: number;
+  } | null {
+    const localLicense = this.getLocalLicenseFile();
+    if (!localLicense) {
+      return null;
+    }
+
+    return {
+      deviceId: localLicense.device_id,
+      licenseKey: localLicense.license_key,
+      planType: localLicense.plan_type,
+      activatedAt: localLicense.activated_at,
+      maxDevices: localLicense.max_devices || 1,
+    };
+  }
+
 }
 
 export const licenseService = LicenseService.getInstance();

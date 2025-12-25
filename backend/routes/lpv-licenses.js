@@ -58,6 +58,9 @@ router.post('/activate', async (req, res) => {
       });
     }
     
+    // Check if this is a family plan
+    const isFamilyPlan = license.plan_type === 'family' || license.plan_type === 'llv_family';
+    
     // First activation
     if (!license.is_activated || !license.hardware_hash) {
       await db.licenses.activate({
@@ -79,6 +82,16 @@ router.post('/activate', async (req, res) => {
           current_device_id: device_id
         })
         .eq('license_key', normalizedKey);
+      
+      // For family plans, create device activation entry
+      if (isFamilyPlan) {
+        const deviceName = req.headers['user-agent'] || 'Unknown Device';
+        await db.deviceActivations.create({
+          license_id: license.id,
+          hardware_hash: device_id,
+          device_name: deviceName,
+        });
+      }
       
       // Generate signed license file for offline validation
       let licenseFile;
@@ -121,6 +134,132 @@ router.post('/activate', async (req, res) => {
       });
     }
     
+    // Handle family plans with multiple devices
+    if (isFamilyPlan) {
+      const existingDevice = await db.deviceActivations.findByLicenseAndHash(
+        license.id,
+        device_id
+      );
+      
+      if (existingDevice) {
+        // Device already registered, just update last seen
+        await db.deviceActivations.updateLastSeen({
+          license_id: license.id,
+          hardware_hash: device_id,
+        });
+        
+        await db.supabase
+          .from('licenses')
+          .update({ last_activated_at: new Date().toISOString() })
+          .eq('license_key', normalizedKey);
+        
+        // Return signed license file for offline validation
+        let licenseFile;
+        try {
+          licenseFile = signLicenseFile({
+            license_key: normalizedKey,
+            device_id: device_id,
+            plan_type: license.plan_type,
+            max_devices: license.max_devices,
+            activated_at: license.activated_at || new Date().toISOString(),
+            product_type: license.product_type || 'lpv',
+            transfer_count: license.transfer_count || 0,
+            last_transfer_at: license.last_transfer_at || null,
+          });
+        } catch (signError) {
+          logger.error('Failed to sign license file', signError, {
+            licenseKey: normalizedKey,
+            operation: 'license_signing',
+          });
+          licenseFile = {
+            license_key: normalizedKey,
+            device_id: device_id,
+            plan_type: license.plan_type,
+            max_devices: license.max_devices,
+            activated_at: license.activated_at || new Date().toISOString(),
+            product_type: license.product_type || 'lpv',
+            transfer_count: license.transfer_count || 0,
+            last_transfer_at: license.last_transfer_at || null,
+            signature: '',
+            signed_at: new Date().toISOString(),
+          };
+        }
+        
+        return res.json({
+          status: 'activated',
+          mode: 'same_device',
+          plan_type: license.plan_type,
+          license_file: licenseFile,
+        });
+      } else {
+        // New device - check device limit
+        const deviceCount = await db.deviceActivations.countByLicense(license.id);
+        
+        if (deviceCount.count >= (license.max_devices || 5)) {
+          return res.status(409).json({
+            status: 'invalid',
+            error: `Maximum devices (${license.max_devices || 5}) reached. Deactivate a device or purchase another license.`
+          });
+        }
+        
+        // Create new device activation
+        const deviceName = req.headers['user-agent'] || 'Unknown Device';
+        await db.deviceActivations.create({
+          license_id: license.id,
+          hardware_hash: device_id,
+          device_name: deviceName,
+        });
+        
+        await db.supabase
+          .from('licenses')
+          .update({
+            activation_count: (license.activation_count || 0) + 1,
+            last_activated_at: new Date().toISOString(),
+          })
+          .eq('license_key', normalizedKey);
+        
+        // Generate signed license file for offline validation
+        let licenseFile;
+        try {
+          licenseFile = signLicenseFile({
+            license_key: normalizedKey,
+            device_id: device_id,
+            plan_type: license.plan_type,
+            max_devices: license.max_devices,
+            activated_at: new Date().toISOString(),
+            product_type: license.product_type || 'lpv',
+            transfer_count: license.transfer_count || 0,
+            last_transfer_at: license.last_transfer_at || null,
+          });
+        } catch (signError) {
+          logger.error('Failed to sign license file', signError, {
+            licenseKey: normalizedKey,
+            operation: 'license_signing',
+          });
+          licenseFile = {
+            license_key: normalizedKey,
+            device_id: device_id,
+            plan_type: license.plan_type,
+            max_devices: license.max_devices,
+            activated_at: new Date().toISOString(),
+            product_type: license.product_type || 'lpv',
+            transfer_count: license.transfer_count || 0,
+            last_transfer_at: license.last_transfer_at || null,
+            signature: '',
+            signed_at: new Date().toISOString(),
+          };
+        }
+        
+        return res.json({
+          status: 'activated',
+          mode: 'new_device',
+          plan_type: license.plan_type,
+          license_file: licenseFile,
+        });
+      }
+    }
+    
+    // Personal plans: single device only
     // Same device reactivation
     if (license.hardware_hash === device_id || license.current_device_id === device_id) {
       await db.supabase
@@ -462,6 +601,150 @@ router.get('/status/:key', async (req, res) => {
       operation: 'license_status_check',
     });
     res.status(500).json({ valid: false, error: 'Check failed' });
+  }
+});
+
+// Get all devices for a license (family plans only)
+router.get('/devices/:key', async (req, res) => {
+  try {
+    const normalizedKey = normalizeKey(req.params.key);
+    
+    if (!isValidFormat(normalizedKey)) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Invalid license key format' 
+      });
+    }
+    
+    const license = await db.licenses.findByKey(normalizedKey);
+    
+    if (!license) {
+      return res.status(404).json({ 
+        success: false,
+        error: 'License key not found' 
+      });
+    }
+    
+    // Only family plans support multiple devices
+    if (license.plan_type !== 'family' && license.plan_type !== 'llv_family') {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Device management is only available for Family Plan licenses' 
+      });
+    }
+    
+    // Get all active devices for this license
+    const devices = await db.deviceActivations.findAllByLicense(license.id);
+    
+    // Get device count
+    const deviceCount = await db.deviceActivations.countByLicense(license.id);
+    
+    res.json({
+      success: true,
+      devices: devices.map(device => ({
+        id: device.id,
+        hardware_hash: device.hardware_hash,
+        device_name: device.device_name || 'Unknown Device',
+        activated_at: device.activated_at,
+        last_seen_at: device.last_seen_at,
+        is_active: device.is_active,
+      })),
+      device_count: deviceCount.count || 0,
+      max_devices: license.max_devices || 5,
+    });
+    
+  } catch (error) {
+    logger.error('Get devices error', error, {
+      licenseKey: req.params?.key,
+      operation: 'get_devices',
+    });
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to retrieve devices' 
+    });
+  }
+});
+
+// Deactivate a device
+router.post('/devices/:key/deactivate', async (req, res) => {
+  try {
+    const normalizedKey = normalizeKey(req.params.key);
+    const { hardware_hash } = req.body;
+    
+    if (!isValidFormat(normalizedKey)) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Invalid license key format' 
+      });
+    }
+    
+    if (!hardware_hash) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Hardware hash is required' 
+      });
+    }
+    
+    if (!/^[a-f0-9]{64}$/i.test(hardware_hash)) {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Invalid hardware hash format' 
+      });
+    }
+    
+    const license = await db.licenses.findByKey(normalizedKey);
+    
+    if (!license) {
+      return res.status(404).json({ 
+        success: false,
+        error: 'License key not found' 
+      });
+    }
+    
+    // Only family plans support multiple devices
+    if (license.plan_type !== 'family' && license.plan_type !== 'llv_family') {
+      return res.status(400).json({ 
+        success: false,
+        error: 'Device management is only available for Family Plan licenses' 
+      });
+    }
+    
+    // Check if device exists and is active
+    const device = await db.deviceActivations.findByLicenseAndHash(
+      license.id,
+      hardware_hash
+    );
+    
+    if (!device) {
+      return res.status(404).json({ 
+        success: false,
+        error: 'Device not found or already deactivated' 
+      });
+    }
+    
+    // Deactivate the device
+    await db.deviceActivations.deactivate(license.id, hardware_hash);
+    
+    // Update device count
+    const deviceCount = await db.deviceActivations.countByLicense(license.id);
+    
+    res.json({
+      success: true,
+      message: 'Device deactivated successfully',
+      device_count: deviceCount.count || 0,
+      max_devices: license.max_devices || 5,
+    });
+    
+  } catch (error) {
+    logger.error('Deactivate device error', error, {
+      licenseKey: req.params?.key,
+      hardwareHash: req.body?.hardware_hash,
+      operation: 'deactivate_device',
+    });
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to deactivate device' 
+    });
   }
 });
 

@@ -12,6 +12,7 @@ import {
   ExternalLink,
   Mail,
 } from "lucide-react";
+import environment from "../config/environment";
 
 // Color palette matching LPV design system
 const colors = {
@@ -78,12 +79,91 @@ export const PurchaseSuccessPage: React.FC = () => {
   const [licenseKeys, setLicenseKeys] = useState<string[]>([]);
   const [customerEmail, setCustomerEmail] = useState<string>("");
   const [planName, setPlanName] = useState<string>("Lifetime License");
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
   const detectedOS = getOS();
 
-  // Extract license keys and other params from URL
+  // Fetch session data or extract keys from URL
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
+    const loadLicenseKeys = async () => {
+      setIsLoading(true);
+      setError(null);
+      
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const sessionId = urlParams.get("session_id");
+        
+        // If session_id is present, fetch license keys from backend
+        if (sessionId && sessionId.startsWith("cs_")) {
+          await fetchSessionData(sessionId);
+          return;
+        }
+        
+        // Otherwise, extract keys from URL params (legacy support)
+        extractKeysFromURL(urlParams);
+      } catch (err) {
+        console.error("Failed to load license keys:", err);
+        setError("Failed to load license keys. Please check your email or contact support@localpasswordvault.com");
+      } finally {
+        setIsLoading(false);
+      }
+    };
     
+    loadLicenseKeys();
+  }, []);
+
+  const fetchSessionData = async (sessionId: string) => {
+    try {
+      const apiBaseUrl = environment.environment.licenseServerUrl;
+      const response = await fetch(`${apiBaseUrl}/api/checkout/session/${sessionId}`);
+      
+      if (!response.ok) {
+        if (response.status === 404) {
+          // License not ready yet (webhook still processing)
+          setError("Your purchase is being processed. Please wait a moment and refresh the page, or check your email for your license keys.");
+          return;
+        }
+        throw new Error(`Failed to fetch session: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.error || "Failed to retrieve license keys");
+      }
+      
+      // Handle bundle purchase (multiple licenses)
+      if (data.isBundle && data.data?.licenses) {
+        const allKeys: string[] = [];
+        data.data.licenses.forEach((license: { licenseKey: string }) => {
+          allKeys.push(license.licenseKey);
+        });
+        setLicenseKeys(allKeys);
+        
+        // Set plan name for bundle
+        if (allKeys.length >= 5) {
+          setPlanName("Family Protection Bundle");
+        } else {
+          setPlanName("Bundle Purchase");
+        }
+      } 
+      // Handle single purchase
+      else if (data.data?.licenseKey) {
+        setLicenseKeys([data.data.licenseKey]);
+        setPlanName(data.data.planType === "family" ? "Family Vault" : "Personal Vault");
+      }
+      
+      // Set email if available
+      if (data.data?.email) {
+        setCustomerEmail(data.data.email);
+      }
+    } catch (err) {
+      console.error("Error fetching session data:", err);
+      throw err;
+    }
+  };
+
+  const extractKeysFromURL = (urlParams: URLSearchParams) => {
     // Support multiple keys: ?keys=KEY1,KEY2,KEY3 or ?key=KEY1&key2=KEY2&key3=KEY3
     const keysParam = urlParams.get("keys");
     const singleKey = urlParams.get("key") || urlParams.get("license") || urlParams.get("licenseKey");
@@ -119,11 +199,13 @@ export const PurchaseSuccessPage: React.FC = () => {
       // Set plan name based on key count if not provided
       if (keys.length >= 5) {
         setPlanName("Family Vault");
+      } else if (keys.length > 1) {
+        setPlanName("Bundle Purchase");
       } else {
         setPlanName("Personal Vault");
       }
     }
-  }, []);
+  };
 
   const handleCopyKey = async (key: string, index: number) => {
     try {
@@ -222,8 +304,46 @@ export const PurchaseSuccessPage: React.FC = () => {
             </p>
           </div>
 
+          {/* Loading State */}
+          {isLoading && (
+            <div
+              className="rounded-xl p-8 mb-8 text-center"
+              style={{
+                backgroundColor: `${colors.slateBackground}`,
+                border: `1px solid ${colors.steelBlue400}40`,
+              }}
+            >
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-4" style={{ borderBottomColor: colors.steelBlue400 }}></div>
+              <p style={{ color: colors.warmIvory, opacity: 0.7 }}>Loading your license keys...</p>
+            </div>
+          )}
+
+          {/* Error State */}
+          {error && !isLoading && (
+            <div
+              className="rounded-xl p-6 mb-8"
+              style={{
+                backgroundColor: `${colors.slateBackground}`,
+                border: `1px solid #EF444440`,
+              }}
+            >
+              <p style={{ color: "#EF4444", marginBottom: "8px", fontWeight: 600 }}>Error</p>
+              <p style={{ color: colors.warmIvory, opacity: 0.8, fontSize: "14px" }}>{error}</p>
+              <button
+                onClick={() => window.location.reload()}
+                className="mt-4 px-4 py-2 rounded-lg text-sm font-medium"
+                style={{
+                  backgroundColor: colors.steelBlue500,
+                  color: "white",
+                }}
+              >
+                Refresh Page
+              </button>
+            </div>
+          )}
+
           {/* License Keys Card */}
-          {licenseKeys.length > 0 && (
+          {!isLoading && !error && licenseKeys.length > 0 && (
             <div
               className="rounded-xl p-6 mb-8"
               style={{

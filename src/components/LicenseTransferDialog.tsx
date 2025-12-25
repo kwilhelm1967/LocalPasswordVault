@@ -62,7 +62,7 @@ export const LicenseTransferDialog: React.FC<LicenseTransferDialogProps> = ({
     } catch (error) {
       setTransferResult({
         success: false,
-        error: "An unexpected error occurred. Please try again.",
+        error: "An unexpected error occurred during transfer. Please check your internet connection and try again. If the problem persists, contact support@LocalPasswordVault.com",
       });
     } finally {
       setIsTransferring(false);
@@ -161,7 +161,7 @@ export const LicenseTransferDialog: React.FC<LicenseTransferDialogProps> = ({
             Transfer Failed
           </h2>
           <p className="text-slate-300 text-center mb-6">
-            {transferResult.error || "Unable to transfer license. Please try again."}
+            {transferResult.error || "Unable to transfer license. Please check your internet connection and try again. If the problem continues, contact support@LocalPasswordVault.com"}
           </p>
           <div className="flex gap-3">
             <button

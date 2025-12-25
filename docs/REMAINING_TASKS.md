@@ -155,8 +155,9 @@
 **Most tasks are complete.** All critical features and documentation are up to date.
 
 **For current production readiness checklist, see:**
-- **`PRODUCT_OWNER.md`** - Complete guide for getting first paying customer
+- **`ACTIVATION_AND_FIRST_USER.md`** - ⭐ **START HERE** - Complete guide to activate system and get first user
 - **`PRODUCTION_CHECKLIST.md`** - Detailed production checklist
+- **`PRODUCTION_LAUNCH_GUIDE.md`** - Step-by-step production setup guide
 - **`DEVELOPER_HANDOFF.md`** - Complete developer handoff guide (updated December 25, 2024)
 
 **Remaining Optional Items:**
