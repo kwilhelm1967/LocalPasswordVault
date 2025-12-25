@@ -3,6 +3,7 @@
  *
  * Consistent error handling patterns for the application.
  * Provides standardized error types, logging, and recovery mechanisms.
+ * Enhanced with structured logging for better error tracking.
  */
 
 import { devError } from "./devLog";
@@ -13,6 +14,114 @@ export interface AppError {
   details?: unknown;
   recoverable: boolean;
   userMessage?: string;
+  timestamp?: string;
+  context?: string;
+  stack?: string;
+}
+
+/**
+ * Structured error log entry
+ */
+export interface ErrorLogEntry {
+  code: string;
+  message: string;
+  context?: string;
+  timestamp: string;
+  details?: unknown;
+  stack?: string;
+  userAgent?: string;
+  url?: string;
+}
+
+/**
+ * Error logging service with structured logging
+ */
+class ErrorLogger {
+  private static instance: ErrorLogger;
+  private errorHistory: ErrorLogEntry[] = [];
+  private readonly MAX_HISTORY = 100;
+
+  static getInstance(): ErrorLogger {
+    if (!ErrorLogger.instance) {
+      ErrorLogger.instance = new ErrorLogger();
+    }
+    return ErrorLogger.instance;
+  }
+
+  /**
+   * Log an error with structured data
+   */
+  logError(error: AppError, context?: string): ErrorLogEntry {
+    const entry: ErrorLogEntry = {
+      code: error.code,
+      message: error.message,
+      context: context || error.context,
+      timestamp: new Date().toISOString(),
+      details: error.details,
+      stack: error.stack,
+      userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : undefined,
+      url: typeof window !== 'undefined' ? window.location.href : undefined,
+    };
+
+    // Add to history (keep only recent errors)
+    this.errorHistory.push(entry);
+    if (this.errorHistory.length > this.MAX_HISTORY) {
+      this.errorHistory.shift();
+    }
+
+    // Log in development
+    if (import.meta.env.DEV) {
+      devError(
+        `[${entry.code}] ${entry.context ? `${entry.context}: ` : ''}${entry.message}`,
+        entry.details,
+        { timestamp: entry.timestamp, stack: entry.stack }
+      );
+    }
+
+    // In production, could send to error tracking service here
+    // Example: sendToErrorTracking(entry);
+
+    return entry;
+  }
+
+  /**
+   * Get recent error history
+   */
+  getErrorHistory(limit: number = 10): ErrorLogEntry[] {
+    return this.errorHistory.slice(-limit);
+  }
+
+  /**
+   * Clear error history
+   */
+  clearHistory(): void {
+    this.errorHistory = [];
+  }
+
+  /**
+   * Get error statistics
+   */
+  getErrorStats(): {
+    total: number;
+    byCode: Record<string, number>;
+    recent: number;
+  } {
+    const byCode: Record<string, number> = {};
+    this.errorHistory.forEach(entry => {
+      byCode[entry.code] = (byCode[entry.code] || 0) + 1;
+    });
+
+    const oneHourAgo = Date.now() - 60 * 60 * 1000;
+    const recent = this.errorHistory.filter(
+      entry => new Date(entry.timestamp).getTime() > oneHourAgo
+    ).length;
+
+    return {
+      total: this.errorHistory.length,
+      byCode,
+      recent,
+    };
+  }
 }
 
 export class ValidationError extends Error implements AppError {
@@ -83,11 +192,19 @@ export class ErrorHandler {
     userMessage: string;
     shouldRetry: boolean;
     logError: boolean;
+    errorCode: string;
   } {
     const appError = this.normalizeError(error);
+    appError.context = context || appError.context;
+    appError.timestamp = new Date().toISOString();
+    
+    if (error instanceof Error && error.stack) {
+      appError.stack = error.stack;
+    }
 
-    // Log error in development
-    devError(`[${appError.code}] ${context ? `${context}: ` : ''}`, appError.message, appError.details);
+    // Log error with structured logging
+    const logger = ErrorLogger.getInstance();
+    logger.logError(appError, context);
 
     // Determine user message
     const userMessage = appError.userMessage || 'An unexpected error occurred.';
@@ -98,7 +215,8 @@ export class ErrorHandler {
     return {
       userMessage,
       shouldRetry,
-      logError: true
+      logError: true,
+      errorCode: appError.code,
     };
   }
 
@@ -107,17 +225,39 @@ export class ErrorHandler {
    */
   private normalizeError(error: Error | AppError): AppError {
     if (this.isAppError(error)) {
-      return error;
+      return {
+        ...error,
+        timestamp: error.timestamp || new Date().toISOString(),
+      };
     }
 
     // Convert regular Error to AppError
     const appError: AppError = {
       code: 'UNKNOWN_ERROR',
-      message: error.message,
+      message: error.message || 'An unknown error occurred',
       details: error,
       recoverable: false,
-      userMessage: 'An unexpected error occurred.'
+      userMessage: 'An unexpected error occurred.',
+      timestamp: new Date().toISOString(),
+      stack: error.stack,
     };
+
+    // Try to infer error type from message
+    if (error.message) {
+      const message = error.message.toLowerCase();
+      if (message.includes('network') || message.includes('fetch') || message.includes('connection')) {
+        appError.code = 'NETWORK_ERROR';
+        appError.recoverable = true;
+        appError.userMessage = 'Network connection issue. Please check your connection and try again.';
+      } else if (message.includes('storage') || message.includes('localStorage') || message.includes('quota')) {
+        appError.code = 'STORAGE_ERROR';
+        appError.userMessage = 'Storage error occurred. Your data may not be saved properly.';
+      } else if (message.includes('permission') || message.includes('unauthorized') || message.includes('forbidden')) {
+        appError.code = 'AUTH_ERROR';
+        appError.recoverable = true;
+        appError.userMessage = 'Permission denied. Please check your access rights.';
+      }
+    }
 
     return appError;
   }
@@ -223,4 +363,68 @@ export async function withRetry<T>(
   }
 
   throw lastError!;
+}
+
+/**
+ * Get error logger instance for advanced error tracking
+ */
+export function getErrorLogger(): ErrorLogger {
+  return ErrorLogger.getInstance();
+}
+
+/**
+ * Error code constants for consistent error identification
+ */
+export const ERROR_CODES = {
+  // Validation errors
+  VALIDATION_ERROR: 'VALIDATION_ERROR',
+  INVALID_INPUT: 'INVALID_INPUT',
+  MISSING_REQUIRED_FIELD: 'MISSING_REQUIRED_FIELD',
+  
+  // Network errors
+  NETWORK_ERROR: 'NETWORK_ERROR',
+  TIMEOUT_ERROR: 'TIMEOUT_ERROR',
+  CONNECTION_FAILED: 'CONNECTION_FAILED',
+  
+  // Storage errors
+  STORAGE_ERROR: 'STORAGE_ERROR',
+  STORAGE_QUOTA_EXCEEDED: 'STORAGE_QUOTA_EXCEEDED',
+  STORAGE_ACCESS_DENIED: 'STORAGE_ACCESS_DENIED',
+  
+  // Authentication errors
+  AUTH_ERROR: 'AUTH_ERROR',
+  LICENSE_INVALID: 'LICENSE_INVALID',
+  LICENSE_EXPIRED: 'LICENSE_EXPIRED',
+  LICENSE_REVOKED: 'LICENSE_REVOKED',
+  
+  // Operation errors
+  OPERATION_FAILED: 'OPERATION_FAILED',
+  OPERATION_CANCELLED: 'OPERATION_CANCELLED',
+  
+  // Unknown errors
+  UNKNOWN_ERROR: 'UNKNOWN_ERROR',
+} as const;
+
+/**
+ * Create a structured error with error code
+ */
+export function createError(
+  code: string,
+  message: string,
+  options?: {
+    details?: unknown;
+    recoverable?: boolean;
+    userMessage?: string;
+    context?: string;
+  }
+): AppError {
+  return {
+    code,
+    message,
+    details: options?.details,
+    recoverable: options?.recoverable ?? false,
+    userMessage: options?.userMessage || message,
+    context: options?.context,
+    timestamp: new Date().toISOString(),
+  };
 }

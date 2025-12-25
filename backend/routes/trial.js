@@ -2,6 +2,7 @@ const express = require('express');
 const db = require('../database/db');
 const { generateTrialKey } = require('../services/licenseGenerator');
 const { sendTrialEmail } = require('../services/email');
+const logger = require('../utils/logger');
 
 const router = express.Router();
 const TRIAL_DURATION_DAYS = 7;
@@ -17,15 +18,17 @@ router.post('/signup', async (req, res) => {
       });
     }
     
+    // Normalize email first (trim and lowercase)
+    const normalizedEmail = email.trim().toLowerCase();
+    
+    // Validate normalized email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
+    if (!emailRegex.test(normalizedEmail)) {
       return res.status(400).json({ 
         success: false, 
         error: 'Invalid email format' 
       });
     }
-    
-    const normalizedEmail = email.toLowerCase().trim();
     const existingTrial = await db.trials.findByEmail(normalizedEmail);
     
     // Resend trial key if still valid
@@ -40,8 +43,15 @@ router.post('/signup', async (req, res) => {
             trialKey: existingTrial.trial_key,
             expiresAt,
           });
+          logger.email('trial_resent', normalizedEmail, {
+            trialKey: existingTrial.trial_key,
+            operation: 'trial_resend',
+          });
         } catch (emailError) {
-          console.error('Failed to resend trial email:', emailError);
+          logger.emailError('trial_resend', normalizedEmail, emailError, {
+            trialKey: existingTrial.trial_key,
+            operation: 'trial_resend',
+          });
         }
         
         return res.json({
@@ -95,8 +105,16 @@ router.post('/signup', async (req, res) => {
         trialKey,
         expiresAt,
       });
+      logger.email('trial_sent', normalizedEmail, {
+        trialKey,
+        expiresAt: expiresAt.toISOString(),
+        operation: 'trial_signup',
+      });
     } catch (emailError) {
-      console.error('Failed to send trial email:', emailError);
+      logger.emailError('trial_send', normalizedEmail, emailError, {
+        trialKey,
+        operation: 'trial_signup',
+      });
     }
     
     res.json({
@@ -107,7 +125,10 @@ router.post('/signup', async (req, res) => {
     });
     
   } catch (error) {
-    console.error('Trial signup error:', error);
+    logger.error('Trial signup error', error, {
+      email: req.body.email,
+      operation: 'trial_signup',
+    });
     res.status(500).json({ 
       success: false, 
       error: 'Failed to create trial. Please try again.' 
@@ -142,7 +163,10 @@ router.get('/status/:email', async (req, res) => {
     });
     
   } catch (error) {
-    console.error('Trial status check error:', error);
+    logger.error('Trial status check error', error, {
+      email: req.params.email,
+      operation: 'trial_status_check',
+    });
     res.status(500).json({ error: 'Failed to check trial status' });
   }
 });

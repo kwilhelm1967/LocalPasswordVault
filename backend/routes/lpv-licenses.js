@@ -2,6 +2,7 @@ const express = require('express');
 const db = require('../database/db');
 const { normalizeKey, isValidFormat } = require('../services/licenseGenerator');
 const { signLicenseFile } = require('../services/licenseSigner');
+const logger = require('../utils/logger');
 
 const router = express.Router();
 const MAX_TRANSFERS_PER_YEAR = 3;
@@ -80,16 +81,37 @@ router.post('/activate', async (req, res) => {
         .eq('license_key', normalizedKey);
       
       // Generate signed license file for offline validation
-      const licenseFile = signLicenseFile({
-        license_key: normalizedKey,
-        device_id: device_id,
-        plan_type: license.plan_type,
-        max_devices: license.max_devices,
-        activated_at: new Date().toISOString(),
-        product_type: license.product_type || 'lpv',
-        transfer_count: license.transfer_count || 0,
-        last_transfer_at: license.last_transfer_at || null,
-      });
+      let licenseFile;
+      try {
+        licenseFile = signLicenseFile({
+          license_key: normalizedKey,
+          device_id: device_id,
+          plan_type: license.plan_type,
+          max_devices: license.max_devices,
+          activated_at: new Date().toISOString(),
+          product_type: license.product_type || 'lpv',
+          transfer_count: license.transfer_count || 0,
+          last_transfer_at: license.last_transfer_at || null,
+        });
+      } catch (signError) {
+        logger.error('Failed to sign license file', signError, {
+          licenseKey: normalizedKey,
+          operation: 'license_signing',
+        });
+        // Continue without signature (fallback for development)
+        licenseFile = {
+          license_key: normalizedKey,
+          device_id: device_id,
+          plan_type: license.plan_type,
+          max_devices: license.max_devices,
+          activated_at: new Date().toISOString(),
+          product_type: license.product_type || 'lpv',
+          transfer_count: license.transfer_count || 0,
+          last_transfer_at: license.last_transfer_at || null,
+          signature: '',
+          signed_at: new Date().toISOString(),
+        };
+      }
       
       return res.json({
         status: 'activated',
@@ -107,16 +129,37 @@ router.post('/activate', async (req, res) => {
         .eq('license_key', normalizedKey);
       
       // Return signed license file for offline validation
-      const licenseFile = signLicenseFile({
-        license_key: normalizedKey,
-        device_id: device_id,
-        plan_type: license.plan_type,
-        max_devices: license.max_devices,
-        activated_at: license.activated_at || new Date().toISOString(),
-        product_type: license.product_type || 'lpv',
-        transfer_count: license.transfer_count || 0,
-        last_transfer_at: license.last_transfer_at || null,
-      });
+      let licenseFile;
+      try {
+        licenseFile = signLicenseFile({
+          license_key: normalizedKey,
+          device_id: device_id,
+          plan_type: license.plan_type,
+          max_devices: license.max_devices,
+          activated_at: license.activated_at || new Date().toISOString(),
+          product_type: license.product_type || 'lpv',
+          transfer_count: license.transfer_count || 0,
+          last_transfer_at: license.last_transfer_at || null,
+        });
+      } catch (signError) {
+        logger.error('Failed to sign license file', signError, {
+          licenseKey: normalizedKey,
+          operation: 'license_signing',
+        });
+        // Continue without signature (fallback for development)
+        licenseFile = {
+          license_key: normalizedKey,
+          device_id: device_id,
+          plan_type: license.plan_type,
+          max_devices: license.max_devices,
+          activated_at: license.activated_at || new Date().toISOString(),
+          product_type: license.product_type || 'lpv',
+          transfer_count: license.transfer_count || 0,
+          last_transfer_at: license.last_transfer_at || null,
+          signature: '',
+          signed_at: new Date().toISOString(),
+        };
+      }
       
       return res.json({
         status: 'activated',
@@ -133,7 +176,10 @@ router.post('/activate', async (req, res) => {
     });
     
   } catch (error) {
-    console.error('LPV License activation error:', error);
+    logger.error('LPV License activation error', error, {
+      licenseKey: req.body?.license_key,
+      operation: 'license_activation',
+    });
     res.status(500).json({ 
       status: 'invalid',
       error: 'License activation failed' 
@@ -228,24 +274,48 @@ router.post('/transfer', async (req, res) => {
     
       // Return signed license file after transfer
       const updatedLicense = await db.licenses.findByKey(normalizedKey);
-      const licenseFile = signLicenseFile({
-        license_key: normalizedKey,
-        device_id: new_device_id,
-        plan_type: updatedLicense.plan_type,
-        max_devices: updatedLicense.max_devices,
-        activated_at: new Date().toISOString(),
-        product_type: updatedLicense.product_type || 'lpv',
-        transfer_count: updatedLicense.transfer_count || 0,
-        last_transfer_at: updatedLicense.last_transfer_at || null,
-      });
-    
+      let licenseFile;
+      try {
+        licenseFile = signLicenseFile({
+          license_key: normalizedKey,
+          device_id: new_device_id,
+          plan_type: updatedLicense.plan_type,
+          max_devices: updatedLicense.max_devices,
+          activated_at: new Date().toISOString(),
+          product_type: updatedLicense.product_type || 'lpv',
+          transfer_count: updatedLicense.transfer_count || 0,
+          last_transfer_at: updatedLicense.last_transfer_at || null,
+        });
+      } catch (signError) {
+        logger.error('Failed to sign license file after transfer', signError, {
+          licenseKey: normalizedKey,
+          operation: 'license_signing_transfer',
+        });
+        // Continue without signature (fallback for development)
+        licenseFile = {
+          license_key: normalizedKey,
+          device_id: new_device_id,
+          plan_type: updatedLicense.plan_type,
+          max_devices: updatedLicense.max_devices,
+          activated_at: new Date().toISOString(),
+          product_type: updatedLicense.product_type || 'lpv',
+          transfer_count: updatedLicense.transfer_count || 0,
+          last_transfer_at: updatedLicense.last_transfer_at || null,
+          signature: '',
+          signed_at: new Date().toISOString(),
+        };
+      }
+      
     res.json({
       status: 'transferred',
       license_file: licenseFile,
     });
     
   } catch (error) {
-    console.error('LPV License transfer error:', error);
+    logger.error('LPV License transfer error', error, {
+      licenseKey: req.body?.license_key,
+      operation: 'license_transfer',
+    });
     res.status(500).json({ 
       status: 'error',
       error: 'License transfer failed' 
@@ -276,7 +346,10 @@ router.get('/status/:key', async (req, res) => {
     });
     
   } catch (error) {
-    console.error('License status check error:', error);
+    logger.error('License status check error', error, {
+      licenseKey: req.params?.key,
+      operation: 'license_status_check',
+    });
     res.status(500).json({ valid: false, error: 'Check failed' });
   }
 });

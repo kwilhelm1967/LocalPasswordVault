@@ -1,5 +1,6 @@
 const express = require('express');
 const { createCheckoutSession, createBundleCheckoutSession, PRODUCTS } = require('../services/stripe');
+const logger = require('../utils/logger');
 
 const router = express.Router();
 
@@ -33,7 +34,10 @@ router.post('/session', async (req, res) => {
     });
     
   } catch (error) {
-    console.error('Checkout session error:', error);
+    logger.error('Checkout session error', error, {
+      planType: req.body?.planType,
+      operation: 'checkout_session_creation',
+    });
     res.status(500).json({ 
       success: false, 
       error: 'Failed to create checkout session' 
@@ -95,7 +99,10 @@ router.get('/session/:sessionId', async (req, res) => {
     }
     
   } catch (error) {
-    console.error('Get session error:', error);
+    logger.error('Get session error', error, {
+      sessionId: req.params?.sessionId,
+      operation: 'checkout_session_retrieval',
+    });
     res.status(500).json({ 
       success: false, 
       error: 'Failed to retrieve session' 
@@ -141,7 +148,10 @@ router.post('/bundle', async (req, res) => {
     });
     
   } catch (error) {
-    console.error('Bundle checkout session error:', error);
+    logger.error('Bundle checkout session error', error, {
+      items: req.body?.items,
+      operation: 'bundle_checkout_session_creation',
+    });
     res.status(500).json({ 
       success: false, 
       error: 'Failed to create bundle checkout session' 

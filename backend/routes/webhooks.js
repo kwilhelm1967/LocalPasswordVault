@@ -8,24 +8,36 @@ const {
   generateLLVFamilyKey 
 } = require('../services/licenseGenerator');
 const { sendPurchaseEmail, sendBundleEmail } = require('../services/email');
+const logger = require('../utils/logger');
+const performanceMonitor = require('../utils/performanceMonitor');
 
 const router = express.Router();
 
 router.post('/stripe', express.raw({ type: 'application/json' }), async (req, res) => {
   const signature = req.headers['stripe-signature'];
+  const webhookStartTime = Date.now();
   
   let event;
   try {
+    if (!signature) {
+      throw new Error('Missing stripe-signature header');
+    }
     event = verifyWebhookSignature(req.body, signature);
   } catch (error) {
-    console.error('Webhook signature verification failed:', error.message);
+    logger.webhookError('signature_verification', null, error, {
+      operation: 'webhook_verification',
+    });
+    const duration = Date.now() - webhookStartTime;
+    performanceMonitor.trackWebhook('signature_verification', false, duration);
     return res.status(400).json({ error: `Webhook Error: ${error.message}` });
   }
   
   // Prevent duplicate processing (idempotency)
   const existingEvent = await db.webhookEvents.exists(event.id);
   if (existingEvent) {
-    console.log(`Duplicate webhook event ignored: ${event.id}`);
+    logger.webhook(event.type, event.id, { duplicate: true });
+    const duration = Date.now() - webhookStartTime;
+    performanceMonitor.trackWebhook(event.type, true, duration);
     return res.json({ received: true, duplicate: true });
   }
   
@@ -36,39 +48,72 @@ router.post('/stripe', express.raw({ type: 'application/json' }), async (req, re
       payload: JSON.stringify(event.data),
     });
   } catch (logError) {
-    console.error('Failed to log webhook event:', logError);
+    logger.dbError('create', 'webhook_events', logError, {
+      eventId: event.id,
+      eventType: event.type,
+    });
   }
   
   try {
+    let webhookSuccess = false;
+    
     switch (event.type) {
       case 'checkout.session.completed':
         await handleCheckoutCompleted(event.data.object);
+        webhookSuccess = true;
         break;
       case 'payment_intent.succeeded':
-        console.log('Payment succeeded:', event.data.object.id);
+        logger.info('Payment succeeded', {
+          paymentIntentId: event.data.object.id,
+          eventId: event.id,
+        });
+        webhookSuccess = true;
         break;
       case 'payment_intent.payment_failed':
-        console.log('Payment failed:', event.data.object.id);
+        logger.warn('Payment failed', {
+          paymentIntentId: event.data.object.id,
+          eventId: event.id,
+        });
+        webhookSuccess = true; // Processed successfully, payment just failed
         break;
       default:
-        console.log(`Unhandled event type: ${event.type}`);
+        logger.debug(`Unhandled event type: ${event.type}`, {
+          eventId: event.id,
+          eventType: event.type,
+        });
+        webhookSuccess = true;
     }
     
     await db.webhookEvents.markProcessed(event.id);
+    
+    const webhookDuration = Date.now() - webhookStartTime;
+    performanceMonitor.trackWebhook(event.type, webhookSuccess, webhookDuration);
   } catch (error) {
-    console.error('Error processing webhook:', error);
+    logger.webhookError(event.type, event.id, error, {
+      operation: 'webhook_processing',
+    });
     await db.webhookEvents.markError(event.id, error.message);
+    
+    const webhookDuration = Date.now() - webhookStartTime;
+    performanceMonitor.trackWebhook(event.type, false, webhookDuration);
   }
   
   res.json({ received: true });
 });
 
 async function handleCheckoutCompleted(session) {
-  console.log('Processing checkout session:', session.id);
+  logger.info('Processing checkout session', {
+    sessionId: session.id,
+    operation: 'checkout_processing',
+  });
   
   const existingLicenses = await db.licenses.findAllBySessionId(session.id);
   if (existingLicenses && existingLicenses.length > 0) {
-    console.log(`License(s) already exist for session: ${session.id} (${existingLicenses.length} license(s))`);
+    logger.info('License(s) already exist for session', {
+      sessionId: session.id,
+      licenseCount: existingLicenses.length,
+      operation: 'checkout_duplicate',
+    });
     return;
   }
   
@@ -101,11 +146,36 @@ async function handleCheckoutCompleted(session) {
   
   // Process each line item and generate license keys
   for (const lineItem of lineItems.data) {
+    // Skip discount line items (negative amounts)
+    if (lineItem.amount_total < 0 || (lineItem.price && lineItem.price.unit_amount < 0)) {
+      logger.debug('Skipping discount line item', {
+        description: lineItem.description,
+        amount: lineItem.amount_total,
+        sessionId: session.id,
+        operation: 'checkout_discount_skip',
+      });
+      continue;
+    }
+    
+    // Skip line items without price ID (custom price_data items not in our product catalog)
+    if (!lineItem.price || !lineItem.price.id) {
+      logger.warn('Line item missing price ID', {
+        description: lineItem.description,
+        sessionId: session.id,
+        operation: 'checkout_missing_price_id',
+      });
+      continue;
+    }
+    
     const priceId = lineItem.price.id;
     const product = getProductByPriceId(priceId);
     
     if (!product) {
-      console.warn(`Unknown price ID in checkout: ${priceId}`);
+      logger.warn('Unknown price ID in checkout', {
+        priceId,
+        sessionId: session.id,
+        operation: 'checkout_unknown_product',
+      });
       continue;
     }
     
@@ -128,7 +198,12 @@ async function handleCheckoutCompleted(session) {
       numKeys = 5;
       keyGenerator = generateLLVFamilyKey;
     } else {
-      console.warn(`Unknown product key: ${product.key}`);
+      logger.warn('Unknown product key', {
+        productKey: product.key,
+        priceId,
+        sessionId: session.id,
+        operation: 'checkout_unknown_product_key',
+      });
       continue;
     }
     
@@ -154,7 +229,12 @@ async function handleCheckoutCompleted(session) {
       });
       
       productKeys.push(licenseKey);
-      console.log(`License created: ${licenseKey} (${product.name}) for ${customerEmail}`);
+      logger.info('License created', {
+        licenseKey,
+        productName: product.name,
+        customerEmail: logger.maskEmail(customerEmail),
+        operation: 'license_creation',
+      });
     }
     
     licenses.push({
@@ -178,7 +258,11 @@ async function handleCheckoutCompleted(session) {
       email: customerEmail,
       license_id: firstLicense?.id || null,
     });
-    console.log(`Trial converted for ${customerEmail}`);
+    logger.info('Trial converted', {
+      customerEmail: logger.maskEmail(customerEmail),
+      licenseId: firstLicense?.id,
+      operation: 'trial_conversion',
+    });
   }
   
   // Send appropriate email (bundle vs single purchase)
@@ -190,7 +274,11 @@ async function handleCheckoutCompleted(session) {
         totalAmount: fullSession.amount_total,
         orderId: session.id,
       });
-      console.log(`Bundle purchase email sent to ${customerEmail}`);
+      logger.email('bundle_purchase_sent', customerEmail, {
+        sessionId: session.id,
+        licenseCount: licenses.length,
+        operation: 'email_delivery',
+      });
     } else {
       await sendPurchaseEmail({
         to: customerEmail,
@@ -198,10 +286,18 @@ async function handleCheckoutCompleted(session) {
         planType: licenses[0].planType,
         amount: licenses[0].amount,
       });
-      console.log(`Purchase email sent to ${customerEmail}`);
+      logger.email('purchase_sent', customerEmail, {
+        sessionId: session.id,
+        planType: licenses[0].planType,
+        operation: 'email_delivery',
+      });
     }
   } catch (emailError) {
-    console.error('Failed to send purchase email:', emailError);
+    logger.emailError('purchase_email', customerEmail, emailError, {
+      sessionId: session.id,
+      isBundle: isBundle || licenses.length > 1,
+      operation: 'email_delivery',
+    });
   }
 }
 

@@ -1,6 +1,7 @@
 const brevo = require('@getbrevo/brevo');
 const fs = require('fs');
 const path = require('path');
+const performanceMonitor = require('../utils/performanceMonitor');
 
 let apiInstance;
 
@@ -94,9 +95,11 @@ async function sendPurchaseEmail({ to, licenseKey, planType, amount }) {
       text,
     });
     console.log(`✓ Purchase email sent to ${to}`);
+    performanceMonitor.trackEmail(true);
     return response;
   } catch (error) {
     console.error(`✗ Failed to send purchase email to ${to}:`, error.message);
+    performanceMonitor.trackEmail(false);
     throw error;
   }
 }
@@ -127,9 +130,11 @@ async function sendTrialEmail({ to, trialKey, expiresAt }) {
       text,
     });
     console.log(`✓ Trial email sent to ${to}`);
+    performanceMonitor.trackEmail(true);
     return response;
   } catch (error) {
     console.error(`✗ Failed to send trial email to ${to}:`, error.message);
+    performanceMonitor.trackEmail(false);
     throw error;
   }
 }
@@ -216,9 +221,11 @@ Thank you for choosing Local Password Vault!
     });
     
     console.log(`✓ Bundle email sent to ${to}`);
+    performanceMonitor.trackEmail(true);
     return response;
   } catch (error) {
     console.error(`✗ Failed to send bundle email to ${to}:`, error.message);
+    performanceMonitor.trackEmail(false);
     throw error;
   }
 }

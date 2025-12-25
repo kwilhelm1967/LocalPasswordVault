@@ -4,6 +4,8 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const logger = require('./utils/logger');
+const performanceMonitor = require('./utils/performanceMonitor');
 
 const licensesRouter = require('./routes/licenses');
 const lpvLicensesRouter = require('./routes/lpv-licenses');
@@ -40,6 +42,19 @@ app.use('/api/', rateLimit({
   legacyHeaders: false,
 }));
 
+// Performance monitoring middleware (tracks response times - NO customer data)
+app.use((req, res, next) => {
+  const startTime = Date.now();
+  
+  // Track response time after response finishes
+  res.on('finish', () => {
+    const duration = Date.now() - startTime;
+    performanceMonitor.trackRequest(req.method, req.path, res.statusCode, duration);
+  });
+  
+  next();
+});
+
 // Webhook endpoint needs raw body for Stripe signature verification
 app.use((req, res, next) => {
   if (req.originalUrl === '/api/webhooks/stripe') {
@@ -57,6 +72,16 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Performance metrics endpoint (NO customer data)
+app.get('/metrics', (req, res) => {
+  // Optional: Add basic auth or IP whitelist for production
+  const summary = performanceMonitor.getSummary();
+  res.json({
+    timestamp: new Date().toISOString(),
+    metrics: summary,
+  });
+});
+
 app.use('/api/licenses', licensesRouter);
 app.use('/api/lpv/license', lpvLicensesRouter);
 app.use('/api/trial', trialRouter);
@@ -68,7 +93,11 @@ app.use((req, res) => {
 });
 
 app.use((err, req, res, next) => {
-  console.error('Server error:', err);
+  logger.error('Server error', err, {
+    path: req.path,
+    method: req.method,
+    operation: 'server_error_handler',
+  });
   res.status(500).json({ 
     error: 'Internal server error',
     message: process.env.NODE_ENV === 'development' ? err.message : undefined
@@ -76,11 +105,18 @@ app.use((err, req, res, next) => {
 });
 
 db.initialize().catch(err => {
-  console.error('Database initialization warning:', err.message);
+  logger.warn('Database initialization warning', {
+    message: err.message,
+    operation: 'database_init',
+  });
 });
 
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT} (${process.env.NODE_ENV || 'development'})`);
+  logger.info(`Server running on port ${PORT}`, {
+    port: PORT,
+    environment: process.env.NODE_ENV || 'development',
+    operation: 'server_start',
+  });
 });
 
 module.exports = app;

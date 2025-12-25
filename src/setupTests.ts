@@ -70,12 +70,14 @@ Object.defineProperty(window, 'crypto', {
   value: cryptoMock,
 });
 
-// Mock navigator.clipboard
+// Mock navigator.clipboard (configurable for userEvent)
 Object.defineProperty(navigator, 'clipboard', {
   value: {
     writeText: jest.fn().mockResolvedValue(undefined),
     readText: jest.fn().mockResolvedValue(''),
   },
+  writable: true,
+  configurable: true,
 });
 
 // Mock window.electronAPI (undefined by default, tests can override)

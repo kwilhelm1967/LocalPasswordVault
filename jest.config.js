@@ -10,13 +10,7 @@ module.exports = {
   transform: {
     '^.+\\.(ts|tsx)$': ['ts-jest', {
       useESM: false,
-      tsconfig: {
-        esModuleInterop: true,
-        jsx: 'react-jsx',
-        module: 'ESNext',
-        moduleResolution: 'node',
-        allowSyntheticDefaultImports: true,
-      },
+      tsconfig: 'tsconfig.test.json',
     }],
   },
   moduleNameMapper: {
@@ -44,6 +38,7 @@ module.exports = {
     '/node_modules/',
     '/dist/',
     '/release/',
+    '/backend/__tests__/', // Backend tests need separate Jest setup
   ],
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],
 };

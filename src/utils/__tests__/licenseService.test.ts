@@ -1,0 +1,475 @@
+/**
+ * License Service Tests
+ * 
+ * Tests for license activation, validation, and transfer functionality.
+ */
+
+import { LicenseService } from '../licenseService';
+import { verifyLicenseSignature } from '../licenseValidator';
+import { trialService } from '../trialService';
+import { getLPVDeviceFingerprint } from '../deviceFingerprint';
+import environment from '../../config/environment';
+
+// Mock dependencies
+jest.mock('../licenseValidator');
+jest.mock('../trialService');
+jest.mock('../deviceFingerprint');
+jest.mock('../../config/environment', () => ({
+  default: {
+    environment: {
+      licenseServerUrl: 'https://api.example.com',
+    },
+  },
+}));
+
+// Mock localStorage
+const localStorageMock = (() => {
+  let store: Record<string, string> = {};
+  return {
+    getItem: (key: string) => store[key] || null,
+    setItem: (key: string, value: string) => { store[key] = value; },
+    removeItem: (key: string) => { delete store[key]; },
+    clear: () => { store = {}; },
+    get length() { return Object.keys(store).length; },
+    key: (index: number) => Object.keys(store)[index] || null,
+  };
+})();
+
+Object.defineProperty(window, 'localStorage', { value: localStorageMock });
+
+// Mock fetch
+global.fetch = jest.fn();
+
+describe('LicenseService', () => {
+  let licenseService: LicenseService;
+
+  beforeEach(() => {
+    localStorageMock.clear();
+    jest.clearAllMocks();
+    licenseService = LicenseService.getInstance();
+    (getLPVDeviceFingerprint as jest.Mock).mockResolvedValue('device-id-123');
+  });
+
+  describe('getLicenseInfo', () => {
+    it('should return invalid license when no license stored', async () => {
+      const info = await licenseService.getLicenseInfo();
+      
+      expect(info.isValid).toBe(false);
+      expect(info.type).toBeNull();
+      expect(info.key).toBeNull();
+    });
+
+    it('should return valid license info when license exists', async () => {
+      localStorageMock.setItem('app_license_key', 'PERS-XXXX-XXXX-XXXX');
+      localStorageMock.setItem('app_license_type', 'personal');
+      localStorageMock.setItem('app_license_activated', new Date().toISOString());
+      localStorageMock.setItem('lpv_license_file', JSON.stringify({
+        license_key: 'PERS-XXXX-XXXX-XXXX',
+        device_id: 'device-id-123',
+        plan_type: 'personal',
+        max_devices: 1,
+        activated_at: new Date().toISOString(),
+        signature: 'valid-signature',
+        signed_at: new Date().toISOString(),
+      }));
+
+      const info = await licenseService.getLicenseInfo();
+      
+      expect(info.isValid).toBe(true);
+      expect(info.type).toBe('personal');
+      expect(info.key).toBe('PERS-XXXX-XXXX-XXXX');
+    });
+  });
+
+  describe('activateLicense', () => {
+    it('should reject invalid license key format', async () => {
+      const result = await licenseService.activateLicense('invalid-key');
+      
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('not a valid license key');
+    });
+
+    it('should activate license in development mode', async () => {
+      const originalEnv = import.meta.env.DEV;
+      Object.defineProperty(import.meta, 'env', {
+        value: { ...import.meta.env, DEV: true },
+        writable: true,
+      });
+
+      const result = await licenseService.activateLicense('PERS-XXXX-XXXX-XXXX');
+      
+      expect(result.success).toBe(true);
+      expect(localStorageMock.getItem('app_license_key')).toBe('PERS-XXXX-XXXX-XXXX');
+
+      Object.defineProperty(import.meta, 'env', {
+        value: { ...import.meta.env, DEV: originalEnv },
+        writable: true,
+      });
+    });
+
+    it('should call activation API with correct parameters', async () => {
+      const originalEnv = import.meta.env.DEV;
+      Object.defineProperty(import.meta, 'env', {
+        value: { ...import.meta.env, DEV: false },
+        writable: true,
+      });
+
+      const mockResponse = {
+        status: 'activated',
+        plan_type: 'personal',
+        license_file: {
+          license_key: 'PERS-XXXX-XXXX-XXXX',
+          device_id: 'device-id-123',
+          plan_type: 'personal',
+          max_devices: 1,
+          activated_at: new Date().toISOString(),
+          signature: 'valid-signature',
+          signed_at: new Date().toISOString(),
+        },
+      };
+
+      (global.fetch as jest.Mock).mockResolvedValue({
+        json: async () => mockResponse,
+      });
+
+      (verifyLicenseSignature as jest.Mock).mockResolvedValue(true);
+
+      const result = await licenseService.activateLicense('PERS-XXXX-XXXX-XXXX');
+      
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/lpv/license/activate'),
+        expect.objectContaining({
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: expect.stringContaining('PERS-XXXX-XXXX-XXXX'),
+        })
+      );
+
+      expect(result.success).toBe(true);
+
+      Object.defineProperty(import.meta, 'env', {
+        value: { ...import.meta.env, DEV: originalEnv },
+        writable: true,
+      });
+    });
+
+    it('should handle device mismatch response', async () => {
+      const originalEnv = import.meta.env.DEV;
+      Object.defineProperty(import.meta, 'env', {
+        value: { ...import.meta.env, DEV: false },
+        writable: true,
+      });
+
+      const mockResponse = {
+        status: 'device_mismatch',
+        mode: 'requires_transfer',
+      };
+
+      (global.fetch as jest.Mock).mockResolvedValue({
+        json: async () => mockResponse,
+      });
+
+      const result = await licenseService.activateLicense('PERS-XXXX-XXXX-XXXX');
+      
+      expect(result.success).toBe(false);
+      expect(result.requiresTransfer).toBe(true);
+      expect(result.status).toBe('device_mismatch');
+
+      Object.defineProperty(import.meta, 'env', {
+        value: { ...import.meta.env, DEV: originalEnv },
+        writable: true,
+      });
+    });
+
+    it('should handle invalid license key response', async () => {
+      const originalEnv = import.meta.env.DEV;
+      Object.defineProperty(import.meta, 'env', {
+        value: { ...import.meta.env, DEV: false },
+        writable: true,
+      });
+
+      const mockResponse = {
+        status: 'invalid',
+        error: 'License key not found',
+      };
+
+      (global.fetch as jest.Mock).mockResolvedValue({
+        json: async () => mockResponse,
+      });
+
+      const result = await licenseService.activateLicense('PERS-INVALID-XXXX');
+      
+      expect(result.success).toBe(false);
+      expect(result.status).toBe('invalid');
+      expect(result.error).toContain('not a valid license key');
+
+      Object.defineProperty(import.meta, 'env', {
+        value: { ...import.meta.env, DEV: originalEnv },
+        writable: true,
+      });
+    });
+
+    it('should handle revoked license response', async () => {
+      const originalEnv = import.meta.env.DEV;
+      Object.defineProperty(import.meta, 'env', {
+        value: { ...import.meta.env, DEV: false },
+        writable: true,
+      });
+
+      const mockResponse = {
+        status: 'revoked',
+        error: 'License has been revoked',
+      };
+
+      (global.fetch as jest.Mock).mockResolvedValue({
+        json: async () => mockResponse,
+      });
+
+      const result = await licenseService.activateLicense('PERS-REVOKED-XXXX');
+      
+      expect(result.success).toBe(false);
+      expect(result.status).toBe('revoked');
+
+      Object.defineProperty(import.meta, 'env', {
+        value: { ...import.meta.env, DEV: originalEnv },
+        writable: true,
+      });
+    });
+
+    it('should handle network errors', async () => {
+      const originalEnv = import.meta.env.DEV;
+      Object.defineProperty(import.meta, 'env', {
+        value: { ...import.meta.env, DEV: false },
+        writable: true,
+      });
+
+      (global.fetch as jest.Mock).mockRejectedValue(
+        new TypeError('Failed to fetch')
+      );
+
+      const result = await licenseService.activateLicense('PERS-XXXX-XXXX-XXXX');
+      
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('Unable to connect');
+
+      Object.defineProperty(import.meta, 'env', {
+        value: { ...import.meta.env, DEV: originalEnv },
+        writable: true,
+      });
+    });
+
+    it('should reject expired trial key reuse', async () => {
+      const originalEnv = import.meta.env.DEV;
+      Object.defineProperty(import.meta, 'env', {
+        value: { ...import.meta.env, DEV: false },
+        writable: true,
+      });
+
+      localStorageMock.setItem('app_license_key', 'TRIAL-XXXX-XXXX-XXXX');
+      localStorageMock.setItem('app_license_type', 'trial');
+
+      (trialService.getTrialInfo as jest.Mock).mockResolvedValue({
+        isExpired: true,
+      });
+
+      const result = await licenseService.activateLicense('TRIAL-XXXX-XXXX-XXXX');
+      
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('trial');
+
+      Object.defineProperty(import.meta, 'env', {
+        value: { ...import.meta.env, DEV: originalEnv },
+        writable: true,
+      });
+    });
+
+    it('should validate and save signed license file', async () => {
+      const originalEnv = import.meta.env.DEV;
+      Object.defineProperty(import.meta, 'env', {
+        value: { ...import.meta.env, DEV: false },
+        writable: true,
+      });
+
+      const licenseFile = {
+        license_key: 'PERS-XXXX-XXXX-XXXX',
+        device_id: 'device-id-123',
+        plan_type: 'personal',
+        max_devices: 1,
+        activated_at: new Date().toISOString(),
+        signature: 'valid-signature',
+        signed_at: new Date().toISOString(),
+      };
+
+      const mockResponse = {
+        status: 'activated',
+        plan_type: 'personal',
+        license_file: licenseFile,
+      };
+
+      (global.fetch as jest.Mock).mockResolvedValue({
+        json: async () => mockResponse,
+      });
+
+      (verifyLicenseSignature as jest.Mock).mockResolvedValue(true);
+
+      const result = await licenseService.activateLicense('PERS-XXXX-XXXX-XXXX');
+      
+      expect(verifyLicenseSignature).toHaveBeenCalledWith(licenseFile);
+      expect(result.success).toBe(true);
+      expect(localStorageMock.getItem('lpv_license_file')).toBeTruthy();
+
+      Object.defineProperty(import.meta, 'env', {
+        value: { ...import.meta.env, DEV: originalEnv },
+        writable: true,
+      });
+    });
+
+    it('should reject license file with invalid signature', async () => {
+      const originalEnv = import.meta.env.DEV;
+      Object.defineProperty(import.meta, 'env', {
+        value: { ...import.meta.env, DEV: false },
+        writable: true,
+      });
+
+      const licenseFile = {
+        license_key: 'PERS-XXXX-XXXX-XXXX',
+        device_id: 'device-id-123',
+        plan_type: 'personal',
+        max_devices: 1,
+        activated_at: new Date().toISOString(),
+        signature: 'invalid-signature',
+        signed_at: new Date().toISOString(),
+      };
+
+      const mockResponse = {
+        status: 'activated',
+        plan_type: 'personal',
+        license_file: licenseFile,
+      };
+
+      (global.fetch as jest.Mock).mockResolvedValue({
+        json: async () => mockResponse,
+      });
+
+      (verifyLicenseSignature as jest.Mock).mockResolvedValue(false);
+
+      const result = await licenseService.activateLicense('PERS-XXXX-XXXX-XXXX');
+      
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('signature');
+
+      Object.defineProperty(import.meta, 'env', {
+        value: { ...import.meta.env, DEV: originalEnv },
+        writable: true,
+      });
+    });
+  });
+
+  describe('transferLicense', () => {
+    it('should transfer license to current device', async () => {
+      const originalEnv = import.meta.env.DEV;
+      Object.defineProperty(import.meta, 'env', {
+        value: { ...import.meta.env, DEV: false },
+        writable: true,
+      });
+
+      const mockResponse = {
+        status: 'transferred',
+        license_file: {
+          license_key: 'PERS-XXXX-XXXX-XXXX',
+          device_id: 'device-id-123',
+          plan_type: 'personal',
+          max_devices: 1,
+          activated_at: new Date().toISOString(),
+          signature: 'valid-signature',
+          signed_at: new Date().toISOString(),
+        },
+      };
+
+      (global.fetch as jest.Mock).mockResolvedValue({
+        json: async () => mockResponse,
+      });
+
+      (verifyLicenseSignature as jest.Mock).mockResolvedValue(true);
+
+      const result = await licenseService.transferLicense('PERS-XXXX-XXXX-XXXX');
+      
+      expect(result.success).toBe(true);
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/lpv/license/transfer'),
+        expect.objectContaining({
+          method: 'POST',
+        })
+      );
+
+      Object.defineProperty(import.meta, 'env', {
+        value: { ...import.meta.env, DEV: originalEnv },
+        writable: true,
+      });
+    });
+
+    it('should handle transfer limit reached', async () => {
+      const originalEnv = import.meta.env.DEV;
+      Object.defineProperty(import.meta, 'env', {
+        value: { ...import.meta.env, DEV: false },
+        writable: true,
+      });
+
+      const mockResponse = {
+        status: 'transfer_limit_reached',
+        error: 'Transfer limit reached',
+      };
+
+      (global.fetch as jest.Mock).mockResolvedValue({
+        json: async () => mockResponse,
+      });
+
+      const result = await licenseService.transferLicense('PERS-XXXX-XXXX-XXXX');
+      
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('limit');
+
+      Object.defineProperty(import.meta, 'env', {
+        value: { ...import.meta.env, DEV: originalEnv },
+        writable: true,
+      });
+    });
+  });
+
+  describe('getAppLicenseStatus', () => {
+    it('should return unlicensed status when no license', async () => {
+      const status = await licenseService.getAppLicenseStatus();
+      
+      expect(status.isLicensed).toBe(false);
+      expect(status.canUseApp).toBe(false);
+      expect(status.requiresPurchase).toBe(true);
+    });
+
+    it('should return licensed status when valid license exists', async () => {
+      localStorageMock.setItem('app_license_key', 'PERS-XXXX-XXXX-XXXX');
+      localStorageMock.setItem('app_license_type', 'personal');
+      localStorageMock.setItem('app_license_activated', new Date().toISOString());
+      localStorageMock.setItem('lpv_license_file', JSON.stringify({
+        license_key: 'PERS-XXXX-XXXX-XXXX',
+        device_id: 'device-id-123',
+        plan_type: 'personal',
+        max_devices: 1,
+        activated_at: new Date().toISOString(),
+        signature: 'valid-signature',
+        signed_at: new Date().toISOString(),
+      }));
+
+      (trialService.getTrialInfo as jest.Mock).mockResolvedValue({
+        hasTrial: false,
+        isExpired: false,
+      });
+
+      const status = await licenseService.getAppLicenseStatus();
+      
+      expect(status.isLicensed).toBe(true);
+      expect(status.canUseApp).toBe(true);
+      expect(status.requiresPurchase).toBe(false);
+    });
+  });
+});
+
