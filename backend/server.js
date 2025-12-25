@@ -1,11 +1,19 @@
 require('dotenv').config();
 
+// Validate environment variables BEFORE anything else
+const { validateAndLog } = require('./utils/envValidator');
+validateAndLog();
+
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const logger = require('./utils/logger');
 const performanceMonitor = require('./utils/performanceMonitor');
+const { initSentry, Sentry, captureException } = require('./utils/sentry');
+
+// Initialize Sentry BEFORE other middleware
+initSentry();
 
 const licensesRouter = require('./routes/licenses');
 const lpvLicensesRouter = require('./routes/lpv-licenses');
@@ -16,6 +24,11 @@ const db = require('./database/db');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+// Sentry request handler must be first
+app.use(Sentry.Handlers.requestHandler());
+// Tracing handler
+app.use(Sentry.Handlers.tracingHandler());
 
 app.use(helmet());
 
@@ -92,12 +105,24 @@ app.use((req, res) => {
   res.status(404).json({ error: 'Endpoint not found' });
 });
 
+// Sentry error handler must be before other error handlers
+app.use(Sentry.Handlers.errorHandler());
+
 app.use((err, req, res, next) => {
+  // Log error
   logger.error('Server error', err, {
     path: req.path,
     method: req.method,
     operation: 'server_error_handler',
   });
+
+  // Send to Sentry
+  captureException(err, {
+    path: req.path,
+    method: req.method,
+    operation: 'server_error_handler',
+  });
+
   res.status(500).json({ 
     error: 'Internal server error',
     message: process.env.NODE_ENV === 'development' ? err.message : undefined

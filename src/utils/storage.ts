@@ -1,11 +1,15 @@
 /**
- * @fileoverview Storage Service - Encrypted Local Storage for Password Vault
+ * @fileoverview Storage Service - Encrypted Storage for Password Vault
  * 
  * This module provides secure, encrypted storage for password entries using
  * military-grade AES-256-GCM encryption with PBKDF2 key derivation.
  * 
+ * Storage Strategy:
+ * - Electron: Secure file storage (unlimited capacity, OS-level permissions)
+ * - Web: localStorage with encryption (5-10MB limit, browser storage)
+ * 
  * @module storage
- * @version 1.2.0
+ * @version 2.0.0
  * 
  * Security Features:
  * - AES-256-GCM encryption (256-bit keys)
@@ -13,6 +17,8 @@
  * - Unique IV for each encryption operation
  * - Secure memory handling for sensitive data
  * - Input sanitization for all stored data
+ * - Master password never leaves renderer process (Electron)
+ * - OS-level file permissions (Electron)
  * 
  * @example
  * // Initialize and use the storage service
@@ -21,10 +27,10 @@
  * // Create a new vault
  * await storageService.createVault('MySecurePassword123!');
  * 
- * // Save entries
+ * // Save entries (automatically uses file storage in Electron)
  * await storageService.saveEntries(entries);
  * 
- * // Load entries
+ * // Load entries (automatically uses file storage in Electron)
  * const entries = await storageService.loadEntries();
  */
 
@@ -481,27 +487,69 @@ export class StorageService {
         balance: entry.balance ? sanitizeTextField(entry.balance, 100) : undefined,
       }));
 
-      // Encrypt the entries before saving
+      // Encrypt the entries before saving (encryption happens in renderer process)
       const entriesJson = JSON.stringify(validEntries);
       const encryptedData = await this.encryption.encryptData(entriesJson);
 
-      // SECURE: Try to save to secure file storage first (Electron)
+      // SECURE: Use Electron file storage when available (encrypted data only, no master password)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      if ((window as any).electronAPI && (window as any).electronAPI.saveVaultEncrypted) {
-        // For Electron app, we need the master password for secure file storage
-        // This is a security limitation - master password should never be exposed
-        // to renderer process in production. For now, fallback to localStorage.
-        devWarn("Secure file storage requires master password in renderer - using localStorage fallback");
+      const electronAPI = (window as any).electronAPI;
+      if (electronAPI && electronAPI.saveVaultEncrypted) {
+        try {
+          // Save encrypted data to secure file storage (OS-level permissions)
+          const success = await electronAPI.saveVaultEncrypted(encryptedData);
+          
+          if (success) {
+            // Successfully saved to file storage - also create localStorage backup for migration
+            try {
+              localStorage.setItem("password_entries_v2_backup", encryptedData);
+            } catch (backupError) {
+              // Backup to localStorage failed - non-critical, file storage succeeded
+              devWarn("Failed to create localStorage backup (file storage succeeded):", backupError);
+            }
+            
+            // Remove old unencrypted data for security
+            const oldData = localStorage.getItem("password_entries");
+            if (oldData) {
+              localStorage.removeItem("password_entries");
+            }
+            
+            return; // Success - exit early
+          } else {
+            devWarn("Electron file storage save failed, falling back to localStorage");
+          }
+        } catch (electronError) {
+          devError("Electron file storage error, falling back to localStorage:", electronError);
+          // Fall through to localStorage fallback
+        }
       }
 
-      // Fallback: localStorage with encryption (less secure than file storage)
+      // Fallback: localStorage with encryption (for web version or if Electron fails)
       // Create backup before saving new data
       const currentData = localStorage.getItem("password_entries_v2");
       if (currentData) {
         localStorage.setItem("password_entries_v2_backup", currentData);
       }
 
-      localStorage.setItem("password_entries_v2", encryptedData);
+      // Use safe storage with quota handling
+      const { safeSetItem } = await import("./storageQuotaHandler");
+      const saveResult = await safeSetItem("password_entries_v2", encryptedData);
+      
+      if (!saveResult.success) {
+        // Try to free up space and retry
+        const { freeUpStorage } = await import("./storageQuotaHandler");
+        const freeResult = await freeUpStorage();
+        
+        if (freeResult.success) {
+          // Retry after freeing space
+          const retryResult = await safeSetItem("password_entries_v2", encryptedData);
+          if (!retryResult.success) {
+            throw new Error(saveResult.error?.message || "Failed to save entries. Storage quota exceeded.");
+          }
+        } else {
+          throw new Error(saveResult.error?.message || "Failed to save entries. Storage quota exceeded.");
+        }
+      }
 
       // Also handle migration from old unencrypted data
       const oldData = localStorage.getItem("password_entries");
@@ -521,11 +569,77 @@ export class StorageService {
     }
 
     try {
-      // Try to load encrypted data first
-      const encryptedData = localStorage.getItem("password_entries_v2");
+      // SECURE: Try Electron file storage first (encrypted data only)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const electronAPI = (window as any).electronAPI;
+      let encryptedData: string | null = null;
+      
+      if (electronAPI && electronAPI.loadVaultEncrypted) {
+        try {
+          encryptedData = await electronAPI.loadVaultEncrypted();
+          if (encryptedData) {
+            // Successfully loaded from file storage
+            // Also sync to localStorage as backup for migration
+            try {
+              localStorage.setItem("password_entries_v2", encryptedData);
+            } catch (syncError) {
+              // Sync failed - non-critical, file storage succeeded
+              devWarn("Failed to sync to localStorage (file storage succeeded):", syncError);
+            }
+          }
+        } catch (electronError) {
+          devError("Electron file storage load error, falling back to localStorage:", electronError);
+          // Fall through to localStorage
+        }
+      }
+      
+      // Fallback: Load from localStorage (for web version or if Electron fails)
+      if (!encryptedData) {
+        encryptedData = localStorage.getItem("password_entries_v2");
+      }
+      
       if (encryptedData) {
         try {
-          const decryptedJson = await this.encryption.decryptData(encryptedData);
+          // Check for corruption before decrypting
+          const { checkVaultDataCorruption, recoverVaultData, restoreFromBackup } = await import("./corruptionHandler");
+          
+          // Try to decrypt first
+          let decryptedJson: string;
+          try {
+            decryptedJson = await this.encryption.decryptData(encryptedData);
+          } catch (decryptError) {
+            // Decryption failed - try backup
+            devWarn("Decryption failed, attempting backup restore:", decryptError);
+            const backupData = restoreFromBackup("password_entries_v2");
+            if (backupData) {
+              try {
+                decryptedJson = await this.encryption.decryptData(backupData);
+                devWarn("Successfully restored from backup");
+              } catch {
+                throw new Error("Vault data is corrupted and backup restoration failed. Please restore from export.");
+              }
+            } else {
+              throw new Error("Vault data is corrupted and no backup available. Please restore from export.");
+            }
+          }
+          
+          // Check for corruption in decrypted data
+          const corruptionCheck = checkVaultDataCorruption(decryptedJson);
+          if (corruptionCheck.isCorrupted) {
+            if (corruptionCheck.recoverable && corruptionCheck.recoveredData) {
+              devWarn("Vault data corruption detected, attempting recovery:", corruptionCheck.errors);
+              const recovery = recoverVaultData(decryptedJson);
+              if (recovery.success && recovery.recovered && typeof recovery.data === "string") {
+                decryptedJson = recovery.data;
+                devWarn("Vault data recovered:", recovery.message);
+              } else {
+                throw new Error("Vault data is corrupted. Please restore from backup.");
+              }
+            } else {
+              throw new Error("Vault data is corrupted and cannot be recovered. Please restore from backup.");
+            }
+          }
+          
           const entries = JSON.parse(decryptedJson);
 
           // Ensure entries is an array and has proper date objects

@@ -18,6 +18,7 @@ import { trialService, TrialInfo } from "./trialService";
 import { getLPVDeviceFingerprint, isValidDeviceId } from "./deviceFingerprint";
 import { verifyLicenseSignature } from "./licenseValidator";
 import { devError } from "./devLog";
+import { apiClient, ApiError } from "./apiClient";
 
 export type LicenseType = "personal" | "family" | "trial";
 
@@ -141,18 +142,36 @@ export class LicenseService {
   }
 
   /**
-   * Get local license file data
+   * Get local license file data with corruption checking
    */
   getLocalLicenseFile(): LocalLicenseFile | null {
     try {
       const stored = localStorage.getItem(LicenseService.LOCAL_LICENSE_FILE);
-      if (stored) {
-        return JSON.parse(stored);
+      if (!stored) {
+        return null;
       }
-    } catch {
-      // Invalid or missing file
+
+      // Check for corruption
+      const { checkLicenseFileCorruption, recoverLicenseFile } = await import("./corruptionHandler");
+      const corruptionCheck = checkLicenseFileCorruption(stored);
+      
+      if (corruptionCheck.isCorrupted) {
+        if (corruptionCheck.recoverable) {
+          devWarn("License file corruption detected, attempting recovery:", corruptionCheck.errors);
+          const recovery = recoverLicenseFile(stored);
+          if (recovery.success && recovery.recovered && recovery.data) {
+            return recovery.data as LocalLicenseFile;
+          }
+        }
+        devError("License file is corrupted and cannot be recovered:", corruptionCheck.errors);
+        return null;
+      }
+
+      return JSON.parse(stored);
+    } catch (error) {
+      devError("Failed to get local license file:", error);
+      return null;
     }
-    return null;
   }
 
   /**
@@ -292,20 +311,20 @@ export class LicenseService {
         }
       }
 
-      // Call activation API
-      const response = await fetch(
-        `${environment.environment.licenseServerUrl}/api/lpv/license/activate`,
+      // Call activation API using centralized API client
+      const response = await apiClient.post<ActivationResponse>(
+        "/api/lpv/license/activate",
         {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            license_key: cleanKey,
-            device_id: deviceId,
-          }),
+          license_key: cleanKey,
+          device_id: deviceId,
+        },
+        {
+          retries: 2,
+          timeout: 10000,
         }
       );
 
-      const result: ActivationResponse = await response.json();
+      const result = response.data;
 
       // Handle device mismatch
       if (result.status === "device_mismatch") {
@@ -381,10 +400,18 @@ export class LicenseService {
     } catch (error) {
       devError("License activation error:", error);
 
-      if (error instanceof TypeError && error.message.includes("fetch")) {
+      // Handle API errors from apiClient
+      if (error && typeof error === "object" && "code" in error) {
+        const apiError = error as ApiError;
+        if (apiError.code === "NETWORK_ERROR" || apiError.code === "REQUEST_TIMEOUT") {
+          return {
+            success: false,
+            error: "Unable to connect to license server. Please check your internet connection and try again.",
+          };
+        }
         return {
           success: false,
-          error: "Unable to connect to license server. Please check your internet connection and try again.",
+          error: apiError.message || "License activation failed",
         };
       }
 
@@ -411,19 +438,20 @@ export class LicenseService {
         return this.transferLocalLicense(cleanKey, deviceId);
       }
 
-      const response = await fetch(
-        `${environment.environment.licenseServerUrl}/api/lpv/license/transfer`,
+      // Call transfer API using centralized API client
+      const response = await apiClient.post<TransferResponse>(
+        "/api/lpv/license/transfer",
         {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            license_key: cleanKey,
-            new_device_id: deviceId,
-          }),
+          license_key: cleanKey,
+          new_device_id: deviceId,
+        },
+        {
+          retries: 2,
+          timeout: 10000,
         }
       );
 
-      const result: TransferResponse = await response.json();
+      const result = response.data;
 
       if (result.status === "transferred") {
         // Verify and save signed license file from server
@@ -476,10 +504,18 @@ export class LicenseService {
     } catch (error) {
       devError("License transfer error:", error);
 
-      if (error instanceof TypeError && error.message.includes("fetch")) {
+      // Handle API errors from apiClient
+      if (error && typeof error === "object" && "code" in error) {
+        const apiError = error as ApiError;
+        if (apiError.code === "NETWORK_ERROR" || apiError.code === "REQUEST_TIMEOUT") {
+          return {
+            success: false,
+            error: "Unable to connect to license server. Please check your internet connection.",
+          };
+        }
         return {
           success: false,
-          error: "Unable to connect to license server. Please check your internet connection.",
+          error: apiError.message || "License transfer failed",
         };
       }
 

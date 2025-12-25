@@ -1,6 +1,7 @@
 import React, { Component, ErrorInfo, ReactNode } from "react";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import { devError } from "../utils/devLog";
+import { captureException } from "../utils/sentry";
 
 interface Props {
   children: ReactNode;
@@ -30,6 +31,12 @@ export class ErrorBoundary extends Component<Props, State> {
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     // Log error for debugging
     devError("Error Boundary caught an error:", error, errorInfo);
+    
+    // Send to Sentry
+    captureException(error, {
+      componentStack: errorInfo.componentStack,
+      errorBoundary: true,
+    });
   }
 
   private handleReload = () => {

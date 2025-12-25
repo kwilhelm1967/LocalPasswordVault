@@ -1,4 +1,9 @@
-// Environment configuration
+/**
+ * Environment Configuration
+ * 
+ * Centralized configuration management with validation and type safety.
+ */
+
 interface Environment {
   isProduction: boolean;
   isTest: boolean;
@@ -7,32 +12,107 @@ interface Environment {
   stripePublishableKey: string;
   licenseServerUrl: string;
   analyticsEnabled: boolean;
+  licenseSigningSecret?: string;
 }
 
-// Get environment variables with fallbacks
+interface EnvironmentConfig {
+  environment: Environment;
+  features: {
+    enableCloudSync: boolean;
+    enableDebugMode: boolean;
+    showTestingTools: boolean;
+    enableAnalytics: boolean;
+    isTrialMode: boolean;
+    trialDays: number;
+    maxTrialPasswords: number;
+    maxDevicesPerLicense: {
+      personal: number;
+      family: number;
+    };
+  };
+}
+
+/**
+ * Get environment variable with fallback
+ */
 const getEnvVar = (key: string, defaultValue: string = ""): string => {
   return import.meta.env[key] || defaultValue;
 };
 
-// Check if we're in production mode
-const isProductionMode = getEnvVar("VITE_APP_MODE") === "production";
+/**
+ * Validate required environment variables
+ */
+function validateEnvironment(): void {
+  const requiredVars: Array<{ key: string; name: string }> = [
+    { key: "VITE_STRIPE_PUBLISHABLE_KEY", name: "Stripe Publishable Key" },
+    { key: "VITE_LICENSE_SERVER_URL", name: "License Server URL" },
+  ];
 
-// Create environment configuration
-export const environment: Environment = {
-  isProduction: isProductionMode,
-  isTest: getEnvVar("VITE_APP_MODE") === "test",
-  isTrialVersion: getEnvVar("VITE_TRIAL_MODE") === "true",
-  appVersion: getEnvVar("VITE_APP_VERSION", "1.0.0"),
-  stripePublishableKey: getEnvVar(
-    "VITE_STRIPE_PUBLISHABLE_KEY",
-    "pk_test_TYooMQauvdEDq54NiTphI7jx"
-  ),
-  licenseServerUrl: getEnvVar(
+  const missing: string[] = [];
+  for (const { key, name } of requiredVars) {
+    if (!import.meta.env[key]) {
+      missing.push(name);
+    }
+  }
+
+  if (missing.length > 0 && import.meta.env.MODE === "production") {
+    console.warn(
+      `[Config] Missing environment variables: ${missing.join(", ")}. Using defaults.`
+    );
+  }
+}
+
+/**
+ * Validate URL format
+ */
+function isValidUrl(url: string): boolean {
+  try {
+    new URL(url);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Sanitize and validate configuration values
+ */
+function sanitizeConfig(): Environment {
+  const appMode = getEnvVar("VITE_APP_MODE", "development");
+  const licenseServerUrl = getEnvVar(
     "VITE_LICENSE_SERVER_URL",
     "https://server.localpasswordvault.com"
-  ),
-  analyticsEnabled: getEnvVar("VITE_ANALYTICS_ENABLED", "false") === "true",
-};
+  );
+
+  // Validate URL
+  if (!isValidUrl(licenseServerUrl)) {
+    console.warn(
+      `[Config] Invalid license server URL: ${licenseServerUrl}. Using default.`
+    );
+  }
+
+  return {
+    isProduction: appMode === "production",
+    isTest: appMode === "test",
+    isTrialVersion: getEnvVar("VITE_TRIAL_MODE", "false") === "true",
+    appVersion: getEnvVar("VITE_APP_VERSION", "1.2.0"),
+    stripePublishableKey: getEnvVar(
+      "VITE_STRIPE_PUBLISHABLE_KEY",
+      "pk_test_TYooMQauvdEDq54NiTphI7jx"
+    ),
+    licenseServerUrl: isValidUrl(licenseServerUrl)
+      ? licenseServerUrl
+      : "https://server.localpasswordvault.com",
+    analyticsEnabled: getEnvVar("VITE_ANALYTICS_ENABLED", "false") === "true",
+    licenseSigningSecret: getEnvVar("VITE_LICENSE_SIGNING_SECRET", ""),
+  };
+}
+
+// Validate on load
+validateEnvironment();
+
+// Create environment configuration
+const environment = sanitizeConfig();
 
 // Feature flags based on environment
 export const features = {
@@ -49,7 +129,16 @@ export const features = {
   },
 };
 
-export default {
+/**
+ * Configuration object
+ */
+const config: EnvironmentConfig = {
   environment,
   features,
 };
+
+// Export default configuration
+export default config;
+
+// Export types for use in other modules
+export type { Environment, EnvironmentConfig };

@@ -1686,8 +1686,9 @@ ipcMain.handle("check-trial-status", () => {
   }
 });
 
-// SECURE: Save encrypted vault data (never store plaintext in main process)
-ipcMain.handle("save-vault-encrypted", (event, encryptedData, masterPassword) => {
+// SECURE: Save pre-encrypted vault data (encryption happens in renderer)
+// Master password NEVER enters main process - only encrypted blob is stored
+ipcMain.handle("save-vault-encrypted", (event, encryptedData) => {
   try {
     // Validate source window
     if (!isValidSource(event.senderFrame)) {
@@ -1695,29 +1696,28 @@ ipcMain.handle("save-vault-encrypted", (event, encryptedData, masterPassword) =>
       return false;
     }
 
-    if (!secureStorage || !masterPassword || !encryptedData) {
+    if (!secureStorage || !encryptedData || typeof encryptedData !== 'string') {
+      console.error("Invalid encrypted data provided");
       return false;
     }
 
-    const vaultData = {
-      data: encryptedData,
-      timestamp: Date.now()
-    };
+    // Save encrypted data directly (no decryption/encryption in main process)
+    const success = secureStorage.saveVaultEncrypted(encryptedData);
 
-    const success = secureStorage.saveVault(vaultData, masterPassword);
-
-    // Clear sensitive parameters immediately
-    masterPassword = null;
+    if (success) {
+      console.log("Vault data saved securely to file (encrypted)");
+    }
 
     return success;
   } catch (error) {
-    console.error("Failed to save vault:", error);
+    console.error("Failed to save encrypted vault:", error);
     return false;
   }
 });
 
-// SECURE: Load encrypted vault data (never decrypt in main process)
-ipcMain.handle("load-vault-encrypted", (event, masterPassword) => {
+// SECURE: Load encrypted vault data (returns encrypted blob, decryption in renderer)
+// Master password NEVER enters main process
+ipcMain.handle("load-vault-encrypted", (event) => {
   try {
     // Validate source window
     if (!isValidSource(event.senderFrame)) {
@@ -1725,18 +1725,20 @@ ipcMain.handle("load-vault-encrypted", (event, masterPassword) => {
       return null;
     }
 
-    if (!secureStorage || !masterPassword) {
+    if (!secureStorage) {
       return null;
     }
 
-    const vaultData = secureStorage.loadVault(masterPassword);
+    // Load encrypted data (still encrypted - no decryption in main process)
+    const encryptedData = secureStorage.loadVaultEncrypted();
 
-    // Clear sensitive parameters immediately
-    masterPassword = null;
+    if (encryptedData) {
+      console.log("Vault data loaded from file (encrypted)");
+    }
 
-    return vaultData;
+    return encryptedData;
   } catch (error) {
-    console.error("Failed to load vault:", error);
+    console.error("Failed to load encrypted vault:", error);
     return null;
   }
 });

@@ -87,18 +87,17 @@ contextBridge.exposeInMainWorld("electronAPI", {
     ipcRenderer.removeAllListeners("vault-status-changed");
   },
 
-  // SECURE: Encrypted vault operations only (no plaintext data)
-  saveVaultEncrypted: (encryptedData, masterPassword) => {
-    if (typeof encryptedData === 'string' && typeof masterPassword === 'string') {
-      return ipcRenderer.invoke("save-vault-encrypted", encryptedData, masterPassword);
+  // SECURE: Encrypted vault operations (encryption happens in renderer)
+  // Master password NEVER sent to main process - only encrypted blob
+  saveVaultEncrypted: (encryptedData) => {
+    if (typeof encryptedData === 'string' && encryptedData.length > 0) {
+      return ipcRenderer.invoke("save-vault-encrypted", encryptedData);
     }
-    return false;
+    return Promise.resolve(false);
   },
-  loadVaultEncrypted: (masterPassword) => {
-    if (typeof masterPassword === 'string') {
-      return ipcRenderer.invoke("load-vault-encrypted", masterPassword);
-    }
-    return null;
+  loadVaultEncrypted: () => {
+    // No master password needed - returns encrypted blob for renderer to decrypt
+    return ipcRenderer.invoke("load-vault-encrypted");
   },
 
   // SECURE: Temporary shared entries for window synchronization

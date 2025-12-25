@@ -10,12 +10,15 @@
     "job:trial-emails": "node jobs/trialEmails.js",
     "backup:verify": "node scripts/verify-backup.js",
     "backup:create": "node scripts/verify-backup.js --create-manual",
+    "validate-env": "node ../scripts/validate-env.js",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage"
   },
   "dependencies": {
     "@getbrevo/brevo": "^3.0.1",
+    "@sentry/node": "^8.0.0",
+    "@sentry/profiling-node": "^8.0.0",
     "@supabase/supabase-js": "^2.39.0",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",

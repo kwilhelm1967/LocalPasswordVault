@@ -2,7 +2,19 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 
-// Military-grade secure file storage for password vault
+/**
+ * Secure File Storage for Electron Password Vault
+ * 
+ * Provides secure, encrypted file storage with OS-level permissions.
+ * All encryption/decryption happens in the renderer process - this class
+ * only handles storing/retrieving pre-encrypted data blobs.
+ * 
+ * Security Features:
+ * - OS-level file permissions (0600 on Unix/Linux/Mac)
+ * - Automatic backup creation
+ * - Secure file deletion (overwrite before delete)
+ * - No master password in main process
+ */
 class SecureFileStorage {
   constructor(userDataPath) {
     this.userDataPath = userDataPath;
@@ -77,79 +89,79 @@ class SecureFileStorage {
     }
   }
 
-  // Save encrypted vault data
-  saveVault(data, masterPassword) {
+  // SECURE: Save pre-encrypted vault data (encryption happens in renderer process)
+  // Master password NEVER enters main process - only encrypted data is stored
+  saveVaultEncrypted(encryptedData) {
     try {
-      const salt = this.getSalt();
-      const key = this.deriveKey(masterPassword, salt);
-
       // Create backup before overwriting
       if (fs.existsSync(this.vaultFilePath)) {
         fs.copyFileSync(this.vaultFilePath, this.backupFilePath);
       }
 
-      const jsonData = JSON.stringify(data);
-      const encryptedData = this.encryptData(jsonData, key);
+      // Write encrypted data directly (already encrypted in renderer)
+      fs.writeFileSync(this.vaultFilePath, encryptedData, { encoding: 'utf8' });
 
-      fs.writeFileSync(this.vaultFilePath, encryptedData);
-
-      // Clear sensitive data from memory
-      key.fill(0);
+      // SECURITY: Set restrictive file permissions (owner read/write only)
+      try {
+        if (process.platform !== 'win32') {
+          // Unix/Linux/Mac: 0600 = rw------- (owner read/write only)
+          fs.chmodSync(this.vaultFilePath, 0o600);
+          if (fs.existsSync(this.backupFilePath)) {
+            fs.chmodSync(this.backupFilePath, 0o600);
+          }
+        } else {
+          // Windows: Use ACL to restrict access (handled by OS)
+          // Files in userDataPath are already user-specific
+        }
+      } catch (permError) {
+        // Permission setting failed - log but don't fail
+        console.warn("Failed to set file permissions (non-critical):", permError);
+      }
 
       return true;
     } catch (error) {
-      console.error("Failed to save vault:", error);
+      console.error("Failed to save encrypted vault:", error);
       return false;
     }
   }
 
-  // Load and decrypt vault data
-  loadVault(masterPassword) {
+  // SECURE: Load encrypted vault data (returns encrypted blob, decryption in renderer)
+  // Master password NEVER enters main process
+  loadVaultEncrypted() {
     try {
       if (!fs.existsSync(this.vaultFilePath)) {
         return null; // No vault exists
       }
 
-      const salt = this.getSalt();
-      const key = this.deriveKey(masterPassword, salt);
-
+      // Read encrypted data (still encrypted - no decryption in main process)
       const encryptedData = fs.readFileSync(this.vaultFilePath, 'utf8');
-
+      return encryptedData;
+    } catch (error) {
+      console.error("Failed to load encrypted vault:", error);
+      
+      // Try backup file
       try {
-        const decryptedJson = this.decryptData(encryptedData, key);
-        const data = JSON.parse(decryptedJson);
-
-        // Clear sensitive data from memory
-        key.fill(0);
-
-        return data;
-      } catch (decryptError) {
-        console.error("Failed to decrypt vault, trying backup:", decryptError);
-
-        // Try backup file
         if (fs.existsSync(this.backupFilePath)) {
           const backupData = fs.readFileSync(this.backupFilePath, 'utf8');
-          const decryptedBackup = this.decryptData(backupData, key);
-          const data = JSON.parse(decryptedBackup);
-
+          
           // Restore backup as main
-          fs.writeFileSync(this.vaultFilePath, backupData);
-
-          // Clear sensitive data from memory
-          key.fill(0);
-
-          return data;
+          fs.writeFileSync(this.vaultFilePath, backupData, { encoding: 'utf8' });
+          
+          // Set permissions on restored file
+          if (process.platform !== 'win32') {
+            fs.chmodSync(this.vaultFilePath, 0o600);
+          }
+          
+          return backupData;
         }
-
-        // Clear sensitive data from memory
-        key.fill(0);
-        throw decryptError;
+      } catch (backupError) {
+        console.error("Failed to load backup:", backupError);
       }
-    } catch (error) {
-      console.error("Failed to load vault:", error);
+      
       return null;
     }
   }
+
 
   // Check if vault exists
   vaultExists() {

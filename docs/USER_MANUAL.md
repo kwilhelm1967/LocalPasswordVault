@@ -1,23 +1,36 @@
 # Local Password Vault - User Manual
 
-Welcome to Local Password Vault! This guide will help you get started and make the most of your secure password manager.
+**Version 1.2.0** | © 2025 Local Password Vault
 
 ---
 
 ## Table of Contents
 
-1. [Getting Started](#getting-started)
-2. [Creating Your Vault](#creating-your-vault)
-3. [Adding Passwords](#adding-passwords)
-4. [Managing Passwords](#managing-passwords)
-5. [Categories & Organization](#categories--organization)
-6. [Security Features](#security-features)
-7. [Two-Factor Authentication](#two-factor-authentication)
-8. [Backup & Export](#backup--export)
-9. [Settings](#settings)
-10. [Keyboard Shortcuts](#keyboard-shortcuts)
-11. [Troubleshooting](#troubleshooting)
-12. [FAQ](#faq)
+1. [Introduction](#introduction)
+2. [Getting Started](#getting-started)
+3. [Core Features](#core-features)
+4. [Security Features](#security-features)
+5. [License & Activation](#license--activation)
+6. [Settings & Preferences](#settings--preferences)
+7. [Import & Export](#import--export)
+8. [Tips & Best Practices](#tips--best-practices)
+9. [Keyboard Shortcuts](#keyboard-shortcuts)
+10. [Support](#support)
+
+---
+
+## Introduction
+
+**Local Password Vault** is a professional-grade password manager that keeps your passwords secure on your device. Your data never leaves your computer—no cloud storage, no subscriptions, no compromises.
+
+### Key Features
+
+- 🔒 **Military-Grade Encryption** - AES-256-GCM encryption
+- 🏠 **100% Offline** - Works without internet after activation
+- 🔐 **Device Binding** - Secure license activation
+- 📱 **Cross-Platform** - Windows, macOS, Linux, and Web
+- 🎯 **Easy to Use** - Intuitive interface
+- 🛡️ **Privacy-First** - Zero data collection
 
 ---
 
@@ -25,437 +38,389 @@ Welcome to Local Password Vault! This guide will help you get started and make t
 
 ### Installation
 
-1. Download the installer for your operating system
-2. Run the installer and follow the prompts
-3. Launch Local Password Vault
+1. **Download** the installer from [LocalPasswordVault.com](https://localpasswordvault.com)
+2. **Run** the installer and follow the setup wizard
+3. **Launch** the application
 
-### System Requirements
+### First Launch
 
-- **Windows:** Windows 10 or later (64-bit)
-- **Mac:** macOS 10.15 (Catalina) or later
-- **Linux:** Ubuntu 20.04+ or equivalent
+When you first open Local Password Vault:
 
----
+1. **Create Your Master Password**
+   - Minimum 12 characters
+   - Use a mix of uppercase, lowercase, numbers, and symbols
+   - This password encrypts all your data—choose wisely
+   - You cannot recover this password if forgotten
 
-## Creating Your Vault
+2. **Save Your Recovery Phrase**
+   - You'll see a 12-word recovery phrase
+   - Write it down and store it securely
+   - This is your only way to recover your vault if you forget your master password
 
-When you first open Local Password Vault, you'll create your master password.
-
-### Choosing a Strong Master Password
-
-Your master password is the key to your vault. Choose wisely:
-
-✅ **Do:**
-- Use at least 12 characters
-- Mix uppercase, lowercase, numbers, and symbols
-- Use a passphrase (e.g., "Coffee-Mountain-Blue-42!")
-- Make it memorable to you
-
-❌ **Don't:**
-- Use personal information (birthdays, names)
-- Use common words or phrases
-- Reuse passwords from other accounts
-- Write it down where others can find it
-
-### Password Hint
-
-You can optionally add a hint to help you remember your master password. This hint is stored locally and shown on the login screen.
-
-> ⚠️ **Important:** Your master password cannot be recovered. If you forget it, your vault data cannot be accessed.
+3. **Start Using Your Vault**
+   - Once your vault is created, you can start adding passwords
 
 ---
 
-## Adding Passwords
+## Core Features
 
-### Quick Add
+### Dashboard
 
-1. Click the **+** button or press `Ctrl+N`
-2. Fill in the account details:
-   - **Account Name:** A friendly name (e.g., "Gmail", "Netflix")
-   - **Username:** Your login username or email
-   - **Password:** Your password (or generate one)
-   - **Category:** Select a category
-   - **Website URL:** (Optional) The login page URL
-   - **Notes:** (Optional) Additional information
+The dashboard provides an overview of your vault:
 
-3. Click **Save**
+- **Security Score** - Overall security rating
+- **Total Entries** - Number of passwords stored
+- **Categories** - Breakdown by category
+- **Password Age** - Warnings for old passwords
+- **Recent Activity** - Latest changes
 
-### Using the Password Generator
+### Adding Passwords
 
-Don't create passwords yourself! Use the built-in generator:
+1. Click the **"+"** button or press `Ctrl+N` (Windows/Linux) or `Cmd+N` (Mac)
+2. Fill in the entry details:
+   - **Title** - Name for this entry (required)
+   - **Username** - Your username or email
+   - **Password** - Your password (or generate one)
+   - **URL** - Website URL (optional)
+   - **Category** - Banking, Shopping, Email, etc.
+   - **Notes** - Additional information
+3. Click **"Save"**
 
-1. Click the **dice icon** 🎲 next to the password field
-2. Adjust settings:
-   - **Length:** 12-32 characters (16+ recommended)
-   - **Include:** Uppercase, lowercase, numbers, symbols
-3. Click **Generate**
-4. Click **Use Password**
+### Password Generator
 
-### Adding Custom Fields
+Generate strong, random passwords:
 
-For accounts with additional information:
+1. Click the **key icon** in the password field
+2. Configure options:
+   - **Length** - 8 to 64 characters
+   - **Include uppercase** - A-Z
+   - **Include lowercase** - a-z
+   - **Include numbers** - 0-9
+   - **Include symbols** - !@#$%^&*
+3. Click **"Generate"**
+4. Click **"Copy"** to copy to clipboard
 
-1. Click **Add Custom Field**
-2. Enter a label (e.g., "PIN", "Security Question")
-3. Enter the value
-4. Toggle **Secret** if the value should be hidden
+### Searching & Filtering
 
----
+- **Search Bar** - Type to search titles, usernames, URLs, or notes
+- **Category Filter** - Click a category in the sidebar
+- **Quick Search** - Press `Ctrl+F` (Windows/Linux) or `Cmd+F` (Mac)
 
-## Managing Passwords
+### Editing Entries
 
-### Viewing Passwords
-
-- Click on any entry to expand it
-- Click the **eye icon** 👁️ to reveal the password
-- Passwords auto-hide after 30 seconds
-
-### Copying Passwords
-
-- Click the **copy icon** 📋 next to any field
-- The value is copied to your clipboard
-- Clipboard is automatically cleared after 30 seconds
-
-### Editing Passwords
-
-1. Click on an entry to expand it
-2. Click the **Edit** button (pencil icon)
+1. Click an entry to open it
+2. Click the **edit icon** (pencil)
 3. Make your changes
-4. Click **Save**
+4. Click **"Save"**
 
-### Deleting Passwords
+### Deleting Entries
 
-1. Click on an entry to expand it
-2. Click the **Delete** button (trash icon)
+1. Click an entry to open it
+2. Click the **delete icon** (trash)
 3. Confirm deletion
-4. Use **Undo** within 5 seconds if needed
+4. **Undo** - You have 5 seconds to undo deletion
 
-### Password History
+### Categories
 
-When you change a password, the old one is saved:
+Organize passwords into categories:
 
-1. Expand an entry
-2. Scroll down to **Password History**
-3. View previous passwords with dates
-
----
-
-## Categories & Organization
-
-### Default Categories
-
-- **All** - View all entries
-- **Banking** - Banks, credit cards, investments
-- **Shopping** - E-commerce, retail accounts
-- **Entertainment** - Streaming, gaming, social
+- **Banking** - Financial accounts
+- **Shopping** - Online stores
+- **Entertainment** - Streaming, games
 - **Email** - Email accounts
-- **Work** - Professional accounts
-- **Business** - Business-related accounts
+- **Work** - Work-related accounts
+- **Business** - Business accounts
 - **Other** - Everything else
-
-### Using Categories
-
-- Click a category in the sidebar to filter
-- Assign categories when adding/editing entries
-- Categories help you find passwords quickly
-
-### Favorites
-
-Mark frequently-used accounts as favorites:
-
-1. Click the **star icon** ⭐ on any entry
-2. Access favorites from the sidebar
-3. Favorites appear at the top when sorted
 
 ---
 
 ## Security Features
 
+### Encryption
+
+All your data is encrypted using:
+
+- **AES-256-GCM** - Military-grade encryption
+- **PBKDF2** - 100,000 iterations for key strengthening
+- **Unique IV** - Each encryption uses a unique initialization vector
+
 ### Auto-Lock
 
-Your vault automatically locks after inactivity:
+Protect your vault when away:
 
-- Default: 5 minutes
-- Configurable in Settings (1-60 minutes)
-- Manual lock: Click the **lock icon** or press `Ctrl+L`
+1. Go to **Settings** → **Auto-Lock**
+2. Choose timeout: 1 min, 5 min, 15 min, 30 min, or Never
+3. Vault locks automatically after inactivity
+
+### Rate-Limited Login
+
+- Maximum **5 failed attempts**
+- **30-second lockout** after 5 failures
+- Protects against brute-force attacks
+
+### Clipboard Auto-Clear
+
+Passwords copied to clipboard are automatically cleared:
+
+1. Go to **Settings** → **Clipboard Clear**
+2. Choose timeout: 15s, 30s, 60s, or Never
+3. Clipboard clears after timeout
 
 ### Password Strength Meter
 
-When adding/editing passwords, a strength meter shows:
+Visual feedback on password quality:
 
-- 🔴 **Weak** - Too short or simple
-- 🟡 **Fair** - Could be stronger
-- 🟢 **Strong** - Good password
-- 💪 **Very Strong** - Excellent password
+- **Weak** - Red indicator
+- **Fair** - Yellow indicator
+- **Good** - Green indicator
+- **Strong** - Dark green indicator
 
 ### Password Age Alerts
 
-Passwords older than 90 days are flagged:
+Get warnings for passwords older than 90 days:
 
-- View in Dashboard under "Old Passwords"
-- Consider updating these regularly
+- **Yellow warning** - Password 90+ days old
+- **Red warning** - Password 180+ days old
+- Update passwords regularly for better security
 
-### Weak Password Detection
+### 2FA/TOTP Support
 
-The app identifies weak passwords:
+Generate authenticator codes:
 
-- Less than 8 characters
-- Common patterns
-- No mix of character types
-
-### Reused Password Detection
-
-Using the same password for multiple accounts is risky. The app warns you about reused passwords.
-
----
-
-## Two-Factor Authentication (2FA)
-
-### Adding 2FA to an Entry
-
-1. Edit an entry
-2. Click **Add 2FA**
-3. Enter the TOTP secret (from the service's QR code)
-4. Save the entry
-
-### Using 2FA
-
-1. Expand an entry with 2FA enabled
-2. View the 6-digit code
-3. Code refreshes every 30 seconds
-4. Click to copy
-
-### Getting the TOTP Secret
-
-Most services provide a QR code for 2FA. To get the secret:
-
-1. Look for "Can't scan QR code?" or "Manual entry"
-2. Copy the secret key (usually 16-32 characters)
-3. Paste into Local Password Vault
+1. Open an entry
+2. Click **"2FA"** tab
+3. Enter your TOTP secret
+4. View current code
+5. Codes refresh every 30 seconds
 
 ---
 
-## Backup & Export
+## License & Activation
 
-### Exporting Your Vault
+### Activating Your License
 
-1. Go to **Settings** (gear icon)
-2. Click **Export Data**
-3. Choose format:
-   - **JSON** - Full backup with all fields
-   - **CSV** - Compatible with other password managers
-4. Choose save location
-5. Enter your master password to confirm
+1. **Purchase** a license from [LocalPasswordVault.com](https://localpasswordvault.com)
+2. **Receive** your license key via email
+3. **Open** the app
+4. **Enter** your license key (format: `XXXX-XXXX-XXXX-XXXX`)
+5. **Accept** the End User License Agreement (EULA)
+6. **Activate** - Your license is now active
 
-### Importing Data
+### License Types
 
-1. Go to **Settings**
-2. Click **Import Data**
-3. Select your file (JSON or CSV)
-4. Review imported entries
-5. Click **Import**
+- **Personal Vault** - $49, 1 device, lifetime
+- **Family Vault** - $79, 5 devices, lifetime
+- **Free Trial** - 7 days, 1 device
 
-### Backup Recommendations
+### Transferring Your License
 
-- Export regularly (weekly or monthly)
-- Store backups securely:
-  - Encrypted USB drive
-  - Encrypted cloud storage
-  - Safe or safety deposit box
-- Keep multiple backup copies
+If you need to move your license to a new device:
+
+1. **Activate** on new device
+2. **Confirm transfer** when prompted
+3. **License transfers** to new device
+4. **Old device** is deactivated
+
+**Note:** Limited to 3 transfers per year.
+
+### Offline Operation
+
+After activation, the app works **100% offline**:
+
+- ✅ No internet required
+- ✅ No phone-home functionality
+- ✅ No data collection
+- ✅ All validation is local
 
 ---
 
-## Settings
+## Settings & Preferences
 
 ### Auto-Lock Timeout
 
-- How long before vault locks automatically
-- Options: 1, 5, 15, 30, 60 minutes
+Control when your vault locks:
 
-### Clipboard Clear
+- **1 minute** - Most secure
+- **5 minutes** - Recommended
+- **15 minutes** - Convenient
+- **30 minutes** - Less secure
+- **Never** - Not recommended
 
-- Automatically clear clipboard after copying
-- Default: 30 seconds
+### Clipboard Clear Timeout
+
+Control when clipboard clears:
+
+- **15 seconds** - Most secure
+- **30 seconds** - Recommended
+- **60 seconds** - Convenient
+- **Never** - Not recommended
+
+### Show Passwords
+
+Toggle password visibility:
+
+- **Off** - Passwords hidden (default)
+- **On** - Passwords visible
 
 ### Sound Effects
 
-- Enable/disable UI sounds
-- Default: Enabled
+Enable/disable sound effects:
 
-### Password Hint
+- **On** - Audio feedback for actions
+- **Off** - Silent operation
 
-- View or update your password hint
+### Theme
 
-### Clear All Data
+The app uses a dark theme optimized for security and eye comfort.
 
-- ⚠️ **Danger Zone**
-- Permanently deletes all vault data
-- Cannot be undone
+---
+
+## Import & Export
+
+### Exporting Your Vault
+
+Create a backup of your data:
+
+1. Go to **Settings** → **Export**
+2. Choose format:
+   - **CSV** - Unencrypted spreadsheet
+   - **Encrypted JSON** - Password-protected backup
+3. **Save** the file securely
+
+### Importing Data
+
+Restore from a backup:
+
+1. Go to **Settings** → **Import**
+2. Select your backup file
+3. Enter password (if encrypted)
+4. **Import** - Data is restored
+
+### Import Formats
+
+- **CSV** - Standard spreadsheet format
+- **Encrypted JSON** - Secure backup format
+- **Standard JSON** - Unencrypted JSON
+
+---
+
+## Tips & Best Practices
+
+### Master Password
+
+- **Use a strong password** - Mix of characters, numbers, symbols
+- **Never share it** - Keep it private
+- **Store recovery phrase** - Write it down securely
+- **Don't forget it** - There's no password recovery
+
+### Password Management
+
+- **Use unique passwords** - Different password for each site
+- **Generate strong passwords** - Use the password generator
+- **Update regularly** - Change passwords every 90 days
+- **Use 2FA** - Enable two-factor authentication where possible
+
+### Security
+
+- **Enable auto-lock** - Protect your vault when away
+- **Use clipboard clear** - Prevent password exposure
+- **Keep app updated** - Install updates for security fixes
+- **Backup regularly** - Export encrypted backups
+
+### Organization
+
+- **Use categories** - Organize passwords by type
+- **Add notes** - Store additional information
+- **Use search** - Quickly find passwords
+- **Keep it clean** - Delete unused entries
 
 ---
 
 ## Keyboard Shortcuts
 
+### General
+
+- `Ctrl+N` / `Cmd+N` - New entry
+- `Ctrl+F` / `Cmd+F` - Search
+- `Ctrl+S` / `Cmd+S` - Save entry
+- `Ctrl+W` / `Cmd+W` - Close modal
+- `Esc` - Cancel/Close
+- `Ctrl+,` / `Cmd+,` - Settings
+
 ### Navigation
 
-| Shortcut | Action |
-|----------|--------|
-| `Ctrl+F` | Focus search |
-| `Esc` | Clear search / Close modal |
-| `↑` `↓` | Navigate entries |
-| `Enter` | Open selected entry |
+- `Ctrl+1` / `Cmd+1` - Dashboard
+- `Ctrl+2` / `Cmd+2` - All entries
+- `Ctrl+3` / `Cmd+3` - Banking
+- `Ctrl+4` / `Cmd+4` - Shopping
+- `Ctrl+5` / `Cmd+5` - Entertainment
+- `Ctrl+6` / `Cmd+6` - Email
+- `Ctrl+7` / `Cmd+7` - Work
+- `Ctrl+8` / `Cmd+8` - Business
+- `Ctrl+9` / `Cmd+9` - Other
 
-### Actions
+### Entry Operations
 
-| Shortcut | Action |
-|----------|--------|
-| `Ctrl+N` | Add new entry |
-| `Ctrl+E` | Edit selected entry |
-| `Ctrl+C` | Copy password |
-| `Ctrl+Shift+C` | Copy username |
-| `Del` | Delete selected entry |
-| `Ctrl+Z` | Undo |
-
-### Vault
-
-| Shortcut | Action |
-|----------|--------|
-| `Ctrl+L` | Lock vault |
-| `Ctrl+,` | Open settings |
-| `?` | Show keyboard shortcuts |
+- `Enter` - Open entry
+- `Delete` - Delete entry
+- `Ctrl+C` / `Cmd+C` - Copy password
+- `Ctrl+V` / `Cmd+V` - Paste
+- `Ctrl+Z` / `Cmd+Z` - Undo
 
 ---
 
-## Troubleshooting
+## Support
 
-### Forgot Master Password
+### Getting Help
 
-Unfortunately, your master password cannot be recovered. This is by design for security.
+- **Email**: support@localpasswordvault.com
+- **Website**: [LocalPasswordVault.com](https://localpasswordvault.com)
+- **Documentation**: See troubleshooting guide
 
-**Options:**
-1. Try password variations you might have used
-2. Check your password hint
-3. If you have a backup, restore from that
-4. As a last resort, reset the vault (loses all data)
+### Common Questions
 
-### App Won't Open
+**Q: Can I recover my master password?**  
+A: No. If you forget your master password, use your recovery phrase to restore access.
 
-**Windows:**
-1. Right-click the app → "Run as Administrator"
-2. Check if antivirus is blocking it
-3. Reinstall the application
+**Q: Does the app work offline?**  
+A: Yes. After activation, the app works 100% offline.
 
-**Mac:**
-1. Right-click → "Open" → "Open" again
-2. Go to System Preferences → Security → "Open Anyway"
+**Q: Can I use the same license on multiple devices?**  
+A: Personal licenses are for 1 device. Family licenses support 5 devices.
 
-**Linux:**
-1. Make the AppImage executable: `chmod +x LocalPasswordVault.AppImage`
-2. Run from terminal to see errors
+**Q: How do I transfer my license?**  
+A: Activate on the new device and confirm the transfer when prompted.
 
-### Vault Won't Unlock
+**Q: Is my data stored in the cloud?**  
+A: No. All data is stored locally on your device.
 
-1. Check Caps Lock
-2. Try typing password in a text editor first
-3. Make sure you're using the correct vault
-
-### Data Not Saving
-
-1. Check disk space
-2. Ensure app has write permissions
-3. Try running as Administrator (Windows)
-
-### Floating Panel Not Showing
-
-1. Check if vault is unlocked
-2. Look for the floating button on screen edges
-3. Restart the application
+**Q: Can I export my passwords?**  
+A: Yes. Go to Settings → Export to create a backup.
 
 ---
 
-## FAQ
+## Appendix
 
-### Is my data stored in the cloud?
+### System Requirements
 
-**No.** All data is stored locally on your device only. No cloud, no servers, no tracking.
+- **Windows**: Windows 10 or later
+- **macOS**: macOS 10.15 or later
+- **Linux**: Modern Linux distribution
+- **Web**: Modern browser (Chrome, Firefox, Edge, Safari)
 
-### What encryption is used?
+### File Locations
 
-AES-256-GCM with PBKDF2 key derivation (100,000 iterations). This is military-grade encryption.
+- **Windows**: `%APPDATA%\Local Password Vault\`
+- **macOS**: `~/Library/Application Support/Local Password Vault/`
+- **Linux**: `~/.config/Local Password Vault/`
 
-### Can I sync across devices?
+### Version History
 
-Local Password Vault is intentionally offline-only for maximum security. To transfer:
-1. Export from one device
-2. Securely transfer the file
-3. Import on the other device
-
-### License Transfers
-
-You may transfer your license to a new device if needed:
-
-**Transfer Limits:**
-- **3 transfers per year** per license key
-- Each transfer deactivates the license on the previous device
-- Transfer count resets 12 months after your first transfer
-
-**How to Transfer:**
-1. Open Local Password Vault on your new device
-2. Enter your license key
-3. The app will detect the device mismatch
-4. Confirm the transfer when prompted
-5. The license will be activated on the new device
-
-**Important Notes:**
-- Transfers require an internet connection for validation
-- If you exceed 3 transfers in a year, contact support for assistance
-- Plan your device changes carefully to avoid hitting the limit
-
-### What if I lose my device?
-
-Your vault is encrypted with your master password. Without the password, the data cannot be accessed. However, you should:
-1. Keep secure backups
-2. Consider remote wiping if available
-3. Change passwords for sensitive accounts
-
-### How do I update the app?
-
-Updates are checked automatically. When available:
-1. A notification will appear
-2. Click "Download" to get the update
-3. The update installs when you restart
-
-### Is it open source?
-
-The core app is proprietary, but we're transparent about our security practices. See our Security documentation for details.
-
-### Can I use it for my team/business?
-
-Yes! The Family plan supports up to 5 users. For larger teams, contact us about enterprise options.
+- **1.2.0** - Current version
+- See changelog for full history
 
 ---
 
-## Getting Help
+**© 2025 Local Password Vault. All rights reserved.**
 
-### Support
-
-- **Email:** support@localpasswordvault.com
-- **Website:** https://localpasswordvault.com/support
-
-### Report a Bug
-
-- Visit: https://github.com/kwilhelm1967/Vault/issues
-- Include: App version, OS, steps to reproduce
-
-### Feature Requests
-
-We love hearing from users! Submit ideas through:
-- GitHub Issues
-- Email support
-
----
-
-*Last updated: December 2024*
-*Version: 1.2.0*
-
+*Your passwords. Your device. Your control.*
