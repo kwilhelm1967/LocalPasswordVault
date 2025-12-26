@@ -2,6 +2,8 @@
 
 **Note:** This system uses HMAC-SHA256 signed license files (not JWT tokens) for offline validation.
 
+**100% Offline Promise:** After license activation, the user's application sends ZERO data to any external service. No APIs, no tracking, no telemetry, no data collection. All validation is local.
+
 ---
 
 ## Phase 1: Backend Deployment
@@ -270,7 +272,11 @@ openssl rand -hex 32
 SENTRY_DSN=https://xxxxx@xxxxx.ingest.sentry.io/xxxxx
 ```
 
-**Note:** Sentry is already integrated in code. Only configuration needed. Backend only. Frontend must remain 100% offline after activation.
+**CRITICAL NOTES:**
+- **Backend Sentry ONLY** - Server-side error tracking. Does not affect app offline operation.
+- **Frontend Sentry is DISABLED** - All frontend Sentry functions are no-ops. No data collection from user's app.
+- **100% Offline Guarantee** - User's application sends ZERO data to any external service after activation.
+- Sentry is already integrated in backend code. Only configuration needed.
 
 ---
 
