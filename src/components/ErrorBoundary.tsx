@@ -1,7 +1,7 @@
 import React, { Component, ErrorInfo, ReactNode } from "react";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import { devError } from "../utils/devLog";
-import { captureException } from "../utils/sentry";
+// NO SENTRY - 100% offline after activation. No data collection from user's app.
 
 interface Props {
   children: ReactNode;
@@ -29,14 +29,10 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    // Log error for debugging
+    // Log error for debugging (local only - no network calls)
     devError("Error Boundary caught an error:", error, errorInfo);
     
-    // Send to Sentry
-    captureException(error, {
-      componentStack: errorInfo.componentStack,
-      errorBoundary: true,
-    });
+    // NO SENTRY - 100% offline after activation. No data collection from user's app.
   }
 
   private handleReload = () => {

@@ -4,12 +4,10 @@ import App from './App.tsx';
 import { ErrorBoundary } from './components/ErrorBoundary.tsx';
 import { LiveRegionProvider } from './components/accessibility';
 import { devLog } from './utils/devLog';
-import { initSentry } from './utils/sentry';
 import './i18n'; // Initialize i18n for localization
 import './index.css';
 
-// Initialize Sentry error tracking (only in production)
-initSentry();
+// NO SENTRY - 100% offline after activation. No data collection from user's app.
 
 // Ensure dark background is set immediately
 document.documentElement.style.backgroundColor = '#1F2534';
