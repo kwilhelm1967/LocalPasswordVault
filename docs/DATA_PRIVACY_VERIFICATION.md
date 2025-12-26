@@ -59,11 +59,15 @@ This document verifies that **ZERO customer password entries or vault data** is 
 
 ---
 
-### 3. **Sentry Error Tracking**
+### 3. **Error Tracking**
 
-**Configuration:** `src/utils/sentry.ts` and `backend/utils/sentry.js`
+**Frontend Sentry:** ❌ **DISABLED** - All frontend Sentry functions are no-ops. No data collection from user's app.
 
-**Data Filtering:**
+**Backend Sentry:** ✅ **Backend Only** - Server-side error tracking only. Does not affect app offline operation.
+
+**Configuration:** `backend/utils/sentry.js` (backend only)
+
+**Data Filtering (Backend Only):**
 - ✅ **Sensitive data redacted** before sending:
   - `password` → `[REDACTED]`
   - `license_key` → `[REDACTED]`
@@ -72,11 +76,10 @@ This document verifies that **ZERO customer password entries or vault data** is 
   - `api_key` → `[REDACTED]`
   - `token` → `[REDACTED]`
 
-**What Sentry Captures:**
-- Error messages (with sensitive data redacted)
+**What Backend Sentry Captures:**
+- Server-side error messages (with sensitive data redacted)
 - Stack traces (no data content)
 - Performance metrics (no user data)
-- Session replay (with all text masked)
 
 **What Sentry Does NOT Capture:**
 - ❌ No password entries
@@ -84,10 +87,9 @@ This document verifies that **ZERO customer password entries or vault data** is 
 - ❌ No encrypted vault data
 - ❌ No account names, usernames, or passwords
 - ❌ No entry content
+- ❌ **NO data from user's application** (frontend Sentry disabled)
 
-**Location:** `src/utils/sentry.ts:44-81` (beforeSend filter)
-
-**Verification:** ✅ **CONFIRMED** - Sensitive data is redacted, no password entries sent
+**Verification:** ✅ **CONFIRMED** - Frontend Sentry disabled. Backend Sentry only tracks server-side errors. No data from user's app.
 
 ---
 
@@ -147,9 +149,9 @@ This document verifies that **ZERO customer password entries or vault data** is 
    - **NO password entries**
    - **NO vault data**
 
-3. **Error Tracking (Sentry):**
-   - Error messages (sensitive data redacted)
-   - Stack traces (no data content)
+3. **Error Tracking:**
+   - ❌ **Frontend Sentry DISABLED** - No data sent from user's app
+   - ✅ **Backend Sentry Only** - Server-side errors only (does not affect app)
    - **NO password entries**
    - **NO vault data**
 
@@ -195,7 +197,8 @@ This document verifies that **ZERO customer password entries or vault data** is 
    - No tracking of entry content
 
 4. **Sensitive Data Redaction**
-   - Sentry redacts all sensitive data
+   - Frontend Sentry DISABLED - No data sent from user's app
+   - Backend Sentry redacts all sensitive data (server-side only)
    - Error logs don't contain password entries
    - Stack traces don't contain data content
 
@@ -206,7 +209,7 @@ This document verifies that **ZERO customer password entries or vault data** is 
 ### **Code Review:**
 
 1. ✅ **Checked all API calls** - Only license activation/transfer
-2. ✅ **Checked Sentry configuration** - Sensitive data redacted
+2. ✅ **Checked Sentry configuration** - Frontend Sentry disabled, backend Sentry redacts sensitive data
 3. ✅ **Checked storage operations** - All local
 4. ✅ **Checked network calls** - No vault data endpoints
 5. ✅ **Checked error handling** - No data in error messages
