@@ -288,8 +288,7 @@ openssl rand -hex 32
 
 ## Reference Documents
 
-- `docs/PRODUCTION_LAUNCH_GUIDE.md` - Detailed production setup guide
-- `docs/PRODUCTION_CHECKLIST.md` - Comprehensive production checklist
+- `docs/REMAINING_TASKS.md` - Summary of remaining tasks
 - `backend/README.md` - API documentation
 - `backend/database/schema.sql` - Database structure
 - `backend/env.example` - Environment variables reference

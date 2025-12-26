@@ -76,9 +76,6 @@ These are nice-to-have improvements that can be added later:
 ## 📚 Reference Documents
 
 - **`docs/DEVELOPER_HANDOFF.md`** - ⭐ **START HERE** - Complete deployment guide
-- `docs/PRODUCTION_LAUNCH_GUIDE.md` - Detailed production setup
-- `docs/PRODUCTION_CHECKLIST.md` - Production checklist
-- `docs/DEVELOPER_HANDOFF.md` - Deployment tasks reference
 
 ---
 
