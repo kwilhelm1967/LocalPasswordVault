@@ -303,6 +303,30 @@ openssl rand -hex 32
 5. ✅ **COMPLETED** - Include stack traces for errors
    - All error objects include full stack traces in structured format
    - Stack traces automatically included in error log entries
+### 6.1 Structured Error Logging (Backend) ✅ **COMPLETED**
+
+**Status:** All tasks completed and implemented ✅
+
+- [x] ✅ **Implement structured error logging with error codes** - **DONE**
+  - Error codes defined in `backend/utils/logger.js` (ERROR_CODES constant)
+  - Codes include: SERVER_ERROR, DATABASE_ERROR, EMAIL_ERROR, WEBHOOK_ERROR, LICENSE_ERROR, STRIPE_ERROR, AUTH_ERROR, VALIDATION_ERROR, etc.
+
+- [x] ✅ **Add context information to error logs (request ID, user ID, timestamp)** - **DONE**
+  - All log entries include: timestamp, requestId, userId (when available), context object
+  - Context automatically extracted from request objects
+
+- [x] ✅ **Replace basic `console.error` with structured logging** - **DONE**
+  - Replaced in: `backend/services/email.js`, `backend/routes/licenses.js`, `backend/jobs/trialEmails.js`, `backend/database/db.js`, `backend/utils/performanceMonitor.js`
+  - All errors now use `logger.error()` with error codes and context
+
+- [x] ✅ **Log levels: ERROR, WARN, INFO, DEBUG** - **DONE**
+  - All log levels implemented with structured JSON output
+  - Configurable via `LOG_LEVEL` environment variable
+
+- [x] ✅ **Include stack traces for errors** - **DONE**
+  - All error objects include full stack traces in structured format
+  - Stack traces automatically included in error log entries
+>>>>>>> 8e6d0be (Improve visibility of completed items in DEVELOPER_HANDOFF.md section 6.1)
 
 **Note:** Backend logging only. Does not affect 100% offline promise.
 
