@@ -21,8 +21,8 @@ export default defineConfig({
   reporter: 'html',
   
   use: {
-    // Base URL for the dev server
-    baseURL: 'http://localhost:5173',
+    // Base URL - dev server (5173) or preview server (4173) depending on CI
+    baseURL: process.env.CI ? 'http://localhost:4173' : 'http://localhost:5173',
     
     // Collect trace when retrying failed test
     trace: 'on-first-retry',
@@ -49,8 +49,13 @@ export default defineConfig({
     },
   ],
 
-  // Run dev server before tests
-  webServer: {
+  // Run server before tests
+  webServer: process.env.CI ? {
+    command: 'npm run preview',
+    url: 'http://localhost:4173',
+    reuseExistingServer: false,
+    timeout: 120000,
+  } : {
     command: 'npm run dev',
     url: 'http://localhost:5173',
     reuseExistingServer: !process.env.CI,

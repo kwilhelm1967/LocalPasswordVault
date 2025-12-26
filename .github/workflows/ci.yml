@@ -43,18 +43,39 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-      - name: Install dependencies
+      - name: Install root dependencies
         run: npm ci
 
-      - name: Run unit tests
-        run: npm test -- --coverage --ci
+      - name: Install backend dependencies
+        working-directory: ./backend
+        run: npm ci
 
-      - name: Upload coverage report
+      - name: Run frontend unit tests
+        run: npm test -- --coverage --ci
+        env:
+          CI: true
+
+      - name: Run backend unit tests
+        working-directory: ./backend
+        run: npm test -- --coverage --ci
+        env:
+          CI: true
+          NODE_ENV: test
+
+      - name: Upload frontend coverage report
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: coverage-report
+          name: coverage-report-frontend
           path: coverage/
+          retention-days: 7
+
+      - name: Upload backend coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report-backend
+          path: backend/coverage/
           retention-days: 7
 
   # Job 3: E2E Tests with Playwright
@@ -114,7 +135,7 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-      - name: Install dependencies
+      - name: Install root dependencies
         run: npm ci
 
       - name: Build production bundle
@@ -148,18 +169,33 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-      - name: Install dependencies
+      - name: Install root dependencies
         run: npm ci
 
-      - name: Run npm audit
-        run: npm audit --audit-level=high
-        continue-on-error: true # Report but don't fail on vulnerabilities
+      - name: Install backend dependencies
+        working-directory: ./backend
+        run: npm ci
+
+      - name: Run npm audit (root)
+        run: npm audit --audit-level=high || echo "⚠️ Vulnerabilities found in root dependencies"
+        continue-on-error: true
+
+      - name: Run npm audit (backend)
+        working-directory: ./backend
+        run: npm audit --audit-level=high || echo "⚠️ Vulnerabilities found in backend dependencies"
+        continue-on-error: true
 
       - name: Check for secrets in code
+        continue-on-error: true
         run: |
           echo "🔍 Checking for potential secrets..."
           # Check for common secret patterns (will fail if found)
-          ! grep -rE "(password|secret|api_key|apikey)\s*[:=]\s*['\"][^'\"]{8,}" src/ --include="*.ts" --include="*.tsx" || echo "⚠️ Potential secrets found - review required"
+          if grep -rE "(password|secret|api_key|apikey)\s*[:=]\s*['\"][^'\"]{8,}" src/ --include="*.ts" --include="*.tsx"; then
+            echo "⚠️ Potential secrets found - review required"
+            exit 1
+          else
+            echo "✅ No obvious secrets detected"
+          fi
 
 
 
