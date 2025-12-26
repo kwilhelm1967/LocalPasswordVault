@@ -8,10 +8,17 @@ if (!supabaseUrl || !supabaseServiceKey) {
 }
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
+const logger = require('../utils/logger');
 
 async function initialize() {
-  console.log('✓ Supabase connection initialized');
-  console.log('⚠ Run schema.sql manually in Supabase SQL Editor');
+  logger.info('Supabase connection initialized', {
+    operation: 'db_init',
+    service: 'supabase',
+  });
+  logger.warn('Run schema.sql manually in Supabase SQL Editor', {
+    operation: 'db_init',
+    service: 'supabase',
+  });
 }
 
 // Performance monitoring (tracks query times - NO customer data)

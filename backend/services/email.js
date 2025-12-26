@@ -2,6 +2,7 @@ const brevo = require('@getbrevo/brevo');
 const fs = require('fs');
 const path = require('path');
 const performanceMonitor = require('../utils/performanceMonitor');
+const logger = require('../utils/logger');
 
 let apiInstance;
 
@@ -14,13 +15,19 @@ function initializeBrevoClient() {
   const apiKey = defaultClient.authentications['api-key'];
   apiKey.apiKey = process.env.BREVO_API_KEY;
   apiInstance = new brevo.TransactionalEmailsApi();
-  console.log('✓ Email service initialized');
+  logger.info('Email service initialized', {
+    operation: 'email_init',
+    service: 'brevo',
+  });
 }
 
 try {
   initializeBrevoClient();
 } catch (error) {
-  console.error('✗ Email service initialization failed:', error.message);
+  logger.error('Email service initialization failed', error, {
+    operation: 'email_init',
+    service: 'brevo',
+  }, logger.ERROR_CODES.EMAIL_INIT_ERROR);
 }
 
 function loadTemplate(templateName, variables = {}) {
@@ -56,7 +63,13 @@ async function sendEmailViaBrevo({ to, subject, html, text }) {
   } catch (error) {
     const errorMessage = error.response?.body?.message || error.message || 'Unknown error';
     const errorCode = error.response?.body?.code || error.status || 'UNKNOWN';
-    console.error(`✗ Brevo API error (${errorCode}):`, errorMessage);
+    logger.error('Brevo API error', error, {
+      operation: 'email_send',
+      service: 'brevo',
+      brevoErrorCode: errorCode,
+      recipient: to,
+      subject: subject,
+    }, logger.ERROR_CODES.EMAIL_SEND_ERROR);
     throw new Error(`Email send failed: ${errorMessage} (Code: ${errorCode})`);
   }
 }
@@ -94,11 +107,20 @@ async function sendPurchaseEmail({ to, licenseKey, planType, amount }) {
       html,
       text,
     });
-    console.log(`✓ Purchase email sent to ${to}`);
+    logger.email('sent', to, {
+      operation: 'email_purchase',
+      planType: planType,
+      planName: planName,
+      amount: amount,
+    });
     performanceMonitor.trackEmail(true);
     return response;
   } catch (error) {
-    console.error(`✗ Failed to send purchase email to ${to}:`, error.message);
+    logger.emailError('purchase', to, error, {
+      operation: 'email_purchase',
+      planType: planType,
+      planName: planName,
+    });
     performanceMonitor.trackEmail(false);
     throw error;
   }
@@ -129,11 +151,17 @@ async function sendTrialEmail({ to, trialKey, expiresAt }) {
       html,
       text,
     });
-    console.log(`✓ Trial email sent to ${to}`);
+    logger.email('sent', to, {
+      operation: 'email_trial',
+      expiresAt: expiresAt.toISOString(),
+    });
     performanceMonitor.trackEmail(true);
     return response;
   } catch (error) {
-    console.error(`✗ Failed to send trial email to ${to}:`, error.message);
+    logger.emailError('trial', to, error, {
+      operation: 'email_trial',
+      expiresAt: expiresAt.toISOString(),
+    });
     performanceMonitor.trackEmail(false);
     throw error;
   }
@@ -220,11 +248,21 @@ Thank you for choosing Local Password Vault!
       text,
     });
     
-    console.log(`✓ Bundle email sent to ${to}`);
+    logger.email('sent', to, {
+      operation: 'email_bundle',
+      licenseCount: licenses.length,
+      totalAmount: totalAmount,
+      orderId: orderId,
+    });
     performanceMonitor.trackEmail(true);
     return response;
   } catch (error) {
-    console.error(`✗ Failed to send bundle email to ${to}:`, error.message);
+    logger.emailError('bundle', to, error, {
+      operation: 'email_bundle',
+      licenseCount: licenses.length,
+      totalAmount: totalAmount,
+      orderId: orderId,
+    });
     performanceMonitor.trackEmail(false);
     throw error;
   }
@@ -233,28 +271,44 @@ Thank you for choosing Local Password Vault!
 async function sendEmail({ to, subject, html, text }) {
   try {
     const response = await sendEmailViaBrevo({ to, subject, html, text });
-    console.log(`✓ Email sent to ${to}: ${subject}`);
+    logger.email('sent', to, {
+      operation: 'email_generic',
+      subject: subject,
+    });
     return response;
   } catch (error) {
-    console.error(`✗ Failed to send email to ${to}:`, error.message);
+    logger.emailError('generic', to, error, {
+      operation: 'email_generic',
+      subject: subject,
+    });
     throw error;
   }
 }
 
 async function verifyConnection() {
   if (!apiInstance) {
-    console.error('✗ Email service connection failed');
+    logger.error('Email service connection failed - API instance not initialized', null, {
+      operation: 'email_verify',
+      service: 'brevo',
+    }, logger.ERROR_CODES.EMAIL_INIT_ERROR);
     return false;
   }
 
   try {
     const accountApi = new brevo.AccountApi();
     const accountInfo = await accountApi.getAccount();
-    console.log('✓ Email service connection verified');
+    logger.info('Email service connection verified', {
+      operation: 'email_verify',
+      service: 'brevo',
+    });
     return true;
   } catch (error) {
     const errorMessage = error.response?.body?.message || error.message || 'Unknown error';
-    console.error('✗ Email service connection failed:', errorMessage);
+    logger.error('Email service connection failed', error, {
+      operation: 'email_verify',
+      service: 'brevo',
+      errorMessage: errorMessage,
+    }, logger.ERROR_CODES.EMAIL_SEND_ERROR);
     return false;
   }
 }
@@ -302,11 +356,17 @@ async function sendAlertEmail({ subject, message }) {
       text,
     });
     
-    console.log(`✓ Alert email sent to ${supportEmail}`);
+    logger.email('sent', supportEmail, {
+      operation: 'email_alert',
+      subject: subject,
+    });
     performanceMonitor.trackEmail(true);
     return response;
   } catch (error) {
-    console.error(`✗ Failed to send alert email to ${supportEmail}:`, error.message);
+    logger.emailError('alert', supportEmail, error, {
+      operation: 'email_alert',
+      subject: subject,
+    });
     performanceMonitor.trackEmail(false);
     throw error;
   }

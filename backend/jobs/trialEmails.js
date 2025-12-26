@@ -2,6 +2,7 @@ require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') }
 
 const db = require('../database/db');
 const { sendEmail } = require('../services/email');
+const logger = require('../utils/logger');
 const fs = require('fs');
 const path = require('path');
 
@@ -39,7 +40,10 @@ async function sendTrialExpiringEmail(email, expiresAt) {
     text,
   });
 
-  console.log(`✓ Expiring email sent to ${email}`);
+  logger.email('sent', email, {
+    operation: 'trial_email_expiring',
+    job: 'trial_emails',
+  });
 }
 
 async function sendTrialExpiredEmail(email, expiredDate) {
@@ -57,13 +61,18 @@ async function sendTrialExpiredEmail(email, expiredDate) {
     text,
   });
 
-  console.log(`✓ Expired email sent to ${email}`);
+  logger.email('sent', email, {
+    operation: 'trial_email_expired',
+    job: 'trial_emails',
+    expiredDate: expiredDate.toISOString(),
+  });
 }
 
 async function checkTrialEmails() {
-  console.log('\n========================================');
-  console.log('Trial Email Job Started:', new Date().toISOString());
-  console.log('========================================\n');
+  logger.info('Trial email job started', {
+    operation: 'trial_email_job',
+    job: 'trial_emails',
+  });
 
   const now = new Date();
   // Find trials expiring in ~24 hours (23-25 hour window)
@@ -87,11 +96,19 @@ async function checkTrialEmails() {
       .or('expiring_email_sent.is.null,expiring_email_sent.eq.false');
 
     if (expiringError) {
-      console.error('Error fetching expiring trials:', expiringError);
+      logger.error('Error fetching expiring trials', expiringError, {
+        operation: 'trial_email_job',
+        job: 'trial_emails',
+        stage: 'fetch_expiring',
+      }, logger.ERROR_CODES.DATABASE_QUERY_ERROR);
       throw expiringError;
     }
 
-    console.log(`Found ${expiringTrials?.length || 0} trials expiring in ~24 hours`);
+    logger.info(`Found ${expiringTrials?.length || 0} trials expiring in ~24 hours`, {
+      operation: 'trial_email_job',
+      job: 'trial_emails',
+      count: expiringTrials?.length || 0,
+    });
 
     for (const trial of expiringTrials || []) {
       try {
@@ -104,7 +121,11 @@ async function checkTrialEmails() {
         
         expiringCount++;
       } catch (error) {
-        console.error(`✗ Failed to send expiring email to ${trial.email}:`, error.message);
+        logger.emailError('trial_expiring', trial.email, error, {
+          operation: 'trial_email_job',
+          job: 'trial_emails',
+          trialId: trial.id,
+        });
         errorCount++;
       }
     }
@@ -118,11 +139,19 @@ async function checkTrialEmails() {
       .or('expired_email_sent.is.null,expired_email_sent.eq.false');
 
     if (expiredError) {
-      console.error('Error fetching expired trials:', expiredError);
+      logger.error('Error fetching expired trials', expiredError, {
+        operation: 'trial_email_job',
+        job: 'trial_emails',
+        stage: 'fetch_expired',
+      }, logger.ERROR_CODES.DATABASE_QUERY_ERROR);
       throw expiredError;
     }
 
-    console.log(`Found ${expiredTrials?.length || 0} trials that expired recently`);
+    logger.info(`Found ${expiredTrials?.length || 0} trials that expired recently`, {
+      operation: 'trial_email_job',
+      job: 'trial_emails',
+      count: expiredTrials?.length || 0,
+    });
 
     for (const trial of expiredTrials || []) {
       try {
@@ -135,22 +164,30 @@ async function checkTrialEmails() {
         
         expiredCount++;
       } catch (error) {
-        console.error(`✗ Failed to send expired email to ${trial.email}:`, error.message);
+        logger.emailError('trial_expired', trial.email, error, {
+          operation: 'trial_email_job',
+          job: 'trial_emails',
+          trialId: trial.id,
+        });
         errorCount++;
       }
     }
 
   } catch (error) {
-    console.error('Job error:', error);
+    logger.error('Trial email job error', error, {
+      operation: 'trial_email_job',
+      job: 'trial_emails',
+    }, logger.ERROR_CODES.SERVER_ERROR);
     errorCount++;
   }
 
-  console.log('\n========================================');
-  console.log('Job Complete:', new Date().toISOString());
-  console.log(`  Expiring emails sent: ${expiringCount}`);
-  console.log(`  Expired emails sent: ${expiredCount}`);
-  console.log(`  Errors: ${errorCount}`);
-  console.log('========================================\n');
+  logger.info('Trial email job complete', {
+    operation: 'trial_email_job',
+    job: 'trial_emails',
+    expiringCount,
+    expiredCount,
+    errorCount,
+  });
 
   return { expiringCount, expiredCount, errorCount };
 }
@@ -160,7 +197,11 @@ if (require.main === module) {
   checkTrialEmails()
     .then(() => process.exit(0))
     .catch((error) => {
-      console.error('Fatal error:', error);
+      logger.error('Fatal error in trial email job', error, {
+        operation: 'trial_email_job',
+        job: 'trial_emails',
+        fatal: true,
+      }, logger.ERROR_CODES.SERVER_ERROR);
       process.exit(1);
     });
 }

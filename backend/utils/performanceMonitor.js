@@ -93,7 +93,15 @@ class PerformanceMonitor {
     // Track slow requests
     if (duration > this.slowRequestThreshold) {
       // Log slow request (no customer data)
-      console.warn(`[PERF] Slow request: ${method} ${normalizedPath} took ${duration}ms`);
+      const logger = require('./logger');
+      logger.warn(`Slow request detected: ${method} ${normalizedPath}`, {
+        operation: 'performance_monitoring',
+        type: 'slow_request',
+        method: method,
+        path: normalizedPath,
+        duration: duration,
+        threshold: this.slowRequestThreshold,
+      });
     }
 
     // Track errors
@@ -114,7 +122,15 @@ class PerformanceMonitor {
 
     if (duration > this.slowQueryThreshold) {
       this.metrics.database.slowQueries++;
-      console.warn(`[PERF] Slow query: ${operation} on ${table} took ${duration}ms`);
+      const logger = require('./logger');
+      logger.warn(`Slow query detected: ${operation} on ${table}`, {
+        operation: 'performance_monitoring',
+        type: 'slow_query',
+        dbOperation: operation,
+        table: table,
+        duration: duration,
+        threshold: this.slowQueryThreshold,
+      });
     }
   }
 

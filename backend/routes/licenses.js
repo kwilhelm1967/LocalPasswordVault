@@ -132,8 +132,13 @@ router.post('/validate', async (req, res) => {
     // LEGACY ENDPOINT: This endpoint still uses JWT for backward compatibility
     // Main LPV activation endpoints use signed license files (HMAC-SHA256)
     // This endpoint is deprecated and should not be used for new implementations
+    const logger = require('../utils/logger');
     if (!process.env.JWT_SECRET) {
-      console.error('CRITICAL: JWT_SECRET not configured (required for legacy endpoint)');
+      logger.error('JWT_SECRET not configured (required for legacy endpoint)', null, {
+        operation: 'license_validation',
+        endpoint: 'legacy',
+        requestId: req.requestId,
+      }, logger.ERROR_CODES.AUTH_MISSING_SECRET);
       return res.status(500).json({ 
         success: false, 
         error: 'Server configuration error' 
@@ -166,7 +171,12 @@ router.post('/validate', async (req, res) => {
     });
     
   } catch (error) {
-    console.error('License validation error:', error);
+    logger.error('License validation error', error, {
+      operation: 'license_validation',
+      endpoint: 'legacy',
+      requestId: req.requestId,
+      licenseKey: req.body?.licenseKey ? '***' : undefined,
+    }, logger.ERROR_CODES.LICENSE_VALIDATION_ERROR);
     res.status(500).json({ 
       success: false, 
       error: 'License validation failed' 
@@ -195,7 +205,11 @@ router.get('/check/:key', async (req, res) => {
     });
     
   } catch (error) {
-    console.error('License check error:', error);
+    logger.error('License check error', error, {
+      operation: 'license_check',
+      requestId: req.requestId,
+      licenseKey: req.params?.key ? '***' : undefined,
+    }, logger.ERROR_CODES.LICENSE_VALIDATION_ERROR);
     res.status(500).json({ valid: false, error: 'Check failed' });
   }
 });
