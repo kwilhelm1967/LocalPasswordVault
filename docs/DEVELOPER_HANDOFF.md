@@ -38,9 +38,10 @@ openssl rand -hex 32
 
 ---
 
-### 1.2 Configure SSL & Reverse Proxy
-- [ ] Configure SSL certificate (Let's Encrypt or your preferred method)
-- [ ] Set up reverse proxy for API domain (api.localpasswordvault.com)
+### 1.2 Configure Cloudflare
+- [ ] Set up Cloudflare DNS for API domain (api.localpasswordvault.com)
+- [ ] Configure SSL/TLS in Cloudflare (Full or Full Strict mode)
+- [ ] Set up Cloudflare proxy/load balancer if needed
 - [ ] Test health endpoint: `curl https://api.localpasswordvault.com/health`
 
 ---
