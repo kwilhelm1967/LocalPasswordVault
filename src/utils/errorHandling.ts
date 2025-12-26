@@ -40,12 +40,59 @@ class ErrorLogger {
   private static instance: ErrorLogger;
   private errorHistory: ErrorLogEntry[] = [];
   private readonly MAX_HISTORY = 100;
+  private readonly STORAGE_KEY = 'lpv_error_logs';
 
   static getInstance(): ErrorLogger {
     if (!ErrorLogger.instance) {
       ErrorLogger.instance = new ErrorLogger();
+      // Load persisted errors on initialization
+      ErrorLogger.instance.loadFromLocalStorage();
     }
     return ErrorLogger.instance;
+  }
+
+  /**
+   * Load error logs from localStorage
+   * Maintains 100% offline operation - no network calls
+   */
+  private loadFromLocalStorage(): void {
+    try {
+      const stored = localStorage.getItem(this.STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored) as ErrorLogEntry[];
+        // Validate and limit to MAX_HISTORY
+        this.errorHistory = parsed.slice(-this.MAX_HISTORY);
+      }
+    } catch (error) {
+      // If parsing fails, clear corrupted data
+      console.warn('Failed to load error logs from localStorage:', error);
+      localStorage.removeItem(this.STORAGE_KEY);
+      this.errorHistory = [];
+    }
+  }
+
+  /**
+   * Save error logs to localStorage
+   * Maintains 100% offline operation - no network calls
+   */
+  private saveToLocalStorage(): void {
+    try {
+      // Only save recent errors (last MAX_HISTORY)
+      const toSave = this.errorHistory.slice(-this.MAX_HISTORY);
+      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(toSave));
+    } catch (error) {
+      // If storage fails (quota exceeded, etc.), log but don't crash
+      console.warn('Failed to save error logs to localStorage:', error);
+      // Try to clear old entries and retry
+      try {
+        // Keep only most recent 50 entries
+        this.errorHistory = this.errorHistory.slice(-50);
+        localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.errorHistory));
+      } catch (retryError) {
+        // If still fails, give up silently
+        console.warn('Failed to save error logs after retry:', retryError);
+      }
+    }
   }
 
   /**
@@ -69,6 +116,9 @@ class ErrorLogger {
       this.errorHistory.shift();
     }
 
+    // Save to localStorage (100% offline - no network calls)
+    this.saveToLocalStorage();
+
     // Log in development
     if (import.meta.env.DEV) {
       devError(
@@ -80,6 +130,7 @@ class ErrorLogger {
 
     // In production, could send to error tracking service here
     // Example: sendToErrorTracking(entry);
+    // NOTE: This would violate 100% offline promise, so NOT implemented
 
     return entry;
   }
@@ -96,6 +147,27 @@ class ErrorLogger {
    */
   clearHistory(): void {
     this.errorHistory = [];
+    // Also clear from localStorage
+    try {
+      localStorage.removeItem(this.STORAGE_KEY);
+    } catch (error) {
+      console.warn('Failed to clear error logs from localStorage:', error);
+    }
+  }
+
+  /**
+   * Export error logs as JSON string
+   * Useful for support requests
+   * Maintains 100% offline operation - no network calls
+   */
+  exportErrorLogs(): string {
+    const exportData = {
+      exportedAt: new Date().toISOString(),
+      appVersion: import.meta.env.VITE_APP_VERSION || 'unknown',
+      totalErrors: this.errorHistory.length,
+      errors: this.errorHistory,
+    };
+    return JSON.stringify(exportData, null, 2);
   }
 
   /**

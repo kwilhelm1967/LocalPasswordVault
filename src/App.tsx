@@ -11,6 +11,7 @@ import { useElectron } from "./hooks/useElectron";
 // Essential components - load immediately
 import { LoginScreen } from "./components/LoginScreen";
 import { LicenseScreen } from "./components/LicenseScreen";
+import { LicenseTransferDialog } from "./components/LicenseTransferDialog";
 import { OfflineIndicator } from "./components/OfflineIndicator";
 import { SkipLink } from "./components/accessibility";
 
@@ -566,6 +567,10 @@ function App() {
   const [showDownloadPage, setShowDownloadPage] = useState(false);
   const [showLicenseKeys, setShowLicenseKeys] = useState(features.showTestingTools);
 
+  // Device mismatch check on startup
+  const [showStartupTransferDialog, setShowStartupTransferDialog] = useState(false);
+  const [startupTransferKey, setStartupTransferKey] = useState<string>("");
+
   // Trial warning popup state (state stored for potential future use)
   const [, setWarningPopupState] = useState<WarningPopupState>({
     shouldShowExpiringWarning: false,
@@ -620,6 +625,24 @@ function App() {
     window.addEventListener('show-keyboard-shortcuts', handleShowShortcuts);
     return () => window.removeEventListener('show-keyboard-shortcuts', handleShowShortcuts);
   }, [openShortcuts]);
+
+  // Check for device mismatch on app startup
+  useEffect(() => {
+    const checkDeviceMismatch = async () => {
+      try {
+        const mismatch = await licenseService.checkDeviceMismatch();
+        if (mismatch.hasMismatch && mismatch.licenseKey) {
+          setStartupTransferKey(mismatch.licenseKey);
+          setShowStartupTransferDialog(true);
+        }
+      } catch (error) {
+        devError('Device mismatch check failed:', error);
+      }
+    };
+
+    // Check on mount (app startup)
+    checkDeviceMismatch();
+  }, []);
 
   // Check for security briefing when vault is unlocked
   useEffect(() => {
@@ -1232,6 +1255,27 @@ function App() {
       )}
 
       {/* Mini Vault Floating Button removed - using Electron's FloatingButton instead */}
+
+      {/* Device Mismatch Dialog (Startup Check) */}
+      {showStartupTransferDialog && (
+        <LicenseTransferDialog
+          isOpen={showStartupTransferDialog}
+          licenseKey={startupTransferKey}
+          onConfirmTransfer={async () => {
+            const result = await licenseService.transferLicense(startupTransferKey);
+            if (result.success) {
+              setShowStartupTransferDialog(false);
+              await updateAppStatus();
+              notify.success("License transferred successfully!");
+            }
+            return result;
+          }}
+          onCancel={() => {
+            setShowStartupTransferDialog(false);
+            // User cancelled - they'll need to transfer later
+          }}
+        />
+      )}
 
       {/* Offline indicator */}
       <OfflineIndicator />
