@@ -115,7 +115,7 @@ openssl rand -hex 32
   - `README.txt` (if available)
   - Documentation files (if available)
 - [ ] Host packages:
-  - Upload to GitHub Releases (or alternative hosting)
+  - Upload to GitHub Releases 
   - Get download URLs
   - Update email templates with download URLs
 
