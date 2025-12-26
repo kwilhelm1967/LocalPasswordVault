@@ -302,7 +302,6 @@ SENTRY_DSN=https://xxxxx@xxxxx.ingest.sentry.io/xxxxx
 
 ## Reference Documents
 
-- `docs/REMAINING_TASKS.md` - Summary of remaining tasks
 - `backend/README.md` - API documentation
 - `backend/database/schema.sql` - Database structure
 - `backend/env.example` - Environment variables reference
