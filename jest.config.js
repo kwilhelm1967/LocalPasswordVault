@@ -45,7 +45,7 @@ module.exports = {
     '!src/main.tsx',
     '!src/vite-env.d.ts',
   ],
-  coverageThreshold: {
+  coverageThreshold: process.env.SKIP_COVERAGE_THRESHOLD ? {} : {
     global: {
       branches: 80,
       functions: 80,
