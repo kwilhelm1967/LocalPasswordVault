@@ -50,17 +50,14 @@ const DashboardComponent: React.FC<DashboardProps> = ({
   onAddEntry,
   onViewCategory,
   onViewEntry: _onViewEntry,
-}) => {
-  // Track render performance in development
-  useRenderTracking('Dashboard');
-
-  // Calculate statistics
   onEditEntry: _onEditEntry,
   onDeleteEntry: _onDeleteEntry,
   onViewWeakPasswords,
   onViewReusedPasswords,
   onImport,
 }) => {
+  // Track render performance in development
+  useRenderTracking('Dashboard');
   // Suppress unused prop warnings - these are kept for API compatibility
   void _categories; void _onViewEntry; void _onEditEntry; void _onDeleteEntry;
   

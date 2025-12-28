@@ -120,14 +120,14 @@ describe('Input Validation', () => {
 
   describe('validateUrl', () => {
     it('should accept valid URLs', () => {
-      expect(validateUrl('https://example.com')).toBe(true);
-      expect(validateUrl('http://localhost:3000')).toBe(true);
-      expect(validateUrl('example.com')).toBe(true);
+      expect(validateUrl('https://example.com').valid).toBe(true);
+      expect(validateUrl('http://localhost:3000').valid).toBe(true);
+      expect(validateUrl('example.com').valid).toBe(true);
     });
 
     it('should reject invalid URLs', () => {
-      expect(validateUrl('')).toBe(false);
-      expect(validateUrl('not a url')).toBe(false);
+      expect(validateUrl('').valid).toBe(false);
+      expect(validateUrl('not a url').valid).toBe(false);
     });
   });
 });

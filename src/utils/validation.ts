@@ -8,12 +8,131 @@
 import { ERROR_MESSAGES, LICENSE_KEY_PATTERN, TRIAL_KEY_PATTERN } from '../constants/errorMessages';
 
 /**
+ * Sanitize input to remove HTML tags and dangerous content
+ * 
+ * @param input - Input string to sanitize
+ * @param maxLength - Optional maximum length
+ * @returns Sanitized string
+ */
+export function sanitizeInput(input: string | null | undefined, maxLength?: number): string {
+  if (!input || typeof input !== 'string') {
+    return '';
+  }
+  
+  let sanitized = input
+    .trim()
+    // Remove script tags
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    // Remove HTML tags
+    .replace(/<[^>]+>/g, '')
+    // Remove event handlers (onclick, onerror, etc.)
+    .replace(/on\w+\s*=\s*["'][^"']*["']/gi, '')
+    .replace(/on\w+\s*=\s*[^\s>]+/gi, '')
+    // Remove javascript: and data: protocols
+    .replace(/javascript:/gi, '')
+    .replace(/data:/gi, '');
+  
+  if (maxLength && sanitized.length > maxLength) {
+    sanitized = sanitized.slice(0, maxLength);
+  }
+  
+  return sanitized;
+}
+
+/**
+ * Master password validation result
+ */
+export interface MasterPasswordValidation {
+  isValid: boolean;
+  errors: string[];
+  warnings: string[];
+  strength: 'weak' | 'fair' | 'good' | 'strong';
+}
+
+/**
+ * Validate master password with strength checking
+ * 
+ * @param password - Password to validate
+ * @returns Validation result with strength and feedback
+ */
+export function validateMasterPassword(password: string): MasterPasswordValidation {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+  
+  // Minimum length check
+  if (password.length < 12) {
+    errors.push('Password must be at least 12 characters');
+  }
+  
+  // Check for common patterns
+  const commonPatterns = [
+    /password/i,
+    /123456/,
+    /qwerty/i,
+    /admin/i,
+    /letmein/i,
+    /welcome/i,
+    /monkey/i,
+    /1234567890/,
+    /abcdef/i,
+  ];
+  
+  if (commonPatterns.some(pattern => pattern.test(password))) {
+    warnings.push('Password contains common patterns');
+  }
+  
+  // Calculate strength
+  let score = 0;
+  if (password.length >= 12) score++;
+  if (password.length >= 16) score++;
+  if (/[a-z]/.test(password)) score++;
+  if (/[A-Z]/.test(password)) score++;
+  if (/[0-9]/.test(password)) score++;
+  if (/[^A-Za-z0-9]/.test(password)) score++;
+  
+  let strength: 'weak' | 'fair' | 'good' | 'strong' = 'weak';
+  if (score >= 5) strength = 'strong';
+  else if (score >= 4) strength = 'good';
+  else if (score >= 3) strength = 'fair';
+  
+  return {
+    isValid: errors.length === 0,
+    errors,
+    warnings,
+    strength,
+  };
+}
+
+/**
+ * Email validation
+ * 
+ * @param email - Email to validate
+ * @returns true if valid, false otherwise
+ */
+export function validateEmail(email: string): boolean {
+  if (!email || typeof email !== 'string') {
+    return false;
+  }
+  
+  const trimmed = email.trim();
+  if (!trimmed) {
+    return false;
+  }
+  
+  // Basic email regex (RFC 5322 simplified)
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(trimmed);
+}
+
+/**
  * License key validation result
  */
 export interface LicenseKeyValidation {
   valid: boolean;
+  isValid?: boolean; // Alias for test compatibility
   error?: string;
   cleaned?: string;
+  normalized?: string; // Alias for test compatibility
 }
 
 /**
@@ -29,6 +148,7 @@ export function validateLicenseKey(key: string): LicenseKeyValidation {
   if (!key || typeof key !== 'string') {
     return {
       valid: false,
+      isValid: false,
       error: ERROR_MESSAGES.LICENSE.INVALID_FORMAT,
     };
   }
@@ -40,6 +160,7 @@ export function validateLicenseKey(key: string): LicenseKeyValidation {
   if (cleaned.length < 16) {
     return {
       valid: false,
+      isValid: false,
       error: ERROR_MESSAGES.LICENSE.INVALID_FORMAT,
     };
   }
@@ -48,6 +169,7 @@ export function validateLicenseKey(key: string): LicenseKeyValidation {
   if (!LICENSE_KEY_PATTERN.test(cleaned)) {
     return {
       valid: false,
+      isValid: false,
       error: ERROR_MESSAGES.LICENSE.INVALID_FORMAT,
     };
   }
@@ -60,6 +182,7 @@ export function validateLicenseKey(key: string): LicenseKeyValidation {
   if (!hasValidPrefix && !cleaned.startsWith('TRIA-')) {
     return {
       valid: false,
+      isValid: false,
       error: ERROR_MESSAGES.LICENSE.INVALID_KEY,
     };
   }
@@ -70,6 +193,7 @@ export function validateLicenseKey(key: string): LicenseKeyValidation {
   if (segments.length < 4) {
     return {
       valid: false,
+      isValid: false,
       error: ERROR_MESSAGES.LICENSE.INVALID_FORMAT,
     };
   }
@@ -79,6 +203,7 @@ export function validateLicenseKey(key: string): LicenseKeyValidation {
     if (segment.length < 4 || segment.length > 5) {
       return {
         valid: false,
+        isValid: false,
         error: ERROR_MESSAGES.LICENSE.INVALID_FORMAT,
       };
     }
@@ -86,7 +211,9 @@ export function validateLicenseKey(key: string): LicenseKeyValidation {
 
   return {
     valid: true,
+    isValid: true,
     cleaned,
+    normalized: cleaned,
   };
 }
 
@@ -125,7 +252,8 @@ export function validateTrialKey(key: string): LicenseKeyValidation {
  * Validates URLs and ensures only safe protocols are allowed.
  * 
  * @param url - URL to validate
- * @returns Validation result
+ * @param returnBoolean - If true, returns boolean instead of object (for test compatibility)
+ * @returns Validation result or boolean
  */
 export interface UrlValidation {
   valid: boolean;

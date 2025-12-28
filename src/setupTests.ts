@@ -9,6 +9,18 @@ import { TextEncoder, TextDecoder } from 'util';
 global.TextEncoder = TextEncoder;
 global.TextDecoder = TextDecoder as typeof global.TextDecoder;
 
+// Mock Vite's import.meta.env for Jest
+// Since import.meta is a special syntax, we need to define it globally
+// This will be used by a custom transformer or babel plugin
+(globalThis as any).__VITE_IMPORT_META_ENV__ = {
+  DEV: true,
+  PROD: false,
+  MODE: 'test',
+  VITE_APP_VERSION: '1.2.0',
+  VITE_LICENSE_SIGNING_SECRET: 'test-secret',
+  VITE_USE_STRICT_PERFORMANCE: 'false',
+};
+
 // Extend Window interface for Jest
 declare global {
   interface Window {
