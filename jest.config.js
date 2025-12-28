@@ -45,14 +45,16 @@ module.exports = {
     '!src/main.tsx',
     '!src/vite-env.d.ts',
   ],
-  coverageThreshold: process.env.SKIP_COVERAGE_THRESHOLD ? {} : {
-    global: {
-      branches: 80,
-      functions: 80,
-      lines: 80,
-      statements: 80,
+  ...(process.env.SKIP_COVERAGE_THRESHOLD ? {} : {
+    coverageThreshold: {
+      global: {
+        branches: 80,
+        functions: 80,
+        lines: 80,
+        statements: 80,
+      },
     },
-  },
+  }),
   testPathIgnorePatterns: [
     '/node_modules/',
     '/dist/',
