@@ -156,7 +156,49 @@ const createWindow = () => {
       mainWindow.webContents.openDevTools();
     }
   } else {
-    mainWindow.loadFile(path.join(__dirname, "../dist/LPV/index.html"));
+    // In production, resolve the correct path to the built HTML file
+    // When packaged, __dirname points to electron/ inside app.asar
+    // dist/ folder is also inside app.asar at the same level as electron/
+    let htmlPath;
+    
+    if (app.isPackaged) {
+      // In packaged app, files are in app.asar
+      // __dirname = app.asar/electron, so ../dist = app.asar/dist
+      htmlPath = path.join(__dirname, "../dist/index.html");
+    } else {
+      // In development build (not packaged), use relative path
+      htmlPath = path.join(__dirname, "../dist/index.html");
+    }
+    
+    console.log("Loading HTML from:", htmlPath);
+    console.log("__dirname:", __dirname);
+    console.log("app.isPackaged:", app.isPackaged);
+    
+    // Add error handlers for debugging
+    mainWindow.webContents.on("did-fail-load", (event, errorCode, errorDescription, validatedURL) => {
+      console.error("Failed to load page:", {
+        errorCode,
+        errorDescription,
+        validatedURL,
+        htmlPath
+      });
+    });
+    
+    mainWindow.webContents.on("console-message", (event, level, message) => {
+      if (level === 3) { // error level
+        console.error("Renderer console error:", message);
+      }
+    });
+    
+    mainWindow.loadFile(htmlPath).catch((error) => {
+      console.error("Error loading file:", error);
+      // Try alternative path as fallback
+      const altPath = path.join(process.resourcesPath || __dirname, "dist", "index.html");
+      console.log("Trying alternative path:", altPath);
+      mainWindow.loadFile(altPath).catch((altError) => {
+        console.error("Failed to load from alternative path:", altError);
+      });
+    });
   }
 
   // Show window when ready to prevent visual flash
@@ -364,8 +406,9 @@ const createFloatingWindow = () => {
         floatingWindow.webContents.openDevTools();
       }
     } else {
-      floatingWindow.loadFile(path.join(__dirname, "../dist/LPV/index.html"), {
-        hash: "floating",
+      const htmlPath = path.join(__dirname, "../dist/index.html");
+      floatingWindow.loadFile(htmlPath, { hash: "floating" }).catch((error) => {
+        console.error("Error loading floating panel:", error);
       });
     }
 
@@ -611,9 +654,10 @@ const createFloatingButton = () => {
     if (isDev) {
       floatingButton.loadURL("http://localhost:5173/floating-button.html");
     } else {
-      floatingButton.loadFile(
-        path.join(__dirname, "../dist/floating-button.html")
-      );
+      const buttonHtmlPath = path.join(__dirname, "../dist/LPV/floating-button.html");
+      floatingButton.loadFile(buttonHtmlPath).catch((error) => {
+        console.error("Error loading floating button:", error);
+      });
     }
 
     // Prevent any accidental resize operations (Windows protection)

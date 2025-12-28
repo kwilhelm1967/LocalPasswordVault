@@ -41,8 +41,12 @@
  * - Bulk selection UI
  */
 
+// ==================== React Imports ====================
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+
+// ==================== Third-Party Imports ====================
 import {
+  // Action icons
   Search,
   Plus,
   Trash2,
@@ -51,14 +55,21 @@ import {
   Copy,
   Edit3,
   X,
+  Check,
+  // Security icons
   Shield,
   Key,
-  Settings as SettingsIcon,
   Lock,
   LockOpen,
+  // Navigation icons
+  Settings as SettingsIcon,
   LayoutDashboard,
-  AlertTriangle,
   Minimize2,
+  // Status icons
+  AlertTriangle,
+  AlertCircle,
+  HelpCircle,
+  // UI icons
   Star,
   ArrowUpDown,
   ChevronDown,
@@ -66,12 +77,9 @@ import {
   ExternalLink,
   History,
   Clock,
-  AlertCircle,
   CheckSquare,
   Square,
   FileText,
-  Check,
-  HelpCircle,
   // Category icons
   Grid3X3,
   CircleDollarSign,
@@ -80,10 +88,31 @@ import {
   Mail,
   Briefcase,
   TrendingUp,
-  LucideIcon,
+  // Types
+  type LucideIcon,
 } from "lucide-react";
 
-// Import from vault components
+// ==================== Type Imports ====================
+import type { PasswordEntry, Category, CustomField } from "../types";
+
+// ==================== Utils Imports ====================
+import { generateTOTP, getTimeRemaining, isValidTOTPSecret } from "../utils/totp";
+import { playLockSound, playCopySound, playDeleteSound } from "../utils/soundEffects";
+import { devError } from "../utils/devLog";
+
+// ==================== Hooks Imports ====================
+import { useRenderTracking } from "../hooks/usePerformance";
+
+// ==================== Component Imports ====================
+import { CategoryIcon } from "./CategoryIcon";
+import { EntryForm } from "./EntryForm";
+import { Dashboard } from "./Dashboard";
+import { SettingsLazy as Settings, FAQLazy as FAQ } from "./LazyComponents";
+import { clearClipboardAfterTimeout, getVaultSettings } from "./Settings";
+import { TrialStatusBanner } from "./TrialStatusBanner";
+import { PerformanceProfiler } from "./PerformanceProfiler";
+
+// ==================== Vault Component Imports ====================
 import {
   colors,
   getPasswordAge,
@@ -92,6 +121,7 @@ import {
   CustomFieldDisplay,
 } from "./vault";
 
+// ==================== Helper Functions ====================
 /**
  * Helper function to find duplicate passwords
  * 
@@ -129,20 +159,6 @@ const categoryIconMap: Record<string, LucideIcon> = {
 const getCategoryIcon = (iconName: string): LucideIcon => {
   return categoryIconMap[iconName] || Key;
 };
-
-import { PasswordEntry, Category, CustomField } from "../types";
-import { CategoryIcon } from "./CategoryIcon";
-import { EntryForm } from "./EntryForm";
-import { Dashboard } from "./Dashboard";
-// Lazy-loaded components for better initial load performance
-import { SettingsLazy as Settings, FAQLazy as FAQ } from "./LazyComponents";
-import { clearClipboardAfterTimeout, getVaultSettings } from "./Settings";
-import { generateTOTP, getTimeRemaining, isValidTOTPSecret } from "../utils/totp";
-import { TrialStatusBanner } from "./TrialStatusBanner";
-import { playLockSound, playCopySound, playDeleteSound } from "../utils/soundEffects";
-import { devError } from "../utils/devLog";
-import { useRenderTracking } from "../hooks/usePerformance";
-import { PerformanceProfiler } from "./PerformanceProfiler";
 
 interface MainVaultProps {
   entries: PasswordEntry[];

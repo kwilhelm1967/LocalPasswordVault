@@ -1,11 +1,22 @@
+// ==================== React Imports ====================
 import { useState, useEffect, useCallback, useMemo, lazy, Suspense } from "react";
-import { PasswordEntry, Category, RawPasswordEntry } from "./types";
+
+// ==================== Type Imports ====================
+import type { PasswordEntry, Category, RawPasswordEntry } from "./types";
+import type { AppLicenseStatus } from "./utils/licenseService";
+import type { WarningPopupState } from "./utils/trialService";
+
+// ==================== Config Imports ====================
+import { features } from "./config/environment";
+
+// ==================== Utils Imports ====================
 import { storageService, FIXED_CATEGORIES } from "./utils/storage";
 import { importService } from "./utils/importService";
 import { devError, devWarn } from "./utils/devLog";
-import { licenseService, AppLicenseStatus } from "./utils/licenseService";
-import { trialService, WarningPopupState } from "./utils/trialService";
-import { features } from "./config/environment";
+import { licenseService } from "./utils/licenseService";
+import { trialService } from "./utils/trialService";
+
+// ==================== Hooks Imports ====================
 import {
   useElectron,
   useAppStatus,
@@ -15,31 +26,39 @@ import {
   useVaultStatusSync,
 } from "./hooks";
 
-// Essential components - lazy load for faster initial load
-const LoginScreen = lazy(() => import("./components/LoginScreen").then(m => ({ default: m.LoginScreen })));
-const LicenseScreen = lazy(() => import("./components/LicenseScreen").then(m => ({ default: m.LicenseScreen })));
-const LicenseTransferDialog = lazy(() => import("./components/LicenseTransferDialog").then(m => ({ default: m.LicenseTransferDialog })));
-const OfflineIndicator = lazy(() => import("./components/OfflineIndicator").then(m => ({ default: m.OfflineIndicator })));
-import { SkipLink } from "./components/accessibility";
-
-// Lazy load heavy components - only load when needed
-const MainVault = lazy(() => import("./components/MainVault").then(m => ({ default: m.MainVault })));
-const FloatingPanel = lazy(() => import("./components/FloatingPanel").then(m => ({ default: m.FloatingPanel })));
-const ElectronFloatingPanel = lazy(() => import("./components/ElectronFloatingPanel").then(m => ({ default: m.ElectronFloatingPanel })));
-const TrialWarningPopup = lazy(() => import("./components/TrialWarningPopup").then(m => ({ default: m.TrialWarningPopup })));
-const LicenseKeyDisplay = lazy(() => import("./components/LicenseKeyDisplay").then(m => ({ default: m.LicenseKeyDisplay })));
-const DownloadPage = lazy(() => import("./components/DownloadPage").then(m => ({ default: m.DownloadPage })));
-const PurchaseSuccessPage = lazy(() => import("./components/PurchaseSuccessPage").then(m => ({ default: m.PurchaseSuccessPage })));
-const UndoToast = lazy(() => import("./components/UndoToast").then(m => ({ default: m.UndoToast })));
-
-// Hooks that can be imported directly (small)
+// ==================== Component Hooks (Direct Imports) ====================
 import { useNotification, Notification } from "./components/Notification";
 import { useWhatsNew } from "./components/WhatsNewModal";
 import { useOnboarding } from "./components/OnboardingTutorial";
 import { useKeyboardShortcuts } from "./components/KeyboardShortcutsModal";
 import { useSecurityBriefing } from "./components/SecurityBriefing";
+import { SkipLink } from "./components/accessibility";
 
-// Lazy load modals - only shown occasionally
+// ==================== Lazy-Loaded Core Components ====================
+const LoginScreen = lazy(() => import("./components/LoginScreen").then(m => ({ default: m.LoginScreen })));
+const LicenseScreen = lazy(() => import("./components/LicenseScreen").then(m => ({ default: m.LicenseScreen })));
+const MainVault = lazy(() => import("./components/MainVault").then(m => ({ default: m.MainVault })));
+const OfflineIndicator = lazy(() => import("./components/OfflineIndicator").then(m => ({ default: m.OfflineIndicator })));
+
+// ==================== Lazy-Loaded License Components ====================
+const LicenseTransferDialog = lazy(() => import("./components/LicenseTransferDialog").then(m => ({ default: m.LicenseTransferDialog })));
+const LicenseKeyDisplay = lazy(() => import("./components/LicenseKeyDisplay").then(m => ({ default: m.LicenseKeyDisplay })));
+
+// ==================== Lazy-Loaded Floating Panel Components ====================
+const FloatingPanel = lazy(() => import("./components/FloatingPanel").then(m => ({ default: m.FloatingPanel })));
+const ElectronFloatingPanel = lazy(() => import("./components/ElectronFloatingPanel").then(m => ({ default: m.ElectronFloatingPanel })));
+
+// ==================== Lazy-Loaded Trial Components ====================
+const TrialWarningPopup = lazy(() => import("./components/TrialWarningPopup").then(m => ({ default: m.TrialWarningPopup })));
+
+// ==================== Lazy-Loaded Page Components ====================
+const DownloadPage = lazy(() => import("./components/DownloadPage").then(m => ({ default: m.DownloadPage })));
+const PurchaseSuccessPage = lazy(() => import("./components/PurchaseSuccessPage").then(m => ({ default: m.PurchaseSuccessPage })));
+
+// ==================== Lazy-Loaded UI Components ====================
+const UndoToast = lazy(() => import("./components/UndoToast").then(m => ({ default: m.UndoToast })));
+
+// ==================== Lazy-Loaded Modal Components ====================
 const WhatsNewModal = lazy(() => import("./components/WhatsNewModal").then(m => ({ default: m.WhatsNewModal })));
 const OnboardingTutorial = lazy(() => import("./components/OnboardingTutorial").then(m => ({ default: m.OnboardingTutorial })));
 const KeyboardShortcutsModal = lazy(() => import("./components/KeyboardShortcutsModal").then(m => ({ default: m.KeyboardShortcutsModal })));

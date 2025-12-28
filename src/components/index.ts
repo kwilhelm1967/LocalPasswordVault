@@ -4,11 +4,14 @@
  * Centralized exports for all components.
  * Organized by feature area for cleaner imports.
  *
- * Usage:
- *   import { LoginScreen, Dashboard, MainVault } from './components';
+ * @example
+ * ```tsx
+ * import { LoginScreen, Dashboard, MainVault } from './components';
+ * import { LicenseScreen, LicenseTransferDialog } from './components';
+ * ```
  */
 
-// ==================== Core App Components ====================
+// ==================== Core Application Components ====================
 export { LoginScreen } from './LoginScreen';
 export { MainVault } from './MainVault';
 export { Dashboard } from './Dashboard';
@@ -16,45 +19,44 @@ export { Settings } from './Settings';
 export { EntryForm } from './EntryForm';
 export { FAQ } from './FAQ';
 
-// ==================== Authentication ====================
-export { ForgotPassword } from './ForgotPassword';
-export { RecoveryPhraseSetup } from './RecoveryPhraseSetup';
-export { RecoveryOptionsScreen } from './RecoveryOptionsScreen';
+// ==================== Authentication & Recovery ====================
+export * from './auth';
 
 // ==================== License & Activation ====================
-export { LicenseScreen } from './LicenseScreen';
-export { KeyActivationScreen } from './KeyActivationScreen';
-export { LicenseKeyDisplay } from './LicenseKeyDisplay';
+export * from './license';
 export { LicenseTransferDialog } from './LicenseTransferDialog';
-export { LoadingSpinner, LoadingOverlay } from './LoadingSpinner';
+export { LicenseStatusDashboard } from './LicenseStatusDashboard';
+export { DeviceManagementScreen } from './DeviceManagementScreen';
 export { EulaAgreement } from './EulaAgreement';
 
-// ==================== Trial ====================
-export { TrialStatusBanner } from './TrialStatusBanner';
-export { TrialExpirationBanner } from './TrialExpirationBanner';
-export { TrialWarningPopup } from './TrialWarningPopup';
-export { ExpiredTrialScreen } from './ExpiredTrialScreen';
-export { TrialTestingTools } from './TrialTestingTools';
+// ==================== Trial Management ====================
+export * from './trial';
 
 // ==================== Vault Components ====================
 export * from './vault';
 
-// ==================== UI Components ====================
+// ==================== UI Components & Feedback ====================
 export { ErrorBoundary } from './ErrorBoundary';
+export { LazyErrorBoundary } from './LazyErrorBoundary';
 export { Skeleton, SkeletonCard, SkeletonList } from './Skeleton';
+export { LoadingSpinner, LoadingOverlay } from './LoadingSpinner';
 export { OfflineIndicator } from './OfflineIndicator';
+export { Notification } from './Notification';
 export { UndoToast } from './UndoToast';
 export { CategoryIcon } from './CategoryIcon';
 export { PasswordGenerator } from './PasswordGenerator';
 export { LanguageSelector } from './LanguageSelector';
+export { PerformanceProfiler } from './PerformanceProfiler';
 
-// ==================== Modals ====================
+// ==================== Modals & Overlays ====================
 export { KeyboardShortcutsModal, useKeyboardShortcuts } from './KeyboardShortcutsModal';
 export { WhatsNewModal, useWhatsNew } from './WhatsNewModal';
 export { OnboardingTutorial, useOnboarding } from './OnboardingTutorial';
+export { SecurityBriefing, useSecurityBriefing } from './SecurityBriefing';
 export { MobileAccess } from './MobileAccess';
+export * from './modals';
 
-// ==================== Floating Panel (Electron) ====================
+// ==================== Floating Panel Components ====================
 export { FloatingButton } from './FloatingButton';
 export { FloatingPanel } from './FloatingPanel';
 export { ElectronFloatingPanel } from './ElectronFloatingPanel';
@@ -64,8 +66,8 @@ export { DownloadPage } from './DownloadPage';
 export { DownloadInstructions } from './DownloadInstructions';
 export { PurchaseSuccessPage } from './PurchaseSuccessPage';
 
-// ==================== Accessibility ====================
+// ==================== Accessibility Components ====================
 export * from './accessibility';
 
-// ==================== Settings Modals ====================
+// ==================== Settings Components ====================
 export * from './settings';

@@ -2,14 +2,25 @@
  * Utilities Index - Local Password Vault
  *
  * Centralized exports for all utility functions.
+ * Organized by functional area for cleaner imports.
  *
- * Usage:
- *   import { storageService, validateLicenseKey } from './utils';
+ * @example
+ * ```ts
+ * import { storageService, validateLicenseKey } from './utils';
+ * import { memorySecurity, secureWipe } from './utils';
+ * ```
  */
 
-// ==================== Storage & Encryption ====================
+// ==================== Storage & Data Management ====================
 export { storageService, StorageService } from './storage';
+export { indexedDBStorage } from './indexedDBStorage';
+export { repository } from './repository';
+export { storageQuotaHandler } from './storageQuotaHandler';
+export { corruptionHandler } from './corruptionHandler';
+
+// ==================== Security & Encryption ====================
 export { memorySecurity, secureWipe, secureCompare } from './memorySecurity';
+export { sanitizeTextField as sanitize } from './sanitization';
 
 // ==================== Validation & Sanitization ====================
 export {
@@ -21,11 +32,12 @@ export {
   validateLicenseKey,
   formatLicenseKey,
 } from './validation';
-export { sanitizeTextField as sanitize } from './sanitization';
+export { commonValidation } from './commonValidation';
+export { typeGuards } from './typeGuards';
 
-// ==================== License & Trial ====================
+// ==================== License Management ====================
 export { licenseService } from './licenseService';
-export { trialService } from './trialService';
+export { licenseValidator } from './licenseValidator';
 export { 
   SINGLE_USER_LICENSES, 
   FAMILY_LICENSES, 
@@ -33,21 +45,24 @@ export {
   getLicenseType 
 } from './licenseKeys';
 
-// ==================== Authentication ====================
+// ==================== Trial Management ====================
+export { trialService } from './trialService';
+
+// ==================== Authentication & Recovery ====================
 export { generateRecoveryPhrase, verifyRecoveryPhrase, storeRecoveryPhrase } from './recoveryPhrase';
 export { generateLPVHardwareFingerprint } from './deviceFingerprint';
 export { generateHardwareFingerprint } from './hardwareFingerprint';
 
-// ==================== 2FA / TOTP ====================
+// ==================== Two-Factor Authentication (TOTP) ====================
 export { generateTOTP, getTimeRemaining, isValidTOTPSecret } from './totp';
 
-// ==================== Import/Export ====================
+// ==================== Import/Export Services ====================
 export { importService } from './importService';
 
-// ==================== Mobile ====================
+// ==================== Mobile Services ====================
 export { mobileService } from './mobileService';
 
-// ==================== Sound Effects ====================
+// ==================== User Feedback (Sound Effects) ====================
 export { 
   playLockSound, 
   playCopySound, 
@@ -56,7 +71,7 @@ export {
   playErrorSound 
 } from './soundEffects';
 
-// ==================== Error Handling ====================
+// ==================== Error Handling & Recovery ====================
 export { 
   ErrorHandler, 
   useErrorHandler, 
@@ -69,22 +84,8 @@ export {
   AuthenticationError
 } from './errorHandling';
 
-// ==================== Analytics (placeholder) ====================
+// ==================== Analytics & Monitoring ====================
 export { analyticsService } from './analyticsService';
-
-// ==================== Development Logging ====================
-export { devLog, devWarn, devError, devLogLabeled, devLogIf } from './devLog';
-
-// ==================== Safe Utilities ====================
-export { 
-  safeParseJSON, 
-  safeGetLocalStorage, 
-  safeSetLocalStorage, 
-  safeParseJWT,
-  safeGet 
-} from './safeUtils';
-
-// ==================== Performance Monitoring ====================
 export {
   trackRender,
   measureOperation,
@@ -94,3 +95,18 @@ export {
   clearMetrics,
   getMetricsSummary,
 } from './performanceMonitor';
+
+// ==================== Development Tools ====================
+export { devLog, devWarn, devError, devLogLabeled, devLogIf } from './devLog';
+export { sentry } from './sentry';
+
+// ==================== Safe Utilities & Helpers ====================
+export { 
+  safeParseJSON, 
+  safeGetLocalStorage, 
+  safeSetLocalStorage, 
+  safeParseJWT,
+  safeGet 
+} from './safeUtils';
+export { serviceRegistry } from './serviceRegistry';
+export { apiClient } from './apiClient';
