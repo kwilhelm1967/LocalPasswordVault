@@ -63,19 +63,19 @@ The **backend templates** are the email HTML files that the backend server uses 
 **Deploy the updated code to your production server** so the server uses the fixed templates:
 
 1. **SSH into Production Server**:
-   ```bash
+   ```
    ssh root@YOUR-SERVER-IP
    ```
 
 2. **Update Code on Server**:
-   ```bash
+   ```
    cd /var/www/lpv-api
    git pull
    ```
    (Replace ```/var/www/lpv-api``` with wherever your backend is deployed)
 
 3. **Restart Backend Server**:
-   ```bash
+   ```
    pm2 restart lpv-api
    pm2 status
    ```
@@ -149,7 +149,7 @@ The **backend templates** are the email HTML files that the backend server uses 
    - (Optional) Code sign installer if certificate is available
 
 2. **macOS Build** (if needed):
-   ```bash
+   ```
    npm run dist:mac
    ```
    (requires macOS system or CI/CD)
@@ -157,7 +157,7 @@ The **backend templates** are the email HTML files that the backend server uses 
    - (Optional) Code sign and notarize if Apple Developer account available
 
 3. **Linux Build** (if needed):
-   ```bash
+   ```
    npm run dist:linux
    ```
    (requires Linux system or CI/CD)
