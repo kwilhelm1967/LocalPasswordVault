@@ -48,7 +48,7 @@ The error occurs in the license activation flow when the application cannot succ
 
 ---
 
-## 📋 Backend Server Deployment
+## 📋 Backend Server Deployment - Update Templates
 
 ### Task: Deploy Updated Backend Templates to Production Server
 
@@ -83,98 +83,38 @@ The error occurs in the license activation flow when the application cannot succ
    - Verify the email contains the correct `.exe` download link
    - Link should be: `https://github.com/kwilhelm1967/Vault/releases/download/V1.2.0/Local.Password.Vault.Setup.1.2.0.exe`
 
-**Status**: ⏳ PENDING - Templates fixed in code, but not yet deployed to server
+**Reference**: See `docs/DEPLOY_TO_LINODE.md` for detailed deployment instructions
 
 ---
 
-## 🔧 Backend Server Initial Deployment (If Not Yet Deployed)
+## 💳 Stripe Configuration - Complete Live Key Setup
 
-### Task: Complete Backend Server Setup
-
-**Location**: See `docs/DEPLOY_TO_LINODE.md` for complete instructions
-
-**Essential Steps**:
-1. **Server Setup**:
-   - Install Node.js 18+ on server
-   - Install PM2: `npm install -g pm2`
-   - Create deployment directory: `/var/www/lpv-api`
-
-2. **Backend Code Deployment**:
-   - Clone repository or upload backend folder
-   - Install dependencies: `npm install`
-   - Create `.env` file with all required environment variables
-
-3. **Required Environment Variables** (see `backend/env.example`):
-   - `NODE_ENV=production`
-   - `PORT=3001`
-   - `SUPABASE_URL` - Database connection URL
-   - `SUPABASE_SERVICE_KEY` - Database service role key
-   - `LICENSE_SIGNING_SECRET` - 64-character hex string (generate with `openssl rand -hex 32`)
-   - `STRIPE_SECRET_KEY` - Stripe live secret key
-   - `STRIPE_WEBHOOK_SECRET` - Stripe webhook signing secret
-   - `STRIPE_PRICE_*` - All Stripe price IDs for products
-   - `BREVO_API_KEY` - Email service API key
-   - `FROM_EMAIL` - Sender email address
-   - `SUPPORT_EMAIL` - Support email address
-   - `WEBSITE_URL` - Website URL
-   - `ADMIN_API_KEY` - Admin dashboard API key
-
-4. **Start Server**:
-   ```bash
-   pm2 start server.js --name lpv-api
-   pm2 startup  # Enable auto-start on reboot
-   pm2 save
-   ```
-
-5. **Configure Domain/SSL**:
-   - Set up DNS for API domain (e.g., `api.localpasswordvault.com`)
-   - Configure SSL certificate (Let's Encrypt or Cloudflare)
-   - Test health endpoint: `curl https://api.localpasswordvault.com/health`
-
-6. **Verify Backend is Accessible**:
-   - Test from browser: `https://api.localpasswordvault.com/health`
-   - Should return: `{"status":"ok"}`
-   - Test from Electron app (if possible)
-
-**Status**: ⏳ PENDING - Verify if backend is already deployed or needs initial setup
-
----
-
-## 💳 Stripe Configuration
-
-### Task: Complete Stripe Payment Setup
+### Task: Get and Configure Stripe Live Secret Key
 
 **What Needs to be Done**:
 
-1. **Create Stripe Products** (if not already created):
-   - Personal Vault - $49
-   - Family Vault - $79
-   - LLV Personal - $49
-   - LLV Family - $129
-
-2. **Get Stripe Live Secret Key**:
+1. **Get Stripe Live Secret Key**:
    - Go to Stripe Dashboard → Developers → API keys
-   - Switch to "Live mode"
+   - Switch to "Live mode" (toggle in top right)
    - Create or copy secret key (starts with `sk_live_`)
-   - Add to backend `.env`: `STRIPE_SECRET_KEY=sk_live_xxxxx`
+   - Add to backend `.env` file: `STRIPE_SECRET_KEY=sk_live_xxxxx`
 
-3. **Configure Stripe Webhook**:
-   - Create webhook endpoint: `https://api.localpasswordvault.com/api/webhooks/stripe`
-   - Select event: `checkout.session.completed`
-   - Copy webhook signing secret (starts with `whsec_`)
-   - Add to backend `.env`: `STRIPE_WEBHOOK_SECRET=whsec_xxxxx`
+2. **Verify Stripe Webhook is Configured**:
+   - Check webhook endpoint exists: `https://api.localpasswordvault.com/api/webhooks/stripe`
+   - Verify event: `checkout.session.completed` is selected
+   - Verify webhook signing secret is in backend `.env`: `STRIPE_WEBHOOK_SECRET=whsec_xxxxx`
 
-4. **Test Webhook**:
+3. **Test Webhook** (if not already tested):
    - Send test event from Stripe dashboard
    - Verify webhook is received and processed
    - Check backend logs for webhook processing
    - Verify license key is generated in database
 
-**Status**: ⏳ PENDING - Stripe price IDs are configured, but live secret key may need to be added
+**Note**: Stripe price IDs are already configured. This task is specifically for getting the live secret key.
 
 ---
 
-## 🧪 Testing & Verification
+## 🧪 Testing & Verification - End-to-End Testing
 
 ### Task: Complete End-to-End Testing
 
@@ -183,13 +123,13 @@ The error occurs in the license activation flow when the application cannot succ
 1. **End-to-End Purchase Flow**:
    - Test complete purchase flow from website to app activation
    - Verify payment processes through Stripe
-   - Verify webhook creates license key
+   - Verify webhook creates license key in database
    - Verify email is sent with license key and download links
-   - Verify download links work (point to `.exe` files, not `.zip`)
-   - Download and install application
+   - Verify download links in email work (point to `.exe` files, not `.zip`)
+   - Download and install application from email link
    - Activate license key in app
    - Verify activation succeeds
-   - Disconnect internet and verify app works offline
+   - Disconnect internet and verify app works completely offline
 
 2. **Trial Flow Testing**:
    - Request trial on website
@@ -201,192 +141,182 @@ The error occurs in the license activation flow when the application cannot succ
 3. **Error Scenario Testing**:
    - Test with invalid license key format
    - Test with non-existent license key
-   - Test network failure scenarios (should show appropriate error)
+   - Test network failure scenarios (should show appropriate error message)
    - Test device transfer flow
    - Test transfer limit enforcement
 
-4. **Offline Operation Verification**:
-   - After activation, disconnect internet
+4. **Offline Operation Verification** (Critical):
+   - After activation, disconnect internet completely
    - Use app for extended period (30+ minutes)
-   - Verify zero network requests (check DevTools Network tab)
+   - Open browser DevTools → Network tab
+   - Verify ZERO network requests (check for any Fetch/XHR/WS requests)
    - Restart app while offline
    - Verify app loads and works completely offline
 
 5. **Cross-Platform Testing** (if applicable):
-   - Test on Windows (primary)
+   - Test on Windows (primary platform)
    - Test on macOS (if built)
    - Test on Linux (if built)
 
-**Status**: ⏳ PENDING - Comprehensive testing needed before launch
-
 ---
 
-## 📦 Application Builds
+## 📦 Application Builds - Build and Test Installers
 
-### Task: Build and Test Application Installers
+### Task: Build and Verify Application Installers
 
 **What Needs to be Done**:
 
 1. **Windows Build**:
    - Run: `npm run dist:win`
-   - Test installer on clean Windows machine
+   - Test installer on clean Windows machine (not your development machine)
    - Verify installer creates proper shortcuts
-   - Verify app launches correctly
+   - Verify app launches correctly after installation
+   - Test activation flow with the built installer
    - (Optional) Code sign installer if certificate is available
 
 2. **macOS Build** (if needed):
-   - Run: `npm run dist:mac` (requires macOS system)
+   - Run: `npm run dist:mac` (requires macOS system or CI/CD)
    - Test DMG on clean macOS machine
    - (Optional) Code sign and notarize if Apple Developer account available
 
 3. **Linux Build** (if needed):
-   - Run: `npm run dist:linux` (requires Linux system)
+   - Run: `npm run dist:linux` (requires Linux system or CI/CD)
    - Test AppImage on clean Linux machine
 
 4. **Upload to GitHub Releases**:
-   - Create release tag: `v1.2.0`
+   - Go to: https://github.com/kwilhelm1967/Vault/releases
+   - Create or edit release with tag: `v1.2.0`
    - Upload installer files
    - Verify download links work
    - Test download from different network locations
 
-**Status**: ⏳ PENDING - Windows build may exist, but needs verification
+**Note**: Windows installer filename should be: `Local.Password.Vault.Setup.1.2.0.exe`
 
 ---
 
-## 📧 Email Service Verification
+## 📧 Email Service Verification - Test Email Delivery
 
-### Task: Verify Email Service is Working
+### Task: Verify Email Service is Working Correctly
 
 **What Needs to be Done**:
 
 1. **Brevo Configuration Verification**:
-   - Verify Brevo API key is correct in backend `.env`
-   - Verify sender email is verified in Brevo dashboard
-   - Test email sending from backend
+   - Verify Brevo API key is correct in backend `.env` file
+   - Verify sender email address is verified in Brevo dashboard
+   - Test email sending from backend (check backend logs)
 
 2. **Email Template Testing**:
-   - Send test trial email
+   - Send test trial welcome email
    - Send test purchase confirmation email
    - Verify email content is correct
-   - Verify download links in emails work
-   - Verify links point to `.exe` files (not `.zip`)
+   - Verify download links in emails work (click them)
+   - **Critical**: Verify links point to `.exe` files (not `.zip`) - this is why templates need to be deployed to server
 
 3. **Email Deliverability**:
-   - Test emails reach inbox (not spam)
-   - Test from multiple email providers
-   - Verify email formatting is correct
+   - Test emails reach inbox (not spam folder)
+   - Test from multiple email providers (Gmail, Outlook, etc.)
+   - Verify email formatting renders correctly
+   - Check that all images/assets load correctly
 
-**Status**: ⏳ PENDING - Email service may be configured but needs testing
+**Note**: After deploying updated templates to server, verify emails contain correct download links.
 
 ---
 
-## 🔍 Monitoring & Error Tracking
+## 🔍 Monitoring & Error Tracking - Sentry Configuration (Optional)
 
-### Task: Set Up Production Monitoring
+### Task: Set Up Production Monitoring (Optional but Recommended)
 
 **What Needs to be Done**:
 
-1. **Sentry Configuration** (Optional but Recommended):
-   - Create Sentry account
-   - Create Node.js project
-   - Get DSN
-   - Add `SENTRY_DSN` to backend `.env`
-   - Test error tracking
+1. **Sentry Configuration**:
+   - Create Sentry account at https://sentry.io
+   - Create new Node.js project
+   - Get DSN from Sentry project settings
+   - Add `SENTRY_DSN` to backend `.env` file
+   - Verify Sentry integration (test by triggering an error)
 
-2. **Backend Log Monitoring**:
-   - Set up log aggregation (optional)
+2. **Backend Log Monitoring** (if desired):
+   - Set up log aggregation service (optional)
    - Verify structured logging is working
    - Monitor for errors in production
 
 3. **Webhook Monitoring**:
-   - Monitor Stripe webhook processing
-   - Set up alerts for webhook failures
-   - Verify webhook failure emails are sent
+   - Monitor Stripe webhook processing in production
+   - Set up alerts for webhook failures (if using monitoring service)
+   - Verify webhook failure emails are sent to support email
 
-**Status**: ⏳ PENDING - Monitoring setup needed for production
+**Note**: This is optional but recommended for production. Backend Sentry does not affect the app's offline operation.
 
 ---
 
-## 🌐 DNS & Domain Configuration
+## 🌐 DNS & Domain Configuration - Verify Domain Setup
 
 ### Task: Verify Domain Configuration
 
 **What Needs to be Done**:
 
-1. **API Domain**:
-   - Verify `api.localpasswordvault.com` (or configured domain) points to backend server
-   - Verify SSL certificate is valid
-   - Test health endpoint is accessible
+1. **API Domain Verification**:
+   - Verify `api.localpasswordvault.com` (or configured API domain) points to backend server
+   - Verify SSL certificate is valid and not expired
+   - Test health endpoint is accessible: `curl https://api.localpasswordvault.com/health`
+   - Should return: `{"status":"ok"}`
 
-2. **Website Domain**:
+2. **Website Domain Verification**:
    - Verify `localpasswordvault.com` is configured correctly
-   - Verify SSL certificate is valid
+   - Verify SSL certificate is valid and not expired
+   - Test website loads correctly
 
 3. **DNS Propagation**:
-   - Verify DNS changes have propagated
+   - Verify DNS changes have propagated (use DNS checker tools)
    - Test from multiple locations if possible
+   - Verify no DNS errors in browser console
 
-**Status**: ⏳ PENDING - Domain configuration may need verification
+4. **Electron App Connection Test**:
+   - Test that Electron app can reach the API domain
+   - This relates directly to the connection error issue above
 
 ---
 
-## ✅ CI/CD Pipeline Verification
+## ✅ CI/CD Verification - Ensure Tests Pass
 
-### Task: Verify Automated Tests Pass
+### Task: Verify Automated Tests Pass in CI
 
 **What Needs to be Done**:
 
 1. **Check CI Test Results**:
+   - Go to GitHub Actions (or your CI/CD platform)
    - Verify unit tests pass
    - Verify e2e tests pass
-   - Fix any failing tests
+   - Fix any failing tests if they exist
 
 2. **Review Test Coverage**:
-   - Ensure critical paths are covered
-   - Add tests for any new changes
+   - Ensure critical paths are covered by tests
+   - Add tests for any recent changes if needed
 
-**Status**: ⏳ PENDING - Tests were recently fixed, but need verification they pass in CI
-
----
-
-## 📝 Documentation Updates
-
-### Task: Update Documentation for Production
-
-**What Needs to be Done**:
-
-1. **Update Deployment Guides**:
-   - Verify all deployment steps are documented
-   - Add any missing configuration steps
-   - Document any server-specific requirements
-
-2. **Update User Documentation**:
-   - Verify user manual is complete
-   - Verify troubleshooting guide covers common issues
-   - Update download instructions if needed
-
-**Status**: ⏳ MOSTLY COMPLETE - Documentation exists but may need final review
+**Note**: Unit tests were recently fixed to properly mock `apiClient`. Verify they pass in CI environment.
 
 ---
 
 ## 🎯 Priority Summary
 
-### High Priority (Must Complete Before Launch):
-1. **Fix Connection Error** - Red box error when activating licenses
-2. **Deploy Backend Templates** - Update server with corrected email templates
-3. **Verify Backend Server** - Ensure backend is accessible and responding
-4. **Complete Stripe Setup** - Get live secret key if not already done
-5. **End-to-End Testing** - Test complete purchase and activation flow
+### Critical (Must Complete):
+1. **Fix Connection Error** - Red box error when activating licenses (blocks user activation)
+2. **Deploy Backend Templates** - Update server with corrected email templates (affects user experience)
+3. **Verify Backend Server** - Ensure backend is accessible (required for connection error fix)
 
-### Medium Priority (Should Complete):
-6. **Build Verification** - Test Windows installer on clean machine
+### High Priority:
+4. **Complete Stripe Setup** - Get live secret key (required for payments)
+5. **End-to-End Testing** - Test complete purchase and activation flow (verify everything works)
+6. **Build Verification** - Test Windows installer on clean machine (verify users can install)
+
+### Medium Priority:
 7. **Email Service Testing** - Verify emails are sent and received correctly
-8. **Error Scenario Testing** - Test error handling and edge cases
+8. **DNS & Domain Verification** - Ensure domains are properly configured
+9. **CI/CD Verification** - Ensure automated tests pass
 
 ### Low Priority (Can Complete After Launch):
-9. **Monitoring Setup** - Sentry configuration
-10. **macOS/Linux Builds** - If needed for other platforms
-11. **Documentation Polish** - Final documentation review
+10. **Monitoring Setup** - Sentry configuration (optional but recommended)
+11. **Cross-Platform Builds** - macOS/Linux builds (if needed)
 
 ---
 
@@ -401,4 +331,4 @@ The error occurs in the license activation flow when the application cannot succ
 ---
 
 **Last Updated**: Based on current codebase state
-**Note**: This document should be updated as tasks are completed
+**Note**: Focus on completing Critical and High Priority items before launch
