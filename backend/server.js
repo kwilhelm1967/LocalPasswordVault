@@ -51,11 +51,27 @@ if (process.env.NODE_ENV === 'development') {
   allowedOrigins.push('http://localhost:5173', 'http://localhost:3000');
 }
 
-app.use(cors({
-  origin: allowedOrigins,
+// Allow Electron app requests (file:// and electron:// protocols)
+// Electron apps don't send Origin header, so we need to allow requests without origin
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like Electron apps, mobile apps, or curl)
+    if (!origin) {
+      return callback(null, true);
+    }
+    // Allow requests from allowed origins
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   methods: ['GET', 'POST'],
   allowedHeaders: ['Content-Type', 'Authorization'],
-}));
+  credentials: false,
+};
+
+app.use(cors(corsOptions));
 
 // General API rate limit (less strict)
 app.use('/api/', rateLimit({
