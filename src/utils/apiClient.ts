@@ -62,8 +62,6 @@ class ApiClient {
 
   constructor(baseUrl?: string) {
     this.baseUrl = baseUrl || (environment?.environment?.licenseServerUrl ?? "https://server.localpasswordvault.com");
-    // Log the base URL for debugging
-    devLog('API Client initialized with baseUrl:', this.baseUrl);
     this.defaultHeaders = {
       "Content-Type": "application/json",
     };
@@ -177,31 +175,27 @@ class ApiClient {
 
     // Retry loop
     const fullUrl = `${this.baseUrl}${endpoint}`;
-    devLog(`Making ${processedConfig.method} request to:`, fullUrl);
     
     for (let attempt = 0; attempt <= (processedConfig.retries || 0); attempt++) {
       try {
         const requestBody = processedConfig.body
           ? JSON.stringify(processedConfig.body)
           : undefined;
-
-        devLog(`Attempt ${attempt + 1}: Fetching`, fullUrl);
         
         // Try Electron's native HTTP request first (bypasses all browser restrictions)
+        // Only use Electron API if it's actually available (not in test environment)
         let response;
-        if (window.electronAPI && window.electronAPI.httpRequest) {
+        const hasElectronAPI = typeof window !== 'undefined' && 
+                               window.electronAPI && 
+                               typeof window.electronAPI.httpRequest === 'function';
+        
+        if (hasElectronAPI) {
           try {
-            devLog('[API Client] Using Electron native HTTP request');
-            devLog('[API Client] Request URL:', fullUrl);
-            devLog('[API Client] Request method:', processedConfig.method);
             const electronResponse = await window.electronAPI.httpRequest(fullUrl, {
               method: processedConfig.method,
               headers: processedConfig.headers,
               body: requestBody,
             });
-            // Electron response already has the data
-            devLog(`[API Client] Electron response status:`, electronResponse.status, electronResponse.statusText);
-            devLog(`[API Client] Electron response ok:`, electronResponse.ok);
             
             if (!electronResponse.ok) {
               const errorData = electronResponse.data || {};
@@ -234,8 +228,7 @@ class ApiClient {
             };
           }
         } else {
-          devLog('[API Client] Electron API not available, using fetch');
-          // Use regular fetch if Electron API not available
+          // Use regular fetch if Electron API not available (e.g., in tests or browser)
           response = await fetch(fullUrl, {
             method: processedConfig.method,
             headers: processedConfig.headers,
@@ -244,7 +237,6 @@ class ApiClient {
             mode: 'cors',
             credentials: 'omit',
           });
-          devLog(`[API Client] Fetch response status:`, response.status, response.statusText);
         }
 
         // Check if response is ok
@@ -279,9 +271,6 @@ class ApiClient {
 
         // Handle network errors
         if (error instanceof TypeError && error.message.includes("fetch")) {
-          // Log the actual error for debugging
-          devError('Network fetch error:', error);
-          devError('Attempted URL:', `${this.baseUrl}${endpoint}`);
           lastError = {
             code: "NETWORK_ERROR",
             message: `Network request failed: ${error.message}. URL: ${this.baseUrl}${endpoint}`,

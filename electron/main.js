@@ -46,14 +46,13 @@ app.on('second-instance', () => {
   }
 });
 
-// Add process error handlers for debugging
+// Process error handlers
 process.on("uncaughtException", (error) => {
   console.error("Uncaught Exception:", error);
-  console.error("Stack:", error.stack);
 });
 
 process.on("unhandledRejection", (reason, promise) => {
-  console.error("Unhandled Rejection at:", promise, "reason:", reason);
+  console.error("Unhandled Rejection:", reason);
 });
 
 let mainWindow;
@@ -158,11 +157,6 @@ const createWindow = () => {
       mainWindow.webContents.openDevTools();
     }
   } else {
-    // Enable DevTools in production for debugging (remove after fixing)
-    // Open DevTools after window is ready
-    mainWindow.webContents.once('did-finish-load', () => {
-      mainWindow.webContents.openDevTools();
-    });
     // In production, resolve the correct path to the built HTML file
     // When packaged, __dirname points to electron/ inside app.asar
     // dist/ folder is also inside app.asar at the same level as electron/
@@ -177,11 +171,7 @@ const createWindow = () => {
       htmlPath = path.join(__dirname, "../dist/index.html");
     }
     
-    console.log("Loading HTML from:", htmlPath);
-    console.log("__dirname:", __dirname);
-    console.log("app.isPackaged:", app.isPackaged);
     
-    // Add error handlers for debugging
     mainWindow.webContents.on("did-fail-load", (event, errorCode, errorDescription, validatedURL) => {
       console.error("Failed to load page:", {
         errorCode,
@@ -543,7 +533,6 @@ const createFloatingButton = () => {
 
     // SECURITY: Do not create floating button if trial is expired AND no valid license
     if (isTrialExpired && !hasValidLicense) {
-      console.log("SECURITY: Floating button creation blocked - trial expired and no valid license");
       return null;
     }
 
@@ -1049,11 +1038,8 @@ const validateAndEnforceTrialStatus = () => {
 
     // SECURITY: If trial is expired and no valid license, enforce restrictions
     if (isTrialExpired && !hasValidLicense) {
-      console.log("PERIODIC CHECK: Trial expired - enforcing restrictions");
-
       // Force destroy floating button if it exists
       if (floatingButton && !floatingButton.isDestroyed()) {
-        console.log("Destroying floating button due to trial expiration");
         try {
           floatingButton.removeAllListeners();
           floatingButton.destroy();
@@ -1065,7 +1051,6 @@ const validateAndEnforceTrialStatus = () => {
 
       // Force close floating window if it exists
       if (floatingWindow && !floatingWindow.isDestroyed()) {
-        console.log("Closing floating window due to trial expiration");
         try {
           floatingWindow.close();
         } catch (error) {
@@ -1076,7 +1061,6 @@ const validateAndEnforceTrialStatus = () => {
 
       // Lock vault if it's unlocked
       if (isVaultUnlocked) {
-        console.log("Locking vault due to trial expiration");
         isVaultUnlocked = false;
 
         // Send lock message to all windows
@@ -1094,30 +1078,22 @@ const validateAndEnforceTrialStatus = () => {
 };
 
 app.on("window-all-closed", () => {
-  console.log("All windows closed! Platform:", process.platform);
   // Force close all floating windows
   if (floatingWindow && !floatingWindow.isDestroyed()) {
-    console.log("Destroying floating window...");
     floatingWindow.destroy();
   }
   if (floatingButton) {
     try {
       if (!floatingButton.isDestroyed()) {
-        floatingButton.removeAllListeners(); // optional, defensive
-        floatingButton.destroy(); // Use destroy, NOT just close
+        floatingButton.removeAllListeners();
+        floatingButton.destroy();
       }
     } catch (err) {
-      console.error(
-        "Error destroying floatingButton on window-all-closed:",
-        err
-      );
+      console.error("Error destroying floatingButton on window-all-closed:", err);
     }
     floatingButton = null;
-    console.log("Destroying floating button...");
   }
 
-  // On macOS, also quit the app when all windows are closed
-  console.log("Quitting app...");
   app.quit();
 });
 
@@ -1219,13 +1195,10 @@ ipcMain.handle("hide-floating-panel", () => {
 });
 
 ipcMain.handle("is-floating-panel-open", () => {
-  const isOpen =
-    floatingWindow !== null &&
+  return floatingWindow !== null &&
     floatingWindow !== undefined &&
     !floatingWindow.isDestroyed() &&
     floatingWindow.isVisible();
-  console.log("Floating panel open check:", isOpen);
-  return isOpen;
 });
 
 // Handle minimize main window
@@ -1299,7 +1272,6 @@ ipcMain.handle("set-always-on-top", (event, flag) => {
 ipcMain.handle("save-floating-panel-position", (event, x, y) => {
   if (typeof x === "number" && typeof y === "number") {
     savePosition(x, y);
-    console.log("Manually saved position:", x, y);
   }
   return true;
 });
@@ -1308,7 +1280,6 @@ ipcMain.handle("save-floating-panel-position", (event, x, y) => {
 const vaultHandlers = {
   "vault-unlocked": async () => {
     try {
-      console.log("Vault unlocked");
       isVaultUnlocked = true;
 
       mainWindow?.webContents.send("vault-status-changed", isVaultUnlocked);
@@ -1344,7 +1315,6 @@ const vaultHandlers = {
 
       // SECURITY: Only create floating button if trial is NOT expired OR user has valid license
       if (isTrialExpired && !hasValidLicense) {
-        console.log("Trial expired and no valid license - NOT creating floating button");
         // Force cleanup any existing floating button
         if (floatingButton && !floatingButton.isDestroyed()) {
           floatingButton.removeAllListeners();
@@ -1363,7 +1333,6 @@ const vaultHandlers = {
       }
 
       if (!floatingButton || floatingButton.isDestroyed()) {
-        console.log("Creating floating button for unlocked vault (valid trial/license)...");
         floatingButton = createFloatingButton();
       }
       return true;
@@ -1374,7 +1343,6 @@ const vaultHandlers = {
   },
   "vault-locked": () => {
     try {
-      console.log("Vault locked");
       isVaultUnlocked = false;
 
       // Clear temporary memory on lock
@@ -1398,14 +1366,12 @@ const vaultHandlers = {
       }
 
       if (floatingWindow && !floatingWindow.isDestroyed()) {
-        console.log("Closing floatingWindow for locked vault...");
         floatingWindow.close();
         floatingWindow = null;
       }
 
       // Restore and show main window when vault is locked
       if (mainWindow && !mainWindow.isDestroyed()) {
-        console.log("Restoring main window for locked vault...");
         mainWindow.restore();
         mainWindow.show();
         mainWindow.focus();
@@ -1449,11 +1415,8 @@ ipcMain.handle("open-external", async (event, url) => {
 // Floating button IPC handlers
 ipcMain.handle("show-floating-button", () => {
   try {
-    console.log("IPC: show-floating-button requested");
     const button = createFloatingButton();
-    const success = button !== null;
-    console.log("IPC: show-floating-button result:", success);
-    return success;
+    return button !== null;
   } catch (error) {
     console.error("Error in show-floating-button IPC handler:", error);
     return false;
@@ -1462,21 +1425,18 @@ ipcMain.handle("show-floating-button", () => {
 
 ipcMain.handle("hide-floating-button", () => {
   try {
-    console.log("IPC: hide-floating-button requested");
     if (floatingButton) {
       try {
         if (!floatingButton.isDestroyed()) {
-          floatingButton.removeAllListeners(); // optional, defensive
-          floatingButton.destroy(); // Use destroy, NOT just close
+          floatingButton.removeAllListeners();
+          floatingButton.destroy();
         }
       } catch (err) {
         console.error("Error destroying floatingButton in IPC handler:", err);
       }
       floatingButton = null;
-      console.log("IPC: floating button destroyed");
       return true;
     }
-    console.log("IPC: no floating button to destroy");
     return false;
   } catch (error) {
     console.error("Error in hide-floating-button IPC handler:", error);
@@ -1502,7 +1462,6 @@ ipcMain.handle("toggle-floating-panel-from-button", async () => {
     );
   }
   isTogglingFloatingWindow = true;
-  console.log("Toggle floating panel requested");
 
   try {
     // Check if we have a valid floating window that's visible
@@ -1512,18 +1471,13 @@ ipcMain.handle("toggle-floating-panel-from-button", async () => {
       floatingWindow.isVisible();
 
     if (isWindowOpen) {
-      // Close the existing window
-      console.log("Closing floating panel");
       floatingWindow.close();
       floatingWindow = null;
       return false;
     } else {
-      // Create a new window
-      console.log("Opening floating panel");
       floatingWindow = createFloatingWindow();
 
       if (!floatingWindow) {
-        console.error("Failed to create floating window");
         return false;
       }
 
@@ -1572,7 +1526,6 @@ ipcMain.handle("toggle-floating-panel-from-button", async () => {
 ipcMain.handle("save-floating-button-position", (event, x, y) => {
   if (typeof x === "number" && typeof y === "number") {
     saveButtonPosition(x, y);
-    console.log("Manually saved button position:", x, y);
   }
   return true;
 });
@@ -1616,22 +1569,16 @@ ipcMain.handle("show-main-window", () => {
 // SECURE: Event broadcasting only (no data exchange)
 ipcMain.handle("broadcast-entries-changed", () => {
   try {
-    console.log("Broadcasting entries-changed event to all windows");
-
     // Send entries-changed event to all renderer processes (no actual data)
     if (mainWindow && !mainWindow.isDestroyed()) {
-      console.log("Sending to main window");
       mainWindow.webContents.send("entries-changed");
     }
 
     if (floatingWindow && !floatingWindow.isDestroyed()) {
-      console.log("Sending to floating window");
       floatingWindow.webContents.send("entries-changed");
     }
 
-    // Also send to floating button if it exists
     if (floatingButton && !floatingButton.isDestroyed()) {
-      console.log("Sending to floating button");
       floatingButton.webContents.send("entries-changed");
     }
 
@@ -1649,7 +1596,6 @@ let tempSharedEntries = null;
 // Clear temporary memory on vault lock
 const clearTempMemory = () => {
   tempSharedEntries = null;
-  console.log("Temporary shared memory cleared");
 };
 
 // SECURE: Vault status only (no data exposure)
@@ -1680,7 +1626,6 @@ ipcMain.handle("save-trial-info", (event, trialInfo) => {
     };
 
     fs.writeFileSync(trialInfoPath, JSON.stringify(sanitizedInfo, null, 2));
-    console.log("Trial info saved:", sanitizedInfo);
     return true;
   } catch (error) {
     console.error('Error saving trial info:', error);
@@ -1860,12 +1805,6 @@ ipcMain.handle("save-shared-entries-temp", (event, entries) => {
 
     // Store in memory only (no file persistence)
     tempSharedEntries = entries;
-    console.log("Temporarily stored entries in memory:", entries.length, "entries from", event.senderFrame.url);
-
-    // Debug: Log first entry to verify data structure
-    if (entries && entries.length > 0) {
-      console.log("First entry:", entries[0]);
-    }
 
     return true;
   } catch (error) {
@@ -1882,13 +1821,6 @@ ipcMain.handle("load-shared-entries-temp", (event) => {
       return null;
     }
 
-    console.log("Loading temporary shared entries for", event.senderFrame.url + ":", tempSharedEntries ? tempSharedEntries.length : 0);
-
-    if (tempSharedEntries && tempSharedEntries.length > 0) {
-      console.log("Returning entries:", tempSharedEntries.length);
-      // Debug: Log first entry to verify data structure
-      console.log("First entry being returned:", tempSharedEntries[0]);
-    }
 
     return tempSharedEntries || [];
   } catch (error) {
@@ -1899,13 +1831,7 @@ ipcMain.handle("load-shared-entries-temp", (event) => {
 
 // Initialize vault in floating window using existing localStorage data
 ipcMain.handle("sync-vault-to-floating", async () => {
-  try {
-    console.log("Syncing vault state to floating window");
-    return true;
-  } catch (error) {
-    console.error("Failed to sync vault to floating window:", error);
-    return false;
-  }
+  return true;
 });
 
 // Auto-updater IPC handlers
@@ -1943,25 +1869,43 @@ ipcMain.handle("get-update-state", async () => {
 // HTTP REQUEST HANDLER - Uses Electron's net module to bypass browser restrictions
 ipcMain.handle("http-request", async (event, url, options = {}) => {
   return new Promise((resolve, reject) => {
+    let timeoutHandle = null;
+    let requestEnded = false;
+    const timeout = options.timeout || 30000; // Default 30 second timeout
+    
     try {
       console.log('[HTTP Request] Starting request to:', url);
       console.log('[HTTP Request] Options:', JSON.stringify(options, null, 2));
       
-      const urlObj = new URL(url);
+      // Validate URL
+      let urlObj;
+      try {
+        urlObj = new URL(url);
+      } catch (urlError) {
+        console.error('[HTTP Request] Invalid URL:', urlError);
+        reject({
+          code: 'INVALID_URL',
+          message: `Invalid URL: ${url}. ${urlError.message}`,
+          details: urlError,
+        });
+        return;
+      }
+      
       const requestOptions = {
         method: options.method || 'GET',
         url: url,
       };
-      
-      console.log('[HTTP Request] Request options:', JSON.stringify(requestOptions, null, 2));
       
       const request = net.request(requestOptions);
 
       // Set headers
       if (options.headers) {
         Object.keys(options.headers).forEach(key => {
-          request.setHeader(key, options.headers[key]);
-          console.log(`[HTTP Request] Set header: ${key} = ${options.headers[key]}`);
+          try {
+            request.setHeader(key, options.headers[key]);
+          } catch (headerError) {
+            console.error(`[HTTP Request] Failed to set header ${key}:`, headerError);
+          }
         });
       }
 
@@ -1969,27 +1913,65 @@ ipcMain.handle("http-request", async (event, url, options = {}) => {
       let statusCode = 0;
       let statusMessage = '';
       let responseHeaders = {};
+      let hasResolved = false;
+
+      // Set up timeout
+      timeoutHandle = setTimeout(() => {
+        if (!hasResolved && !requestEnded) {
+          requestEnded = true;
+          console.error('[HTTP Request] Request timeout after', timeout, 'ms');
+          try {
+            request.abort();
+          } catch (abortError) {
+            // Request might already be aborted
+          }
+          reject({
+            code: 'REQUEST_TIMEOUT',
+            message: `Request timed out after ${timeout}ms. Unable to connect to license server. Please check your internet connection and try again.`,
+            status: 0,
+          });
+        }
+      }, timeout);
+
+      // Cleanup function
+      const cleanup = () => {
+        if (timeoutHandle) {
+          clearTimeout(timeoutHandle);
+          timeoutHandle = null;
+        }
+      };
 
       request.on('response', (response) => {
         statusCode = response.statusCode;
         statusMessage = response.statusMessage;
-        console.log(`[HTTP Request] Response: ${statusCode} ${statusMessage}`);
         
         // Collect response headers
-        response.headers = response.headers || {};
-        Object.keys(response.headers).forEach(key => {
-          responseHeaders[key] = response.headers[key];
-        });
+        try {
+          const headers = response.headers || {};
+          Object.keys(headers).forEach(key => {
+            const value = headers[key];
+            if (Array.isArray(value)) {
+              responseHeaders[key] = value[0];
+            } else {
+              responseHeaders[key] = value;
+            }
+          });
+        } catch (headerError) {
+          console.error('[HTTP Request] Error reading response headers:', headerError);
+        }
 
         response.on('data', (chunk) => {
           responseData += chunk.toString();
         });
 
         response.on('end', () => {
-          console.log(`[HTTP Request] Response body length: ${responseData.length}`);
-          console.log(`[HTTP Request] Response data: ${responseData.substring(0, 200)}...`);
+          if (requestEnded) return; // Already handled by timeout or error
+          requestEnded = true;
+          cleanup();
+          
           try {
             const data = responseData ? JSON.parse(responseData) : {};
+            hasResolved = true;
             resolve({
               status: statusCode,
               statusText: statusMessage,
@@ -1999,6 +1981,8 @@ ipcMain.handle("http-request", async (event, url, options = {}) => {
             });
           } catch (parseError) {
             console.error('[HTTP Request] JSON parse error:', parseError);
+            // Even if JSON parsing fails, return the response
+            hasResolved = true;
             resolve({
               status: statusCode,
               statusText: statusMessage,
@@ -2008,30 +1992,91 @@ ipcMain.handle("http-request", async (event, url, options = {}) => {
             });
           }
         });
+
+        response.on('error', (error) => {
+          if (requestEnded) return;
+          requestEnded = true;
+          cleanup();
+          console.error('[HTTP Request] Response error:', error);
+          reject({
+            code: 'NETWORK_ERROR',
+            message: `Response error: ${error.message || 'Unable to connect to license server. Please check your internet connection and try again.'}`,
+            status: statusCode || 0,
+            details: error,
+          });
+        });
       });
 
       request.on('error', (error) => {
-        console.error('[HTTP Request] Request error:', error);
+        if (requestEnded) return;
+        requestEnded = true;
+        cleanup();
+        
+        // Provide more specific error messages based on error code
+        let errorMessage = 'Unable to connect to license server. Please check your internet connection and try again.';
+        
+        if (error.code === 'ENOTFOUND' || error.code === 'EAI_AGAIN') {
+          errorMessage = `DNS resolution failed. Cannot resolve hostname: ${urlObj.hostname}. Please check your internet connection.`;
+        } else if (error.code === 'ECONNREFUSED') {
+          errorMessage = `Connection refused by server at ${urlObj.hostname}:${urlObj.port || (urlObj.protocol === 'https:' ? '443' : '80')}. The server may be down or unreachable.`;
+        } else if (error.code === 'ETIMEDOUT' || error.code === 'ECONNRESET') {
+          errorMessage = `Connection timeout. Unable to reach ${urlObj.hostname}. Please check your internet connection and try again.`;
+        } else if (error.code === 'CERT_HAS_EXPIRED' || error.code === 'UNABLE_TO_VERIFY_LEAF_SIGNATURE') {
+          errorMessage = `SSL certificate error. Unable to verify server certificate for ${urlObj.hostname}.`;
+        } else if (error.message) {
+          errorMessage = `${error.message}. Unable to connect to license server. Please check your internet connection and try again.`;
+        }
+        
         reject({
           code: 'NETWORK_ERROR',
-          message: error.message || 'Network request failed',
+          message: errorMessage,
+          status: 0,
           details: error,
         });
       });
 
+      request.on('abort', () => {
+        if (requestEnded) return;
+        requestEnded = true;
+        cleanup();
+        console.error('[HTTP Request] Request aborted');
+        // Don't reject here if we already have a timeout rejection
+        if (!hasResolved) {
+          reject({
+            code: 'REQUEST_ABORTED',
+            message: 'Request was aborted. Unable to connect to license server.',
+            status: 0,
+          });
+        }
+      });
+
       // Send body if provided
       if (options.body) {
-        console.log('[HTTP Request] Writing body:', options.body.substring ? options.body.substring(0, 100) : options.body);
-        request.write(options.body);
+        try {
+          const bodyString = typeof options.body === 'string' ? options.body : JSON.stringify(options.body);
+          request.write(bodyString, 'utf8');
+        } catch (writeError) {
+          cleanup();
+          reject({
+            code: 'REQUEST_ERROR',
+            message: `Failed to write request body: ${writeError.message}`,
+            details: writeError,
+          });
+          return;
+        }
       }
 
       request.end();
-      console.log('[HTTP Request] Request sent');
+      
     } catch (error) {
+      if (timeoutHandle) {
+        clearTimeout(timeoutHandle);
+      }
       console.error('[HTTP Request] Setup error:', error);
       reject({
         code: 'INVALID_URL',
-        message: error.message || 'Invalid URL',
+        message: error.message || `Invalid request setup. Unable to connect to license server: ${url}`,
+        status: 0,
         details: error,
       });
     }

@@ -282,7 +282,8 @@ export class LicenseService {
     requiresTransfer?: boolean;
     status?: ActivationStatus;
   }> {
-    const isDevMode = import.meta.env.DEV;
+    // Check dev mode - in test environment, ensure we can override it
+    const isDevMode = import.meta.env.DEV && !import.meta.env.MODE?.includes('test');
 
     try {
       // Enhanced validation using centralized validation utility
@@ -442,10 +443,25 @@ export class LicenseService {
       // Handle API errors from apiClient
       if (error && typeof error === "object" && "code" in error) {
         const apiError = error as ApiError;
-        if (apiError.code === "NETWORK_ERROR" || apiError.code === "REQUEST_TIMEOUT") {
+        
+        if (apiError.code === "NETWORK_ERROR" || apiError.code === "REQUEST_TIMEOUT" || apiError.code === "REQUEST_ABORTED") {
+          const specificMessage = apiError.message || ERROR_MESSAGES.NETWORK.UNABLE_TO_CONNECT_ACTIVATION_ONLY;
+          
+          const hasSpecificDetails = specificMessage && (
+            specificMessage.includes("DNS") || 
+            specificMessage.includes("Connection refused") || 
+            specificMessage.includes("timeout") || 
+            specificMessage.includes("certificate") ||
+            specificMessage.includes("Cannot resolve hostname")
+          );
+          
+          const errorMessage = hasSpecificDetails && specificMessage.includes("Unable to connect to license server")
+            ? specificMessage
+            : ERROR_MESSAGES.NETWORK.UNABLE_TO_CONNECT_ACTIVATION_ONLY;
+          
           return {
             success: false,
-            error: ERROR_MESSAGES.NETWORK.UNABLE_TO_CONNECT_ACTIVATION_ONLY,
+            error: errorMessage,
           };
         }
         return {
