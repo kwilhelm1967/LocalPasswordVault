@@ -169,7 +169,6 @@ router.get('/status/:email', async (req, res) => {
       isActivated: trial.is_activated,
       isConverted: trial.is_converted,
       canStartTrial: false,
-      trialKey: trial.trial_key, // ALWAYS return the key
     });
     
   } catch (error) {
