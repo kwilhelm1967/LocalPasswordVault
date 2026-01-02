@@ -929,8 +929,24 @@ app.whenReady().then(() => {
   // COMPLETELY DISABLE ALL SECURITY RESTRICTIONS FOR LICENSE SERVER
   // Allow all HTTP/HTTPS connections (needed for license server)
   session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) => {
-    // Allow all permissions for license server connections
-    callback(true);
+    // Allow ALL permissions including downloads
+    if (permission === 'download' || permission === 'media' || permission === 'geolocation' || permission === 'notifications' || permission === 'midi' || permission === 'pointerLock' || permission === 'fullscreen' || permission === 'openExternal') {
+      callback(true);
+    } else {
+      callback(true); // Allow everything
+    }
+  });
+  
+  // Handle download permissions
+  session.defaultSession.setPermissionCheckHandler((webContents, permission, requestingOrigin, details) => {
+    // Allow all permission checks
+    return true;
+  });
+  
+  // Allow all downloads
+  session.defaultSession.on('will-download', (event, item, webContents) => {
+    // Allow all downloads without prompting
+    item.setSavePath(item.getFilename());
   });
   
   // Allow all web requests without restrictions
