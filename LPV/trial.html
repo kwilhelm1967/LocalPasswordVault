@@ -426,10 +426,19 @@
           successMsg.textContent = data.message || 'Trial key sent! Check your email.';
           successMsg.style.display = 'block';
           
-          // Redirect to success page with email and key - ALWAYS pass the key
+          // ALWAYS get the trial key from response
           const trialKey = data.trialKey || '';
+          console.log('Trial key received:', trialKey ? 'YES' : 'NO', trialKey);
+          
+          // Redirect to success page with email and key
           setTimeout(() => {
-            window.location.href = `trial-success.html?email=${encodeURIComponent(email)}&key=${encodeURIComponent(trialKey)}`;
+            if (trialKey) {
+              window.location.href = `trial-success.html?email=${encodeURIComponent(email)}&key=${encodeURIComponent(trialKey)}`;
+            } else {
+              // If no key in response, still redirect but fetch it on success page
+              console.warn('No trial key in response - will fetch on success page');
+              window.location.href = `trial-success.html?email=${encodeURIComponent(email)}`;
+            }
           }, 1500);
         } else {
           throw new Error(data.error || 'Failed to create trial');

@@ -524,16 +524,39 @@
       }, { threshold: 0.1 });
       document.querySelectorAll('.animate').forEach(el => observer.observe(el));
       
-      // Get trial key from URL params - ALWAYS show it if provided
+      // Get trial key from URL params
       const urlParams = new URLSearchParams(window.location.search);
       const email = urlParams.get('email');
       const keyFromUrl = urlParams.get('key');
       
+      console.log('URL params - email:', email, 'key:', keyFromUrl ? 'YES' : 'NO');
+      
       // ALWAYS display the key from URL if it exists
-      if (keyFromUrl) {
+      if (keyFromUrl && keyFromUrl.trim() !== '') {
+        console.log('Displaying key from URL:', keyFromUrl);
         document.getElementById('trialKey').textContent = keyFromUrl;
+      } else if (email) {
+        // If no key in URL but email provided, fetch from backend
+        console.log('No key in URL, fetching from backend for email:', email);
+        fetch(`${API_BASE_URL}/api/trial/status/${encodeURIComponent(email)}`)
+          .then(res => res.json())
+          .then(data => {
+            console.log('Backend response:', data);
+            if (data.trialKey) {
+              console.log('Displaying key from backend:', data.trialKey);
+              document.getElementById('trialKey').textContent = data.trialKey;
+            } else if (data.hasTrial && !data.isExpired) {
+              document.getElementById('trialKey').textContent = 'Check your email for your trial key';
+            } else {
+              document.getElementById('trialKey').textContent = 'Trial not found';
+            }
+          })
+          .catch(err => {
+            console.error('Error fetching trial status:', err);
+            document.getElementById('trialKey').textContent = 'Check your email for your trial key';
+          });
       } else {
-        // If no key in URL, show message to check email
+        // No email or key provided
         document.getElementById('trialKey').textContent = 'Check your email for your trial key';
       }
     });
