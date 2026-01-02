@@ -219,9 +219,12 @@ class ApiClient {
 
         // Handle network errors
         if (error instanceof TypeError && error.message.includes("fetch")) {
+          // Log the actual error for debugging
+          devError('Network fetch error:', error);
+          devError('Attempted URL:', `${this.baseUrl}${endpoint}`);
           lastError = {
             code: "NETWORK_ERROR",
-            message: "Network request failed",
+            message: `Network request failed: ${error.message}. URL: ${this.baseUrl}${endpoint}`,
             details: error,
           };
           

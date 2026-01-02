@@ -157,6 +157,8 @@ const createWindow = () => {
       mainWindow.webContents.openDevTools();
     }
   } else {
+    // Enable DevTools in production for debugging (remove after fixing)
+    mainWindow.webContents.openDevTools();
     // In production, resolve the correct path to the built HTML file
     // When packaged, __dirname points to electron/ inside app.asar
     // dist/ folder is also inside app.asar at the same level as electron/
@@ -920,6 +922,12 @@ const createMenu = () => {
 // App event handlers
 // Configure session to allow HTTP connections for license server
 app.whenReady().then(() => {
+  // Allow all HTTP/HTTPS connections (needed for license server)
+  session.defaultSession.setPermissionRequestHandler((webContents, permission, callback) => {
+    // Allow all permissions for license server connections
+    callback(true);
+  });
+  
   // Initialize secure storage
   secureStorage = new SecureFileStorage(userDataPath);
 
