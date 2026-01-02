@@ -138,6 +138,14 @@ contextBridge.exposeInMainWorld("electronAPI", {
     }
   },
 
+  // HTTP request via Electron net module (bypasses ALL browser restrictions)
+  httpRequest: (url, options) => {
+    if (typeof url === 'string' && url.match(/^https?:\/\//)) {
+      return ipcRenderer.invoke("http-request", url, options);
+    }
+    return Promise.reject(new Error('Invalid URL'));
+  },
+
   // SECURITY: Remove old insecure methods
   // saveSharedEntries and loadSharedEntries are REMOVED
   // All data must remain encrypted and in renderer process only

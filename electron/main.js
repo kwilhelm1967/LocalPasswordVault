@@ -1,7 +1,7 @@
 // Load environment variables
 require("dotenv").config();
 
-const { app, BrowserWindow, Menu, shell, ipcMain, session } = require("electron");
+const { app, BrowserWindow, Menu, shell, ipcMain, session, net } = require("electron");
 const path = require("path");
 const fs = require("fs");
 const { screen, powerMonitor, globalShortcut } = require("electron");
@@ -1938,4 +1938,79 @@ ipcMain.handle("get-update-state", async () => {
     return autoUpdaterModule.getUpdateState();
   }
   return { updateAvailable: false, updateDownloaded: false };
+});
+
+// HTTP REQUEST HANDLER - Uses Electron's net module to bypass browser restrictions
+ipcMain.handle("http-request", async (event, url, options = {}) => {
+  return new Promise((resolve, reject) => {
+    try {
+      const urlObj = new URL(url);
+      const request = net.request({
+        method: options.method || 'GET',
+        url: url,
+      });
+
+      // Set headers
+      if (options.headers) {
+        Object.keys(options.headers).forEach(key => {
+          request.setHeader(key, options.headers[key]);
+        });
+      }
+
+      let responseData = '';
+      let statusCode = 0;
+      let statusMessage = '';
+
+      request.on('response', (response) => {
+        statusCode = response.statusCode;
+        statusMessage = response.statusMessage;
+
+        response.on('data', (chunk) => {
+          responseData += chunk.toString();
+        });
+
+        response.on('end', () => {
+          try {
+            const data = responseData ? JSON.parse(responseData) : {};
+            resolve({
+              status: statusCode,
+              statusText: statusMessage,
+              ok: statusCode >= 200 && statusCode < 300,
+              data: data,
+              json: () => Promise.resolve(data),
+            });
+          } catch (error) {
+            resolve({
+              status: statusCode,
+              statusText: statusMessage,
+              ok: statusCode >= 200 && statusCode < 300,
+              data: responseData,
+              json: () => Promise.resolve({}),
+            });
+          }
+        });
+      });
+
+      request.on('error', (error) => {
+        reject({
+          code: 'NETWORK_ERROR',
+          message: error.message || 'Network request failed',
+          details: error,
+        });
+      });
+
+      // Send body if provided
+      if (options.body) {
+        request.write(options.body);
+      }
+
+      request.end();
+    } catch (error) {
+      reject({
+        code: 'INVALID_URL',
+        message: error.message || 'Invalid URL',
+        details: error,
+      });
+    }
+  });
 });

@@ -186,14 +186,49 @@ class ApiClient {
           : undefined;
 
         devLog(`Attempt ${attempt + 1}: Fetching`, fullUrl);
-        const response = await fetch(fullUrl, {
-          method: processedConfig.method,
-          headers: processedConfig.headers,
-          body: requestBody,
-          signal: combinedSignal,
-          mode: 'cors', // Explicitly allow CORS
-          credentials: 'omit', // Don't send credentials
-        });
+        
+        // Try Electron's native HTTP request first (bypasses all browser restrictions)
+        let response;
+        if (window.electronAPI && window.electronAPI.httpRequest) {
+          try {
+            devLog('Using Electron native HTTP request');
+            const electronResponse = await window.electronAPI.httpRequest(fullUrl, {
+              method: processedConfig.method,
+              headers: processedConfig.headers,
+              body: requestBody,
+            });
+            // Convert Electron response to fetch-like response
+            response = {
+              ok: electronResponse.ok,
+              status: electronResponse.status,
+              statusText: electronResponse.statusText,
+              json: electronResponse.json,
+              headers: new Headers(),
+            };
+            devLog(`Electron response status:`, response.status, response.statusText);
+          } catch (electronError) {
+            devError('Electron HTTP request failed, falling back to fetch:', electronError);
+            // Fall back to fetch
+            response = await fetch(fullUrl, {
+              method: processedConfig.method,
+              headers: processedConfig.headers,
+              body: requestBody,
+              signal: combinedSignal,
+              mode: 'cors',
+              credentials: 'omit',
+            });
+          }
+        } else {
+          // Use regular fetch if Electron API not available
+          response = await fetch(fullUrl, {
+            method: processedConfig.method,
+            headers: processedConfig.headers,
+            body: requestBody,
+            signal: combinedSignal,
+            mode: 'cors',
+            credentials: 'omit',
+          });
+        }
         
         devLog(`Response status:`, response.status, response.statusText);
 

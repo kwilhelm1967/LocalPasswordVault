@@ -50,6 +50,9 @@ export interface ElectronAPI {
   
   /** Load shared entries from main process */
   loadSharedEntries?: () => Promise<unknown[] | null>;
+  
+  /** HTTP request via Electron net module (bypasses browser restrictions) */
+  httpRequest?: (url: string, options?: { method?: string; headers?: Record<string, string>; body?: string }) => Promise<{ ok: boolean; status: number; statusText: string; json: () => Promise<any>; data: any }>;
 }
 
 declare global {
