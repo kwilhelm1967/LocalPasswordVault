@@ -16,54 +16,54 @@ Updates the email templates on your production server so they use ```.exe``` dow
 1. **Open PowerShell on your computer**
 
 2. **Connect to your server via SSH**:
-   ```powershell
+   ```
    ssh root@YOUR-SERVER-IP
    ```
    (Replace ```YOUR-SERVER-IP``` with your actual server IP address)
 
 3. **Navigate to backend directory**:
-   ```bash
+   ```
    cd /var/www/lpv-api/backend
    ```
    (Or wherever your backend code is located)
 
 4. **Check current status**:
-   ```bash
+   ```
    git status
    ```
    (This shows if there are any local changes)
 
 5. **Pull latest code from GitHub**:
-   ```bash
+   ```
    git pull origin main
    ```
    (This downloads the updated template files)
 
 6. **Verify files were updated** (optional):
-   ```bash
+   ```
    grep -n "Local.Password.Vault.Setup.1.2.0.exe" templates/trial-welcome-email.html
    ```
    (Should show line 214 with the .exe link)
 
 7. **Restart the backend server**:
-   ```bash
+   ```
    pm2 restart lpv-api
    ```
 
 8. **Verify server is running**:
-   ```bash
+   ```
    pm2 status
    ```
    (Should show ```lpv-api``` as "online" with green status)
 
 9. **Check server logs** (optional):
-   ```bash
+   ```
    pm2 logs lpv-api --lines 20
    ```
    (Look for "Server running" or any error messages)
 
 10. **Exit SSH**:
-    ```bash
+    ```
     exit
     ```
 
@@ -90,7 +90,7 @@ Updates the email templates on your production server so they use ```.exe``` dow
 5. **Upload the 3 new files** from your local computer to the server
 
 6. **SSH into server** and restart:
-   ```bash
+   ```
    ssh root@YOUR-SERVER-IP
    pm2 restart lpv-api
    pm2 status
@@ -260,7 +260,7 @@ Creates the Windows installer file that users will download and install.
 
 #### Build Windows Installer
 
-1. **Open PowerShell in your project directory**:
+1. **Open the command box in your project directory**:
    ```powershell
    cd C:\Users\kelly\OneDrive\Desktop\Vault-Main\LocalPasswordVault
    ```
@@ -369,7 +369,7 @@ Verifies that emails are sent correctly and contain the right information.
 #### Verify Brevo Configuration
 
 1. **Check backend ```.env``` file** (on your server):
-   ```bash
+   ```
    ssh root@YOUR-SERVER-IP
    cd /var/www/lpv-api/backend
    cat .env | grep BREVO
@@ -392,13 +392,13 @@ Verifies that emails are sent correctly and contain the right information.
 #### Test Email Sending
 
 1. **SSH into server**:
-   ```bash
+   ```
    ssh root@YOUR-SERVER-IP
    cd /var/www/lpv-api/backend
    ```
 
 2. **Check backend logs** (to see if emails are being sent):
-   ```bash
+   ```
    pm2 logs lpv-api --lines 50
    ```
    (Look for email-related log messages)
@@ -415,7 +415,7 @@ Verifies that emails are sent correctly and contain the right information.
    - Check if purchase confirmation email is received
 
    **Option C: Use backend API directly** (advanced):
-   ```bash
+   ```
    curl -X POST https://api.localpasswordvault.com/api/trial/request \
      -H "Content-Type: application/json" \
      -d '{"email":"your-email@example.com"}'
@@ -603,20 +603,20 @@ Sets up error tracking for the backend so you can see errors in production.
 
 4. **Add DSN to Backend**:
    - SSH into server:
-     ```bash
+     ```
      ssh root@YOUR-SERVER-IP
      cd /var/www/lpv-api/backend
      nano .env
      ```
    - Add this line:
-     ```env
+     ```
      SENTRY_DSN=https://xxxxx@xxxxx.ingest.sentry.io/xxxxx
      ```
      (Replace with your actual DSN)
    - Save: ```Ctrl+X```, then ```Y```, then ```Enter```
 
 5. **Restart Backend**:
-   ```bash
+   ```
    pm2 restart lpv-api
    ```
 

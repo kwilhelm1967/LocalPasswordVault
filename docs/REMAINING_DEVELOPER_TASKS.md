@@ -139,7 +139,7 @@ The **backend templates** are the email HTML files that the backend server uses 
 **What Needs to be Done**:
 
 1. **Windows Build**:
-   ```powershell
+   ```
    npm run dist:win
    ```
    - Test installer on clean Windows machine (not your development machine)
@@ -236,7 +236,7 @@ The **backend templates** are the email HTML files that the backend server uses 
 1. **API Domain Verification**:
    - Verify ```api.localpasswordvault.com``` (or configured API domain) points to backend server
    - Verify SSL certificate is valid and not expired
-   ```powershell
+   ```
    curl https://api.localpasswordvault.com/health
    ```
    - Should return: ```{"status":"ok"}```
