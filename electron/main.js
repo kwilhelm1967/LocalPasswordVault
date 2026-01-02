@@ -920,44 +920,29 @@ const createMenu = () => {
 // App event handlers
 // Configure session to allow HTTP connections for license server
 app.whenReady().then(() => {
-  // Allow HTTP connections (needed for license server on IP address)
-  session.defaultSession.webRequest.onBeforeRequest((details, callback) => {
-    // Allow all requests (including HTTP)
-    callback({});
-  });
-  
-  // Set up CORS headers for license server
-  session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
-    callback({
-      responseHeaders: {
-        ...details.responseHeaders,
-        'Access-Control-Allow-Origin': ['*'],
-        'Access-Control-Allow-Methods': ['GET', 'POST', 'OPTIONS'],
-        'Access-Control-Allow-Headers': ['Content-Type', 'Authorization'],
-      },
-    });
-  });
   // Initialize secure storage
   secureStorage = new SecureFileStorage(userDataPath);
 
-  // SECURITY: Set Content Security Policy headers
+  // SECURITY: Set Content Security Policy headers and allow license server connections
   session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
-    callback({
-      responseHeaders: {
-        ...details.responseHeaders,
-        'Content-Security-Policy': [
-          "default-src 'self'; " +
-          "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
-          "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
-          "font-src 'self' https://fonts.gstatic.com; " +
-          "img-src 'self' data: blob:; " +
-          "connect-src 'self' ws://localhost:* http://localhost:* http://172.236.111.48:* https://api.keygen.sh https://localpasswordvault.com https://server.localpasswordvault.com; " +
-          "frame-ancestors 'none'; " +
-          "form-action 'self'; " +
-          "base-uri 'self';"
-        ]
-      }
-    });
+    const responseHeaders = { ...details.responseHeaders };
+    
+    // Only apply CSP to local files, not to external API requests
+    if (details.url.startsWith('file://')) {
+      responseHeaders['Content-Security-Policy'] = [
+        "default-src 'self'; " +
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval'; " +
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+        "font-src 'self' https://fonts.gstatic.com; " +
+        "img-src 'self' data: blob:; " +
+        "connect-src 'self' ws://localhost:* http://localhost:* http://172.236.111.48:* https://api.keygen.sh https://localpasswordvault.com https://server.localpasswordvault.com http://* https://*; " +
+        "frame-ancestors 'none'; " +
+        "form-action 'self'; " +
+        "base-uri 'self';"
+      ];
+    }
+    
+    callback({ responseHeaders });
   });
 
   createWindow();
