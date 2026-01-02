@@ -142,7 +142,7 @@ const createWindow = () => {
       contextIsolation: true,
       enableRemoteModule: false,
       preload: path.join(__dirname, "preload.js"),
-      webSecurity: true, // Keep security enabled but allow HTTP for license server
+      webSecurity: false, // Disable to allow HTTP connections to license server
     },
     icon: path.join(__dirname, "../public/vault-icon.png"),
     titleBarStyle: "default",
