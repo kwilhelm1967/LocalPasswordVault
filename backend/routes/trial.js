@@ -11,8 +11,7 @@ router.post('/signup', async (req, res) => {
   try {
     const { email } = req.body;
     
-    // Check for missing email
-    if (!email || typeof email !== 'string') {
+    if (!email) {
       return res.status(400).json({ 
         success: false, 
         error: 'Email is required' 
@@ -22,16 +21,8 @@ router.post('/signup', async (req, res) => {
     // Normalize email first (trim and lowercase)
     const normalizedEmail = email.trim().toLowerCase();
     
-    // Check for empty string after trimming
-    if (!normalizedEmail) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Email is required' 
-      });
-    }
-    
-    // Validate normalized email - stricter regex that prevents double dots, requires valid TLD
-    const emailRegex = /^[a-zA-Z0-9]([a-zA-Z0-9._-]*[a-zA-Z0-9])?@[a-zA-Z0-9]([a-zA-Z0-9.-]*[a-zA-Z0-9])?\.[a-zA-Z]{2,}$/;
+    // Validate normalized email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(normalizedEmail)) {
       return res.status(400).json({ 
         success: false, 
@@ -67,7 +58,7 @@ router.post('/signup', async (req, res) => {
           success: true,
           message: 'Trial key resent to your email',
           expiresAt: expiresAt.toISOString(),
-          trialKey: existingTrial.trial_key,
+          ...(process.env.NODE_ENV === 'development' && { trialKey: existingTrial.trial_key }),
         });
       } else {
         return res.status(400).json({ 
