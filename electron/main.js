@@ -158,7 +158,10 @@ const createWindow = () => {
     }
   } else {
     // Enable DevTools in production for debugging (remove after fixing)
-    mainWindow.webContents.openDevTools();
+    // Open DevTools after window is ready
+    mainWindow.webContents.once('did-finish-load', () => {
+      mainWindow.webContents.openDevTools();
+    });
     // In production, resolve the correct path to the built HTML file
     // When packaged, __dirname points to electron/ inside app.asar
     // dist/ folder is also inside app.asar at the same level as electron/
