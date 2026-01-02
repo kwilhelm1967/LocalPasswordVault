@@ -142,6 +142,7 @@ const createWindow = () => {
       contextIsolation: true,
       enableRemoteModule: false,
       preload: path.join(__dirname, "preload.js"),
+      webSecurity: true, // Keep security enabled but allow HTTP for license server
     },
     icon: path.join(__dirname, "../public/vault-icon.png"),
     titleBarStyle: "default",
@@ -917,7 +918,25 @@ const createMenu = () => {
 };
 
 // App event handlers
+// Configure session to allow HTTP connections for license server
 app.whenReady().then(() => {
+  // Allow HTTP connections (needed for license server on IP address)
+  session.defaultSession.webRequest.onBeforeRequest((details, callback) => {
+    // Allow all requests (including HTTP)
+    callback({});
+  });
+  
+  // Set up CORS headers for license server
+  session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+    callback({
+      responseHeaders: {
+        ...details.responseHeaders,
+        'Access-Control-Allow-Origin': ['*'],
+        'Access-Control-Allow-Methods': ['GET', 'POST', 'OPTIONS'],
+        'Access-Control-Allow-Headers': ['Content-Type', 'Authorization'],
+      },
+    });
+  });
   // Initialize secure storage
   secureStorage = new SecureFileStorage(userDataPath);
 
@@ -932,7 +951,7 @@ app.whenReady().then(() => {
           "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
           "font-src 'self' https://fonts.gstatic.com; " +
           "img-src 'self' data: blob:; " +
-          "connect-src 'self' ws://localhost:* http://localhost:* https://api.keygen.sh https://localpasswordvault.com; " +
+          "connect-src 'self' ws://localhost:* http://localhost:* http://172.236.111.48:* https://api.keygen.sh https://localpasswordvault.com https://server.localpasswordvault.com; " +
           "frame-ancestors 'none'; " +
           "form-action 'self'; " +
           "base-uri 'self';"
