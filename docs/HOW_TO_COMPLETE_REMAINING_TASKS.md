@@ -7,7 +7,7 @@ This guide provides detailed, actionable steps for completing each remaining tas
 ## 📋 Task 1: Deploy Backend Code - Update Email Templates on Server
 
 ### What This Does
-Updates the email templates on your production server so they use `.exe` download links instead of `.zip` links.
+Updates the email templates on your production server so they use ```.exe``` download links instead of ```.zip``` links.
 
 ### Step-by-Step Instructions
 
@@ -19,7 +19,7 @@ Updates the email templates on your production server so they use `.exe` downloa
    ```powershell
    ssh root@YOUR-SERVER-IP
    ```
-   (Replace `YOUR-SERVER-IP` with your actual server IP address)
+   (Replace ```YOUR-SERVER-IP``` with your actual server IP address)
 
 3. **Navigate to backend directory**:
    ```bash
@@ -54,7 +54,7 @@ Updates the email templates on your production server so they use `.exe` downloa
    ```bash
    pm2 status
    ```
-   (Should show `lpv-api` as "online" with green status)
+   (Should show ```lpv-api``` as "online" with green status)
 
 9. **Check server logs** (optional):
    ```bash
@@ -70,22 +70,22 @@ Updates the email templates on your production server so they use `.exe` downloa
 #### Option B: Manual Upload (If Git Not Available on Server)
 
 1. **On your local computer**, locate these 3 files:
-   - `backend/templates/trial-welcome-email.html`
-   - `backend/templates/purchase-confirmation-email.html`
-   - `backend/templates/bundle-email.html`
+   - ```backend/templates/trial-welcome-email.html```
+   - ```backend/templates/purchase-confirmation-email.html```
+   - ```backend/templates/bundle-email.html```
 
 2. **Connect to server via SFTP** (using FileZilla, WinSCP, or similar):
    - Host: Your server IP address
-   - Username: `root`
+   - Username: ```root```
    - Password: Your server password
-   - Port: `22`
+   - Port: ```22```
 
-3. **Navigate to**: `/var/www/lpv-api/backend/templates/`
+3. **Navigate to**: ```/var/www/lpv-api/backend/templates/```
 
 4. **Backup old files first** (in case you need to revert):
-   - Rename `trial-welcome-email.html` to `trial-welcome-email.html.backup`
-   - Rename `purchase-confirmation-email.html` to `purchase-confirmation-email.html.backup`
-   - Rename `bundle-email.html` to `bundle-email.html.backup`
+   - Rename ```trial-welcome-email.html``` to ```trial-welcome-email.html.backup```
+   - Rename ```purchase-confirmation-email.html``` to ```purchase-confirmation-email.html.backup```
+   - Rename ```bundle-email.html``` to ```bundle-email.html.backup```
 
 5. **Upload the 3 new files** from your local computer to the server
 
@@ -103,7 +103,7 @@ Updates the email templates on your production server so they use `.exe` downloa
    ```
    https://github.com/kwilhelm1967/Vault/releases/download/V1.2.0/Local.Password.Vault.Setup.1.2.0.exe
    ```
-3. **Click the link** to ensure it downloads the `.exe` file (not a `.zip` file)
+3. **Click the link** to ensure it downloads the ```.exe``` file (not a ```.zip``` file)
 
 ---
 
@@ -116,14 +116,17 @@ Verifies the complete user journey from purchase to app activation works correct
 
 #### Test 1: Complete Purchase Flow
 
-1. **Go to your website**: `https://localpasswordvault.com`
+1. **Go to your website**:
+   ```
+   https://localpasswordvault.com
+   ```
 
 2. **Navigate to pricing page**
 
 3. **Click "Buy Now" for Personal Vault** (or any product)
 
 4. **Complete Stripe checkout**:
-   - Use Stripe test card: `4242 4242 4242 4242`
+   - Use Stripe test card: ```4242 4242 4242 4242```
    - Expiry: Any future date
    - CVC: Any 3 digits
    - ZIP: Any 5 digits
@@ -137,11 +140,11 @@ Verifies the complete user journey from purchase to app activation works correct
    - ✅ Email is received (may take a few seconds)
    - ✅ Email contains license key
    - ✅ Email contains download links
-   - ✅ Windows download link points to `.exe` file (not `.zip`)
+   - ✅ Windows download link points to ```.exe``` file (not ```.zip```)
 
 7. **Download and install the app**:
    - Click the Windows download link in the email
-   - Save the `.exe` file
+   - Save the ```.exe``` file
    - Run the installer
    - Complete installation
 
@@ -160,7 +163,10 @@ Verifies the complete user journey from purchase to app activation works correct
 
 #### Test 2: Trial Flow
 
-1. **Go to website**: `https://localpasswordvault.com`
+1. **Go to website**:
+   ```
+   https://localpasswordvault.com
+   ```
 
 2. **Click "Start Free Trial"** (or similar button)
 
@@ -170,7 +176,7 @@ Verifies the complete user journey from purchase to app activation works correct
 
 5. **Check your email**:
    - ✅ Trial welcome email is received
-   - ✅ Email contains trial key (format: `TRIA-XXXX-XXXX-XXXX-XXXX`)
+   - ✅ Email contains trial key (format: ```TRIA-XXXX-XXXX-XXXX-XXXX```)
 
 6. **Download and install the app** (if not already installed)
 
@@ -193,12 +199,12 @@ Verifies the complete user journey from purchase to app activation works correct
 
 1. **Invalid License Key Format**:
    - Open app
-   - Enter invalid key: `INVALID-123`
+   - Enter invalid key: ```INVALID-123```
    - Click "Activate"
    - ✅ Verify appropriate error message is shown
 
 2. **Non-existent License Key**:
-   - Enter valid format but non-existent key: `PERS-0000-0000-0000`
+   - Enter valid format but non-existent key: ```PERS-0000-0000-0000```
    - Click "Activate"
    - ✅ Verify error message says key not found
 
@@ -217,7 +223,7 @@ Verifies the complete user journey from purchase to app activation works correct
    - Disable network adapter in Windows
 
 3. **Open browser DevTools** (in the Electron app):
-   - Press `F12` or `Ctrl+Shift+I`
+   - Press ```F12``` or ```Ctrl+Shift+I```
    - Go to "Network" tab
    - Make sure it's recording (red circle button should be active)
 
@@ -268,7 +274,7 @@ Creates the Windows installer file that users will download and install.
    ```powershell
    npm run build:prod
    ```
-   (This creates optimized production files in `dist/` folder)
+   (This creates optimized production files in ```dist/``` folder)
 
 4. **Build Windows installer**:
    ```powershell
@@ -277,15 +283,15 @@ Creates the Windows installer file that users will download and install.
    (This may take several minutes - be patient)
 
 5. **Find the installer**:
-   - Location: `release/` folder in your project
-   - Filename should be: `Local Password Vault Setup 1.2.0-x64.exe` or similar
-   - Note: Based on `electron-builder.json`, it may create a portable `.exe` instead
+   - Location: ```release/``` folder in your project
+   - Filename should be: ```Local Password Vault Setup 1.2.0-x64.exe``` or similar
+   - Note: Based on ```electron-builder.json```, it may create a portable ```.exe``` instead
 
 6. **Check electron-builder.json configuration**:
-   - Open `electron-builder.json`
+   - Open ```electron-builder.json```
    - Look at line 84-90 (Windows configuration)
-   - Check if it says `"target": "portable"` or `"target": "nsis"`
-   - If you need an installer (NSIS), you may need to change this to `"nsis"`
+   - Check if it says ```"target": "portable"``` or ```"target": "nsis"```
+   - If you need an installer (NSIS), you may need to change this to ```"nsis"```
 
 #### Test Installer on Clean Machine
 
@@ -304,7 +310,7 @@ Creates the Windows installer file that users will download and install.
    - ✅ Installer runs without errors
    - ✅ Installation completes successfully
    - ✅ Shortcuts are created on desktop/start menu
-   - ✅ App appears in Start Menu under "Local Password Vault"
+   - ✅ App appears in Start Menu under ```Local Password Vault```
 
 4. **After installation, verify**:
    - ✅ App launches when clicked
@@ -316,21 +322,23 @@ Creates the Windows installer file that users will download and install.
 #### Upload to GitHub Releases
 
 1. **Go to GitHub**:
-   - Navigate to: https://github.com/kwilhelm1967/Vault/releases
+   ```
+   https://github.com/kwilhelm1967/Vault/releases
+   ```
 
 2. **Create or Edit Release**:
    - Click "Draft a new release" (or edit existing V1.2.0 release)
-   - Tag: `v1.2.0` (must match exactly)
-   - Title: `Version 1.2.0` (or similar)
+   - Tag: ```v1.2.0``` (must match exactly)
+   - Title: ```Version 1.2.0``` (or similar)
 
 3. **Upload Installer**:
    - Click "Attach binaries by dropping them here or selecting them"
-   - Select the installer file from `release/` folder
+   - Select the installer file from ```release/``` folder
    - Wait for upload to complete
 
 4. **Verify Filename**:
    - GitHub will show the uploaded file
-   - Make sure filename is correct (should be something like `Local.Password.Vault.Setup.1.2.0.exe`)
+   - Make sure filename is correct (should be something like ```Local.Password.Vault.Setup.1.2.0.exe```)
 
 5. **Publish Release**:
    - Click "Publish release" (NOT "Save draft")
@@ -341,7 +349,7 @@ Creates the Windows installer file that users will download and install.
    ```
    https://github.com/kwilhelm1967/Vault/releases/download/v1.2.0/FILENAME.exe
    ```
-   (Replace `FILENAME.exe` with the actual filename shown on GitHub)
+   (Replace ```FILENAME.exe``` with the actual filename shown on GitHub)
 
 7. **Verify Direct Download**:
    - Open a new browser window (or incognito mode)
@@ -360,23 +368,25 @@ Verifies that emails are sent correctly and contain the right information.
 
 #### Verify Brevo Configuration
 
-1. **Check backend `.env` file** (on your server):
+1. **Check backend ```.env``` file** (on your server):
    ```bash
    ssh root@YOUR-SERVER-IP
    cd /var/www/lpv-api/backend
    cat .env | grep BREVO
    ```
-   (Should show `BREVO_API_KEY=xkeysib-...`)
+   (Should show ```BREVO_API_KEY=xkeysib-...```)
 
 2. **Verify in Brevo Dashboard**:
-   - Go to: https://app.brevo.com
+   ```
+   https://app.brevo.com
+   ```
    - Login to your account
    - Go to: Settings → SMTP & API → API Keys
    - ✅ Verify API key exists and is active
 
 3. **Verify Sender Email**:
    - In Brevo Dashboard: Settings → Senders & IP
-   - ✅ Verify `noreply@localpasswordvault.com` is verified
+   - ✅ Verify ```noreply@localpasswordvault.com``` is verified
    - If not verified, click "Verify" and follow instructions
 
 #### Test Email Sending
@@ -425,7 +435,10 @@ Verifies that emails are sent correctly and contain the right information.
 
 4. **Verify download links**:
    - ✅ Windows download link exists
-   - ✅ Link points to: `https://github.com/kwilhelm1967/Vault/releases/download/V1.2.0/Local.Password.Vault.Setup.1.2.0.exe`
+   - ✅ Link points to:
+   ```
+   https://github.com/kwilhelm1967/Vault/releases/download/V1.2.0/Local.Password.Vault.Setup.1.2.0.exe
+   ```
    - ✅ Link is clickable and works
    - ✅ Download starts (not 404 error)
 
@@ -450,11 +463,13 @@ Ensures your domains are properly configured and accessible.
    ```powershell
    curl https://api.localpasswordvault.com/health
    ```
-   (Should return: `{"status":"ok"}`)
+   (Should return: ```{"status":"ok"}```)
 
 2. **Or use browser**:
-   - Go to: `https://api.localpasswordvault.com/health`
-   - ✅ Should show: `{"status":"ok"}`
+   ```
+   https://api.localpasswordvault.com/health
+   ```
+   - ✅ Should show: ```{"status":"ok"}```
 
 3. **Check SSL certificate**:
    - In browser, click the padlock icon next to the URL
@@ -466,12 +481,18 @@ Ensures your domains are properly configured and accessible.
 4. **Test from different network** (optional):
    - Use your phone's mobile data
    - Or use a different WiFi network
-   - Try accessing: `https://api.localpasswordvault.com/health`
+   - Try accessing:
+   ```
+   https://api.localpasswordvault.com/health
+   ```
    - ✅ Should work from any network
 
 #### Verify Website Domain
 
-1. **Visit website**: `https://localpasswordvault.com`
+1. **Visit website**:
+   ```
+   https://localpasswordvault.com
+   ```
 
 2. **Verify site loads**:
    - ✅ Page loads without errors
@@ -485,9 +506,11 @@ Ensures your domains are properly configured and accessible.
 #### Test DNS Propagation (If You Made Changes)
 
 1. **Use online DNS checker**:
-   - Go to: https://www.whatsmydns.net
-   - Enter: `api.localpasswordvault.com`
-   - Select record type: `A`
+   ```
+   https://www.whatsmydns.net
+   ```
+   - Enter: ```api.localpasswordvault.com```
+   - Select record type: ```A```
    - Check from multiple locations
    - ✅ All locations should resolve to your server IP
 
@@ -519,7 +542,9 @@ Ensures automated tests pass in the CI environment.
 ### Step-by-Step Instructions
 
 1. **Go to GitHub**:
-   - Navigate to: https://github.com/kwilhelm1967/Vault
+   ```
+   https://github.com/kwilhelm1967/Vault
+   ```
 
 2. **Check Actions Tab**:
    - Click "Actions" tab at the top
@@ -527,7 +552,7 @@ Ensures automated tests pass in the CI environment.
    - Click on the most recent run
 
 3. **Check Test Results**:
-   - Look for workflow named "Tests & Quality" or similar
+   - Look for workflow named ```Tests & Quality``` or similar
    - ✅ Unit tests should show green checkmark (passed)
    - ✅ E2E tests should show green checkmark (passed)
 
@@ -538,7 +563,7 @@ Ensures automated tests pass in the CI environment.
    - Share this information with the developer
 
 5. **Check Test Output** (optional):
-   - Click on the test job (e.g., "unit-tests")
+   - Click on the test job (e.g., ```unit-tests```)
    - Expand the test output
    - Look for specific test failures
    - Note any error messages
@@ -559,19 +584,21 @@ Sets up error tracking for the backend so you can see errors in production.
 ### Step-by-Step Instructions
 
 1. **Create Sentry Account**:
-   - Go to: https://sentry.io/signup/
+   ```
+   https://sentry.io/signup/
+   ```
    - Sign up for a free account
    - Complete email verification
 
 2. **Create New Project**:
    - After login, click "Create Project"
    - Select platform: **Node.js**
-   - Project name: `Local Password Vault Backend`
+   - Project name: ```Local Password Vault Backend```
    - Click "Create Project"
 
 3. **Get DSN**:
    - After project creation, Sentry shows "Configure SDK"
-   - Copy the DSN (looks like: `https://xxxxx@xxxxx.ingest.sentry.io/xxxxx`)
+   - Copy the DSN (looks like: ```https://xxxxx@xxxxx.ingest.sentry.io/xxxxx```)
    - Save this somewhere safe
 
 4. **Add DSN to Backend**:
@@ -586,7 +613,7 @@ Sets up error tracking for the backend so you can see errors in production.
      SENTRY_DSN=https://xxxxx@xxxxx.ingest.sentry.io/xxxxx
      ```
      (Replace with your actual DSN)
-   - Save: `Ctrl+X`, then `Y`, then `Enter`
+   - Save: ```Ctrl+X```, then ```Y```, then ```Enter```
 
 5. **Restart Backend**:
    ```bash

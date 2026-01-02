@@ -8,35 +8,35 @@ Users are seeing a red error box with the message: **"Activation Error: Unable t
 ### Root Cause Analysis
 The error occurs in the license activation flow when the application cannot successfully connect to the backend license server. The current implementation has the following potential issues:
 
-1. **Electron HTTP Request Handler**: The custom HTTP request handler in `electron/main.js` (lines ~1869-2083) attempts to use Electron's `net` module to make requests that bypass browser CORS restrictions. However, there may be:
+1. **Electron HTTP Request Handler**: The custom HTTP request handler in ```electron/main.js``` (lines ~1869-2083) attempts to use Electron's `net` module to make requests that bypass browser CORS restrictions. However, there may be:
    - SSL/TLS certificate validation issues
    - Network timeout configurations that are too aggressive
    - Error handling that doesn't properly surface the underlying connection problem
    - DNS resolution failures that aren't being caught or reported correctly
 
-2. **API Client Fallback Logic**: The `apiClient.ts` checks for Electron API availability but may fail to properly fallback to standard `fetch` when Electron API is unavailable, or the Electron API itself may be failing silently.
+2. **API Client Fallback Logic**: The ```apiClient.ts``` checks for Electron API availability but may fail to properly fallback to standard `fetch` when Electron API is unavailable, or the Electron API itself may be failing silently.
 
 3. **Error Message Propagation**: While error messages have been improved to show specific network errors (DNS, connection refused, timeout), the underlying connection failures may not be reaching the error handlers properly.
 
 4. **Backend Server Configuration**: The backend server URL configuration may be incorrect, or the backend server may not be properly accessible from the Electron app.
 
 ### What Needs Investigation
-1. **Verify Backend Server is Running**: Check if `https://server.localpasswordvault.com` (or the configured license server URL) is accessible and responding to health checks
+1. **Verify Backend Server is Running**: Check if ```https://server.localpasswordvault.com``` (or the configured license server URL) is accessible and responding to health checks
 2. **Check SSL Certificate**: Verify the backend SSL certificate is valid and trusted by Electron
 3. **Test Network Connection**: Verify the Electron app can actually reach the backend server from a user's machine (not just from development environment)
-4. **Review Timeout Settings**: Current timeout is 30 seconds in `apiClient.ts` and 30 seconds in `electron/main.js` - may need adjustment
-5. **Error Logging**: Add more detailed logging in `electron/main.js` HTTP handler to capture what's actually failing (currently uses `devError` which may not be visible in production)
+4. **Review Timeout Settings**: Current timeout is 30 seconds in ```apiClient.ts``` and 30 seconds in ```electron/main.js``` - may need adjustment
+5. **Error Logging**: Add more detailed logging in ```electron/main.js``` HTTP handler to capture what's actually failing (currently uses `devError` which may not be visible in production)
 6. **Certificate Validation**: Electron's `net` module may be rejecting self-signed certificates or certificates from certain CAs - may need to configure certificate validation bypass or proper certificate chain
 
 ### Files to Review
-- `electron/main.js` (lines ~1869-2083) - HTTP request handler
-- `src/utils/apiClient.ts` - API client with Electron API detection
-- `src/utils/licenseService.ts` - License activation logic
-- `src/utils/trialService.ts` - Trial activation logic
-- `src/config/environment.ts` - License server URL configuration
+- ```electron/main.js``` (lines ~1869-2083) - HTTP request handler
+- ```src/utils/apiClient.ts``` - API client with Electron API detection
+- ```src/utils/licenseService.ts``` - License activation logic
+- ```src/utils/trialService.ts``` - Trial activation logic
+- ```src/config/environment.ts``` - License server URL configuration
 
 ### Potential Solutions to Try
-1. **Add Certificate Validation Override**: In `electron/main.js`, configure `session.defaultSession.setCertificateVerifyProc()` to handle certificate validation
+1. **Add Certificate Validation Override**: In ```electron/main.js```, configure ```session.defaultSession.setCertificateVerifyProc()``` to handle certificate validation
 2. **Improve Error Reporting**: Add detailed error logging that works in production (not just dev mode)
 3. **Network Diagnostics**: Add a network diagnostic feature to test connectivity before attempting activation
 4. **User-Friendly Error Messages**: Provide more actionable error messages (e.g., "Check your firewall settings" or "Your network may be blocking HTTPS connections")
@@ -52,12 +52,12 @@ The error occurs in the license activation flow when the application cannot succ
 
 ### What Are "Backend Templates"?
 The **backend templates** are the email HTML files that the backend server uses to send emails to users:
-- `backend/templates/trial-welcome-email.html` - Email sent when user signs up for trial
-- `backend/templates/purchase-confirmation-email.html` - Email sent after purchase
-- `backend/templates/bundle-email.html` - Email sent for bundle purchases
+- ```backend/templates/trial-welcome-email.html``` - Email sent when user signs up for trial
+- ```backend/templates/purchase-confirmation-email.html``` - Email sent after purchase
+- ```backend/templates/bundle-email.html``` - Email sent for bundle purchases
 
 ### What Was Already Fixed (in Code)
-✅ These files have already been updated in the code repository to use `.exe` download links instead of `.zip` links.
+✅ These files have already been updated in the code repository to use ```.exe``` download links instead of ```.zip``` links.
 
 ### What You Need to Do
 **Deploy the updated code to your production server** so the server uses the fixed templates:
@@ -69,19 +69,20 @@ The **backend templates** are the email HTML files that the backend server uses 
 
 2. **Update Code on Server**:
    ```bash
-   cd /var/www/lpv-api  # or wherever your backend is deployed
-   git pull  # This will get the updated templates
+   cd /var/www/lpv-api
+   git pull
    ```
+   (Replace ```/var/www/lpv-api``` with wherever your backend is deployed)
 
 3. **Restart Backend Server**:
    ```bash
    pm2 restart lpv-api
-   pm2 status  # Verify it's running
+   pm2 status
    ```
 
-**That's it!** Once you pull the latest code and restart, the server will use the updated templates with `.exe` links.
+**That's it!** Once you pull the latest code and restart, the server will use the updated templates with ```.exe``` links.
 
-**Note**: If you're not using git on the server, you'll need to manually upload the 3 template files from `backend/templates/` to your server.
+**Note**: If you're not using git on the server, you'll need to manually upload the 3 template files from ```backend/templates/``` to your server.
 
 ---
 
@@ -96,7 +97,7 @@ The **backend templates** are the email HTML files that the backend server uses 
    - Verify payment processes through Stripe
    - Verify webhook creates license key in database
    - Verify email is sent with license key and download links
-   - Verify download links in email work (point to `.exe` files, not `.zip`)
+   - Verify download links in email work (point to ```.exe``` files, not ```.zip```)
    - Download and install application from email link
    - Activate license key in app
    - Verify activation succeeds
@@ -138,7 +139,9 @@ The **backend templates** are the email HTML files that the backend server uses 
 **What Needs to be Done**:
 
 1. **Windows Build**:
-   - Run: `npm run dist:win`
+   ```powershell
+   npm run dist:win
+   ```
    - Test installer on clean Windows machine (not your development machine)
    - Verify installer creates proper shortcuts
    - Verify app launches correctly after installation
@@ -146,22 +149,28 @@ The **backend templates** are the email HTML files that the backend server uses 
    - (Optional) Code sign installer if certificate is available
 
 2. **macOS Build** (if needed):
-   - Run: `npm run dist:mac` (requires macOS system or CI/CD)
+   ```bash
+   npm run dist:mac
+   ```
+   (requires macOS system or CI/CD)
    - Test DMG on clean macOS machine
    - (Optional) Code sign and notarize if Apple Developer account available
 
 3. **Linux Build** (if needed):
-   - Run: `npm run dist:linux` (requires Linux system or CI/CD)
+   ```bash
+   npm run dist:linux
+   ```
+   (requires Linux system or CI/CD)
    - Test AppImage on clean Linux machine
 
 4. **Upload to GitHub Releases**:
-   - Go to: https://github.com/kwilhelm1967/Vault/releases
-   - Create or edit release with tag: `v1.2.0`
+   - Go to: ```https://github.com/kwilhelm1967/Vault/releases```
+   - Create or edit release with tag: ```v1.2.0```
    - Upload installer files
    - Verify download links work
    - Test download from different network locations
 
-**Note**: Windows installer filename should be: `Local.Password.Vault.Setup.1.2.0.exe`
+**Note**: Windows installer filename should be: ```Local.Password.Vault.Setup.1.2.0.exe```
 
 ---
 
@@ -172,7 +181,7 @@ The **backend templates** are the email HTML files that the backend server uses 
 **What Needs to be Done**:
 
 1. **Brevo Configuration Verification**:
-   - Verify Brevo API key is correct in backend `.env` file
+   - Verify Brevo API key is correct in backend ```.env``` file
    - Verify sender email address is verified in Brevo dashboard
    - Test email sending from backend (check backend logs)
 
@@ -181,7 +190,7 @@ The **backend templates** are the email HTML files that the backend server uses 
    - Send test purchase confirmation email
    - Verify email content is correct
    - Verify download links in emails work (click them)
-   - **Critical**: Verify links point to `.exe` files (not `.zip`) - this confirms templates were deployed correctly
+   - **Critical**: Verify links point to ```.exe``` files (not ```.zip```) - this confirms templates were deployed correctly
 
 3. **Email Deliverability**:
    - Test emails reach inbox (not spam folder)
@@ -198,10 +207,10 @@ The **backend templates** are the email HTML files that the backend server uses 
 **What Needs to be Done**:
 
 1. **Sentry Configuration**:
-   - Create Sentry account at https://sentry.io
+   - Create Sentry account at ```https://sentry.io```
    - Create new Node.js project
    - Get DSN from Sentry project settings
-   - Add `SENTRY_DSN` to backend `.env` file
+   - Add ```SENTRY_DSN``` to backend ```.env``` file
    - Verify Sentry integration (test by triggering an error)
 
 2. **Backend Log Monitoring** (if desired):
@@ -225,13 +234,15 @@ The **backend templates** are the email HTML files that the backend server uses 
 **What Needs to be Done**:
 
 1. **API Domain Verification**:
-   - Verify `api.localpasswordvault.com` (or configured API domain) points to backend server
+   - Verify ```api.localpasswordvault.com``` (or configured API domain) points to backend server
    - Verify SSL certificate is valid and not expired
-   - Test health endpoint is accessible: `curl https://api.localpasswordvault.com/health`
-   - Should return: `{"status":"ok"}`
+   ```powershell
+   curl https://api.localpasswordvault.com/health
+   ```
+   - Should return: ```{"status":"ok"}```
 
 2. **Website Domain Verification**:
-   - Verify `localpasswordvault.com` is configured correctly
+   - Verify ```localpasswordvault.com``` is configured correctly
    - Verify SSL certificate is valid and not expired
    - Test website loads correctly
 
@@ -262,7 +273,7 @@ The **backend templates** are the email HTML files that the backend server uses 
    - Ensure critical paths are covered by tests
    - Add tests for any recent changes if needed
 
-**Note**: Unit tests were recently fixed to properly mock `apiClient`. They should pass, but verify in CI environment.
+**Note**: Unit tests were recently fixed to properly mock ```apiClient```. They should pass, but verify in CI environment.
 
 ---
 
@@ -290,11 +301,11 @@ The **backend templates** are the email HTML files that the backend server uses 
 
 ## 📚 Reference Documents
 
-- `docs/DEPLOY_TO_LINODE.md` - Backend deployment guide
-- `docs/DEVELOPER_HANDOFF.md` - Complete deployment checklist
-- `docs/PRODUCTION_UAT_QUICK_START.md` - Quick start for UAT testing
-- `backend/env.example` - Environment variables reference
-- `backend/README.md` - Backend API documentation
+- ```docs/DEPLOY_TO_LINODE.md``` - Backend deployment guide
+- ```docs/DEVELOPER_HANDOFF.md``` - Complete deployment checklist
+- ```docs/PRODUCTION_UAT_QUICK_START.md``` - Quick start for UAT testing
+- ```backend/env.example``` - Environment variables reference
+- ```backend/README.md``` - Backend API documentation
 
 ---
 
