@@ -24,6 +24,7 @@ const ticketsRouter = require('./routes/tickets');
 const adminRouter = require('./routes/admin');
 const testRouter = require('./routes/test');
 const db = require('./database/db');
+const { stripe } = require('./services/stripe');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
