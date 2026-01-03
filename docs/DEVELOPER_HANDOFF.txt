@@ -165,11 +165,41 @@ Auto-Updater
 Problem Description
 Users see red error box: "Activation Error: Unable to connect to license server" when activating license or trial keys, even with internet connectivity.
 
-What Is Failing
-Location: Electron app to Backend API connection
-Endpoint: https://api.localpasswordvault.com/api/lpv/license/activate
-When: During license/trial activation attempts
-User Impact: Cannot activate licenses or trials
+ROOT CAUSE IDENTIFIED: DNS RESOLUTION FAILURE
+----------------------------------------------
+The domain api.localpasswordvault.com does not resolve. DNS A record is missing.
+
+Proof from diagnostic tests:
+- nslookup api.localpasswordvault.com: Non-existent domain (ENOTFOUND)
+- ping api.localpasswordvault.com: Could not find host
+- curl https://api.localpasswordvault.com/health: The remote name could not be resolved
+
+Exact Hostname App Uses:
+- Hostname: api.localpasswordvault.com
+- Defined in: src/config/environment.ts line 87
+- Full URL: https://api.localpasswordvault.com/api/lpv/license/activate
+
+EXACT FIX REQUIRED:
+-------------------
+Add DNS A record in DNS provider for localpasswordvault.com:
+
+Type: A
+Name: api
+Value: 45.79.40.42
+TTL: 3600
+
+This creates: api.localpasswordvault.com → 45.79.40.42
+
+After adding DNS record:
+1. Wait 5-10 minutes for DNS propagation
+2. Verify: nslookup api.localpasswordvault.com (should return 45.79.40.42)
+3. Verify: curl https://api.localpasswordvault.com/health (should return {"status":"ok"})
+4. Test activation in app (should work)
+
+Backend Server Verification:
+- Verify backend is running: pm2 status (should show lpv-api online)
+- Verify SSL certificate exists for api.localpasswordvault.com
+- Verify HTTPS endpoint works: curl https://api.localpasswordvault.com/health
 
 What Has Been Tried
 1. Added Electron net module HTTP handler (bypasses CORS)
@@ -178,45 +208,19 @@ What Has Been Tried
 4. Added production logging (electron-log)
 5. Added network diagnostics function
 6. Improved error propagation from Electron main to renderer
+7. Enhanced error logging to capture exact error codes
+8. Created diagnostic scripts to identify DNS failure
 
-Root Cause Analysis
-Most Likely Causes:
-1. SSL Certificate Validation: Electron's net module may reject the backend SSL certificate
-2. DNS Resolution: App may not resolve api.localpasswordvault.com correctly
-3. Firewall/Network: User's network may block HTTPS connections
-4. Timeout Too Aggressive: 30-second timeout may be too short for slow connections
-
-Evidence:
-- Backend health endpoint works in browser: https://api.localpasswordvault.com/health
-- Error appears even with internet connectivity
-- Error handling code is in place but underlying connection fails
-
-What Needs to Be Done
-1. Test from Production Build:
-   - Build Windows installer
-   - Install on clean machine
-   - Attempt activation
-   - Check Electron logs: %APPDATA%\Local Password Vault\logs\main.log
-   - Identify exact error code/message
-
-2. Certificate Validation:
-   - Check if session.defaultSession.setCertificateVerifyProc is working
-   - May need to log certificate details
-   - Consider certificate pinning if needed
-
-3. Network Diagnostics:
-   - Use testNetworkConnectivity function in app
-   - Verify it can reach backend
-   - Check if DNS resolution works
-
-4. Fallback Testing:
-   - Test if fetch API fallback works when Electron net fails
-   - Verify CORS headers on backend allow Electron origins
+Diagnostic Tools Created:
+- scripts/diagnose-activation-error.js - Tests DNS, HTTPS, certificate
+- scripts/test-activation-endpoint.ps1 - PowerShell test script
+- scripts/test-activation-endpoint.bat - Batch test script
 
 Files to Review:
-- electron/main.js (lines ~1869-2083) - HTTP request handler
-- src/utils/apiClient.ts - API client with Electron detection
+- electron/main.js (lines ~1902-2110) - HTTP request handler with enhanced logging
+- src/utils/apiClient.ts - API client with Electron detection and error logging
 - electron/preload.js - IPC bridge
+- src/config/environment.ts line 87 - License server URL definition
 
 
 ================================================================================

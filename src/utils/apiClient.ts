@@ -216,9 +216,30 @@ class ApiClient {
               headers: new Headers(),
             };
           } catch (electronError: any) {
+            // Enhanced error logging for diagnosis
             devError('[API Client] Electron HTTP request failed:', electronError);
+            devError('[API Client] Full URL attempted:', fullUrl);
             devError('[API Client] Error code:', electronError.code);
             devError('[API Client] Error message:', electronError.message);
+            devError('[API Client] Error status:', electronError.status);
+            devError('[API Client] Error details:', JSON.stringify(electronError.details || electronError, null, 2));
+            
+            // Log to production logs if available
+            if (typeof window !== 'undefined' && window.electronAPI) {
+              try {
+                // Use console.error which electron-log will capture
+                console.error('[API Client] Activation Request Failed:', {
+                  url: fullUrl,
+                  errorCode: electronError.code,
+                  errorMessage: electronError.message,
+                  errorStatus: electronError.status,
+                  errorDetails: electronError.details || electronError,
+                });
+              } catch (logError) {
+                // Ignore logging errors
+              }
+            }
+            
             // Don't fall back to fetch - throw the error so it's handled properly
             throw {
               code: electronError.code || 'NETWORK_ERROR',

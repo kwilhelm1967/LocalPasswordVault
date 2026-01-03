@@ -2061,7 +2061,18 @@ ipcMain.handle("http-request", async (event, url, options = {}) => {
           hostname: urlObj.hostname,
           port: urlObj.port || (urlObj.protocol === 'https:' ? '443' : '80'),
           protocol: urlObj.protocol,
+          fullUrl: url,
+          isIPAddress: /^\d+\.\d+\.\d+\.\d+$/.test(urlObj.hostname),
           stack: error.stack,
+        });
+        
+        // Also log to console for immediate visibility
+        console.error(`[HTTP Request ${requestId}] FAILED:`, {
+          url: url,
+          errorCode: error.code,
+          errorMessage: error.message,
+          hostname: urlObj.hostname,
+          isIPAddress: /^\d+\.\d+\.\d+\.\d+$/.test(urlObj.hostname),
         });
         
         // Provide more specific error messages based on error code

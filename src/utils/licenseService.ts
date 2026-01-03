@@ -340,6 +340,16 @@ export class LicenseService {
         }
       }
 
+      // Log activation attempt with full details for diagnosis
+      const apiBaseUrl = environment.environment.licenseServerUrl;
+      const activationUrl = `${apiBaseUrl}/api/lpv/license/activate`;
+      devLog('[License Service] Attempting activation:', {
+        url: activationUrl,
+        licenseKey: cleanKey.substring(0, 12) + '...', // Log partial key for security
+        deviceId: deviceId.substring(0, 16) + '...', // Log partial device ID
+        isIPAddress: /^\d+\.\d+\.\d+\.\d+$/.test(new URL(apiBaseUrl).hostname),
+      });
+
       // Call activation API using centralized API client with performance monitoring
       const response = await measureOperation(
         'license-activation',
@@ -438,7 +448,27 @@ export class LicenseService {
       };
 
     } catch (error) {
-      devError("License activation error:", error);
+      // Enhanced error logging for diagnosis
+      const apiBaseUrl = environment.environment.licenseServerUrl;
+      const activationUrl = `${apiBaseUrl}/api/lpv/license/activate`;
+      
+      devError("[License Service] Activation failed - Full Error Details:", {
+        url: activationUrl,
+        errorType: error?.constructor?.name || typeof error,
+        errorCode: (error as any)?.code,
+        errorMessage: (error as any)?.message,
+        errorStatus: (error as any)?.status,
+        errorDetails: (error as any)?.details,
+        fullError: error,
+      });
+      
+      // Also log to console for production visibility (electron-log will capture)
+      console.error("[License Service] ACTIVATION ERROR:", {
+        url: activationUrl,
+        errorCode: (error as any)?.code,
+        errorMessage: (error as any)?.message,
+        errorStatus: (error as any)?.status,
+      });
 
       // Handle API errors from apiClient
       if (error && typeof error === "object" && "code" in error) {
