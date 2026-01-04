@@ -191,6 +191,13 @@ class ApiClient {
         
         if (hasElectronAPI) {
           try {
+            // Log request for debugging
+            console.log('[API Client] Making request:', {
+              url: fullUrl,
+              method: processedConfig.method || 'POST',
+              endpoint: endpoint,
+            });
+            
             const electronResponse = await window.electronAPI.httpRequest(fullUrl, {
               method: processedConfig.method,
               headers: processedConfig.headers,
@@ -199,11 +206,23 @@ class ApiClient {
             
             if (!electronResponse.ok) {
               const errorData = electronResponse.data || {};
+              const errorMessage = errorData.error || errorData.message || `HTTP ${electronResponse.status}: ${electronResponse.statusText}`;
+              
+              // Log HTTP error for debugging
+              console.error('[API Client] HTTP Error Response:', {
+                url: fullUrl,
+                method: processedConfig.method || 'POST',
+                status: electronResponse.status,
+                statusText: electronResponse.statusText,
+                responseBody: errorData,
+              });
+              
               throw {
                 code: 'HTTP_ERROR',
-                message: errorData.error || `HTTP ${electronResponse.status}: ${electronResponse.statusText}`,
+                message: errorMessage,
                 status: electronResponse.status,
                 details: errorData,
+                url: fullUrl,
               };
             }
             
@@ -217,24 +236,25 @@ class ApiClient {
             };
           } catch (electronError: any) {
             // Enhanced error logging for diagnosis
-            devError('[API Client] Electron HTTP request failed:', electronError);
-            devError('[API Client] Full URL attempted:', fullUrl);
-            devError('[API Client] Error code:', electronError.code);
-            devError('[API Client] Error message:', electronError.message);
-            devError('[API Client] Error status:', electronError.status);
-            devError('[API Client] Error details:', JSON.stringify(electronError.details || electronError, null, 2));
+            const errorDetails = {
+              url: fullUrl,
+              method: processedConfig.method || 'GET',
+              errorCode: electronError.code,
+              errorMessage: electronError.message,
+              errorStatus: electronError.status,
+              errorDetails: electronError.details || electronError,
+            };
+            
+            devError('[API Client] Electron HTTP request failed:', errorDetails);
+            
+            // Log to console for debugging (visible in DevTools)
+            console.error('[API Client] Request Failed:', errorDetails);
             
             // Log to production logs if available
             if (typeof window !== 'undefined' && window.electronAPI) {
               try {
                 // Use console.error which electron-log will capture
-                console.error('[API Client] Activation Request Failed:', {
-                  url: fullUrl,
-                  errorCode: electronError.code,
-                  errorMessage: electronError.message,
-                  errorStatus: electronError.status,
-                  errorDetails: electronError.details || electronError,
-                });
+                console.error('[API Client] Activation Request Failed:', errorDetails);
               } catch (logError) {
                 // Ignore logging errors
               }
@@ -246,6 +266,7 @@ class ApiClient {
               message: electronError.message || 'Unable to connect to license server. Please check your internet connection and try again.',
               status: electronError.status,
               details: electronError,
+              url: fullUrl,
             };
           }
         } else {
@@ -263,11 +284,23 @@ class ApiClient {
         // Check if response is ok
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
+          const errorMessage = errorData.error || errorData.message || response.statusText;
+          
+          // Log HTTP error for debugging
+          console.error('[API Client] HTTP Error Response:', {
+            url: fullUrl,
+            method: processedConfig.method || 'POST',
+            status: response.status,
+            statusText: response.statusText,
+            responseBody: errorData,
+          });
+          
           throw {
             code: `HTTP_${response.status}`,
-            message: errorData.message || response.statusText,
+            message: errorMessage,
             status: response.status,
             details: errorData,
+            url: fullUrl,
           } as ApiError;
         }
 

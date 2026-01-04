@@ -343,6 +343,16 @@ export class LicenseService {
       // Log activation attempt with full details for diagnosis
       const apiBaseUrl = environment.environment.licenseServerUrl;
       const activationUrl = `${apiBaseUrl}/api/lpv/license/activate`;
+      
+      // Console log for debugging (visible in DevTools)
+      console.log('[License Service] Attempting activation:', {
+        url: activationUrl,
+        baseUrl: apiBaseUrl,
+        endpoint: '/api/lpv/license/activate',
+        licenseKey: cleanKey.substring(0, 12) + '...', // Log partial key for security
+        deviceId: deviceId.substring(0, 16) + '...', // Log partial device ID
+      });
+      
       devLog('[License Service] Attempting activation:', {
         url: activationUrl,
         licenseKey: cleanKey.substring(0, 12) + '...', // Log partial key for security

@@ -284,6 +284,28 @@
       margin-right: 4px;
     }
 
+    #errorMessage {
+      display: none;
+      margin-top: 12px;
+      padding: 12px;
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      border-radius: 8px;
+      color: #fca5a5;
+      font-size: 0.9rem;
+    }
+
+    #successMessage {
+      display: none;
+      margin-top: 12px;
+      padding: 12px;
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      border-radius: 8px;
+      color: #6ee7b7;
+      font-size: 0.9rem;
+    }
+
     @media (max-width: 768px) {
       .nav-links { display: none; }
       .trial-card { padding: 28px 20px; }
@@ -330,7 +352,10 @@
               <input type="email" id="email" name="email" placeholder="you@example.com" required>
             </div>
             
-            <button type="submit" class="btn-trial">Get My Trial Key →</button>
+            <div id="errorMessage" style="display:none; margin-top: 12px; padding: 12px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px; color: #fca5a5; font-size: 0.9rem;"></div>
+            <div id="successMessage" style="display:none; margin-top: 12px; padding: 12px; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; color: #6ee7b7; font-size: 0.9rem;"></div>
+            
+            <button type="submit" class="btn-trial" id="submitBtn">Get My Trial Key →</button>
           </form>
         </div>
 
@@ -372,56 +397,86 @@
     const API_BASE_URL = 'https://api.localpasswordvault.com';
 
     // Handle form submission
-    document.getElementById('trialForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      
-      const email = document.getElementById('email').value.trim();
-      const submitBtn = document.getElementById('submitBtn');
-      const errorMsg = document.getElementById('errorMessage');
-      const successMsg = document.getElementById('successMessage');
-      
-      errorMsg.style.display = 'none';
-      successMsg.style.display = 'none';
-      
-      if (!email) {
-        errorMsg.textContent = 'Please enter your email address';
-        errorMsg.style.display = 'block';
-        return;
-      }
-      
-      submitBtn.disabled = true;
-      submitBtn.textContent = 'Processing...';
-      
-      try {
-        const response = await fetch(`${API_BASE_URL}/api/trial/signup`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email }),
-        });
+    const trialForm = document.getElementById('trialForm');
+    if (trialForm) {
+      trialForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
         
-        const data = await response.json();
+        const emailInput = document.getElementById('email');
+        const email = emailInput ? emailInput.value.trim() : '';
+        const submitBtn = document.getElementById('submitBtn');
+        const errorMsg = document.getElementById('errorMessage');
+        const successMsg = document.getElementById('successMessage');
         
-        if (!response.ok) {
-          throw new Error(data.error || 'Failed to create trial');
+        // Null-safe element access
+        if (errorMsg) errorMsg.style.display = 'none';
+        if (successMsg) successMsg.style.display = 'none';
+        
+        if (!email) {
+          if (errorMsg) {
+            errorMsg.textContent = 'Please enter your email address';
+            errorMsg.style.display = 'block';
+          }
+          return;
         }
         
-        if (data.success) {
-          successMsg.textContent = data.message || 'Trial key sent! Check your email.';
-          successMsg.style.display = 'block';
+        if (submitBtn) {
+          submitBtn.disabled = true;
+          submitBtn.textContent = 'Processing...';
+        }
+        
+        try {
+          console.log('[Trial Signup] Making request to:', `${API_BASE_URL}/api/trial/signup`);
           
-          setTimeout(() => {
-            window.location.href = `trial-success.html?email=${encodeURIComponent(email)}&key=${encodeURIComponent(data.trialKey || '')}`;
-          }, 1500);
-        } else {
-          throw new Error(data.error || 'Failed to create trial');
+          const response = await fetch(`${API_BASE_URL}/api/trial/signup`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email }),
+          });
+          
+          console.log('[Trial Signup] Response status:', response.status, response.statusText);
+          
+          const data = await response.json();
+          console.log('[Trial Signup] Response data:', data);
+          
+          if (!response.ok) {
+            // Show actual API error message
+            const errorMessage = data.error || data.message || `Server error (${response.status}): ${response.statusText}`;
+            throw new Error(errorMessage);
+          }
+          
+          if (data.success) {
+            if (successMsg) {
+              successMsg.textContent = data.message || 'Trial key sent! Check your email.';
+              successMsg.style.display = 'block';
+            }
+            
+            setTimeout(() => {
+              window.location.href = `trial-success.html?email=${encodeURIComponent(email)}&key=${encodeURIComponent(data.trialKey || '')}`;
+            }, 1500);
+          } else {
+            // Show actual API error message
+            const errorMessage = data.error || data.message || 'Failed to create trial';
+            throw new Error(errorMessage);
+          }
+        } catch (error) {
+          console.error('[Trial Signup] Error:', error);
+          
+          // Show actual error message (from API or network error)
+          const errorMessage = error.message || 'Something went wrong. Please try again.';
+          
+          if (errorMsg) {
+            errorMsg.textContent = errorMessage;
+            errorMsg.style.display = 'block';
+          }
+          
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Get My Trial Key →';
+          }
         }
-      } catch (error) {
-        errorMsg.textContent = error.message || 'Something went wrong. Please try again.';
-        errorMsg.style.display = 'block';
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Get My Trial Key →';
-      }
-    });
+      });
+    }
   </script>
 </body>
 </html>
