@@ -2,7 +2,7 @@ DEVELOPER HANDOFF - LOCAL PASSWORD VAULT AND LOCAL LEGACY VAULT
 
 Purpose: Complete technical overview for next developer to understand current state and execute remaining work.
 
-Last Updated: January 2025 - All bundle purchase functionality complete across websites and Electron apps
+Last Updated: January 2026 - All bundle purchase functionality complete across websites and Electron apps
 
 
 ================================================================================
@@ -179,16 +179,26 @@ Exact Hostname App Uses:
 - Defined in: src/config/environment.ts line 87
 - Full URL: https://api.localpasswordvault.com/api/lpv/license/activate
 
+DNS PROVIDER IDENTIFIED:
+------------------------
+- Registrar: Namecheap
+- Nameservers: dns1.registrar-servers.com, dns2.registrar-servers.com
+- Main domain (localpasswordvault.com) correctly resolves to 45.79.40.42
+- Subdomain (api.localpasswordvault.com) missing - needs A record
+
 EXACT FIX REQUIRED:
 -------------------
-Add DNS A record in DNS provider for localpasswordvault.com:
+Add DNS A record in Namecheap DNS management for localpasswordvault.com:
 
-Type: A
-Name: api
+Type: A Record
+Host: api (just "api", not the full domain)
 Value: 45.79.40.42
-TTL: 3600
+TTL: 3600 (or Automatic)
 
 This creates: api.localpasswordvault.com → 45.79.40.42
+
+Instructions: See scripts/add-api-dns-record.md for step-by-step guide
+Verification: Run scripts/verify-api-dns.ps1 after adding the record
 
 After adding DNS record:
 1. Wait 5-10 minutes for DNS propagation
@@ -244,12 +254,13 @@ Actions:
    - Activate ? Disconnect internet ? Use app ? Verify no network requests
 
 Bundle Purchase Integration
-Status: Backend complete, websites complete, apps missing
+Status: Backend complete, websites complete, apps complete (see Section 3 for details)
 Actions:
 1. Test bundle purchase from LPV website (pricing.html buttons work)
 2. Test bundle purchase from LLV website (pricing.html buttons work)
-3. Test bundle purchase ? Email with 2 keys ? Both activations work
-4. Optional: Add bundle purchase to Electron apps if needed
+3. Test bundle purchase from LPV app (bundle buttons in LicenseScreen)
+4. Test bundle purchase from LLV app (bundle buttons in ActivationScreen)
+5. Test bundle purchase ? Email with 2 keys ? Both activations work
 
 Email Template Verification
 Actions:
@@ -380,21 +391,33 @@ Data Integrity:
 
 Task 1: Fix Connection Error (LPV)
 What: Users cannot activate licenses due to connection error
+Root Cause: DNS resolution failure - api.localpasswordvault.com does not resolve (see Section 5 for details)
+
 Files:
 - electron/main.js (HTTP request handler)
 - src/utils/apiClient.ts
 - electron/preload.js
 
 Steps:
-1. Build production Windows installer
-2. Install on clean machine
-3. Attempt license activation
-4. Check logs: %APPDATA%\Local Password Vault\logs\main.log
-5. Identify exact error (DNS, SSL, timeout, etc.)
-6. Fix root cause
-7. Test again on clean machine
+1. Log in to Namecheap (https://www.namecheap.com)
+2. Navigate to Domain List → localpasswordvault.com → Advanced DNS tab
+3. Add DNS A record in Host Records section:
+   - Type: A Record
+   - Host: api
+   - Value: 45.79.40.42
+   - TTL: 3600 (or Automatic)
+4. Take screenshot of DNS zone showing the api record (for verification)
+5. Wait 5-10 minutes for DNS propagation
+6. Verify DNS resolution: Run scripts/verify-api-dns.ps1 OR nslookup api.localpasswordvault.com (should return 45.79.40.42)
+7. Verify backend health: curl https://api.localpasswordvault.com/health (should return {"status":"ok"})
+8. Build production Windows installer
+9. Install on clean machine
+10. Test license activation (should work after DNS fix)
+11. Check logs if issues persist: %APPDATA%\Local Password Vault\logs\main.log
 
-Success Criteria: Users can activate licenses without connection errors
+Note: Detailed instructions available in scripts/add-api-dns-record.md
+
+Success Criteria: Users can activate licenses without connection errors after DNS record is added
 
 Task 2: End-to-End Purchase Flow Testing
 What: Verify complete purchase to activation flow works
