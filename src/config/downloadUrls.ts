@@ -29,8 +29,9 @@ const LPV_DOWNLOAD_URLS: DownloadUrls = {
 };
 
 // LOCKED: Local Legacy Vault downloads - ALWAYS uses kwilhelm1967/LocalLegacyVault repository
+// NOTE: Actual filenames from upload script: "Local Legacy Vault Setup 1.2.0-x64.exe" (spaces, -x64 suffix)
 const LLV_DOWNLOAD_URLS: DownloadUrls = {
-  windows: `https://github.com/${LLV_GITHUB_REPO}/releases/download/V${VERSION}/Local.Legacy.Vault.Setup.${VERSION}.exe`,
+  windows: `https://github.com/${LLV_GITHUB_REPO}/releases/download/V${VERSION}/Local%20Legacy%20Vault%20Setup%20${VERSION}-x64.exe`,
   macos: `https://github.com/${LLV_GITHUB_REPO}/releases/latest/download/Local%20Legacy%20Vault-${VERSION}-mac.dmg`,
   linux: `https://github.com/${LLV_GITHUB_REPO}/releases/latest/download/Local%20Legacy%20Vault-${VERSION}.AppImage`,
 };
