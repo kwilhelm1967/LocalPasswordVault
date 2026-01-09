@@ -286,11 +286,16 @@ const licenses = {
 
 
 const trials = {
-  async create({ email, trial_key, expires_at }) {
+  async create({ email, trial_key, expires_at, product_type }) {
     const startTime = Date.now();
+    const insertData = { email, trial_key, expires_at };
+    // Only include product_type if provided (database column may not exist in all schemas)
+    if (product_type) {
+      insertData.product_type = product_type;
+    }
     const { data, error } = await supabase
       .from('trials')
-      .insert({ email, trial_key, expires_at })
+      .insert(insertData)
       .select()
       .single();
     

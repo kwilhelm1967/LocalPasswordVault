@@ -23,8 +23,19 @@ function generateLicenseKey(prefix = null) {
   return `${generateSegment()}-${generateSegment()}-${generateSegment()}-${generateSegment()}`;
 }
 
-function generateTrialKey() {
-  return `TRIA-${generateSegment()}-${generateSegment()}-${generateSegment()}`;
+function generateTrialKey(productType = 'lpv') {
+  // Generate trial key with product-specific prefix
+  // LPV trials use 'TRIA', LLV trials use 'LLVT'
+  const prefix = productType === 'llv' ? 'LLVT' : 'TRIA';
+  return `${prefix}-${generateSegment()}-${generateSegment()}-${generateSegment()}`;
+}
+
+function generateLPVTrialKey() {
+  return generateTrialKey('lpv');
+}
+
+function generateLLVTrialKey() {
+  return generateTrialKey('llv');
 }
 
 function generatePersonalKey() {
@@ -83,16 +94,26 @@ function getPlanTypeFromKey(key) {
     case 'AFCS': // Legacy (backward compatibility)
     case 'AFPG': // AfterPassing Guide Standalone
       return 'afterpassing_standalone';
-    case 'TRIA':
+    case 'TRIA': // LPV trial
       return 'trial';
+    case 'LLVT': // LLV trial
+      return 'llv_trial';
     default:
       return null;
   }
 }
 
+function getProductTypeFromTrialKey(key) {
+  if (!key) return 'lpv';
+  const prefix = key.toUpperCase().slice(0, 4);
+  return prefix === 'LLVT' ? 'llv' : 'lpv';
+}
+
 module.exports = {
   generateLicenseKey,
   generateTrialKey,
+  generateLPVTrialKey,
+  generateLLVTrialKey,
   generatePersonalKey,
   generateFamilyKey,
   generateLLVPersonalKey,
@@ -102,5 +123,6 @@ module.exports = {
   isValidFormat,
   normalizeKey,
   getPlanTypeFromKey,
+  getProductTypeFromTrialKey,
 };
 

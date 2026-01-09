@@ -6,7 +6,8 @@
 
 // License key patterns
 export const LICENSE_KEY_PATTERN = /^(PERS|FMLY)-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/;
-export const TRIAL_KEY_PATTERN = /^TRIA-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/;
+// Trial key pattern: TRIA- for LPV, LLVT- for LLV
+export const TRIAL_KEY_PATTERN = /^(TRIA|LLVT)-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/;
 
 export const ERROR_MESSAGES = {
   LICENSE: {

@@ -496,10 +496,6 @@ router.post('/trial/activate', async (req, res) => {
       });
     }
     
-    // Determine product type: 'llv' for LLV, 'lpv' for LPV (default for backward compatibility)
-    // LLV requests should include product_type: 'llv' in the request body
-    const detectedProductType = product_type === 'llv' ? 'llv' : 'lpv';
-    
     // Check if trial exists
     const trial = await db.trials.findByKey(normalizedKey);
     
@@ -508,6 +504,22 @@ router.post('/trial/activate', async (req, res) => {
         status: 'invalid',
         error: 'Trial key not found' 
       });
+    }
+    
+    // Detect product type from trial key prefix (LLVT = LLV, TRIA = LPV)
+    // Also check trial.product_type if available in database, otherwise detect from key
+    let detectedProductType = 'lpv';
+    if (trial.product_type) {
+      detectedProductType = trial.product_type;
+    } else {
+      // Detect from key prefix
+      const keyPrefix = normalizedKey.toUpperCase().slice(0, 4);
+      detectedProductType = keyPrefix === 'LLVT' ? 'llv' : 'lpv';
+    }
+    
+    // Override with explicit product_type from request if provided
+    if (product_type === 'llv' || product_type === 'lpv') {
+      detectedProductType = product_type;
     }
     
     // Check if trial is expired

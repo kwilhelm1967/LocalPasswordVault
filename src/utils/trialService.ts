@@ -77,6 +77,9 @@ export class TrialService {
       const cleanKey = trialKey.replace(/[^A-Z0-9-]/g, "");
       const deviceId = await getLPVDeviceFingerprint();
 
+      // Detect product type from trial key prefix
+      const productType = cleanKey.startsWith('LLVT-') ? 'llv' : 'lpv';
+      
       // Development mode: create unsigned trial file
       if (import.meta.env.DEV) {
         const startDate = new Date().toISOString();
@@ -89,7 +92,7 @@ export class TrialService {
           plan_type: 'trial',
           start_date: startDate,
           expires_at: expiresAt.toISOString(),
-          product_type: 'lpv',
+          product_type: productType,
           signature: '',
           signed_at: new Date().toISOString(),
         };
@@ -101,7 +104,8 @@ export class TrialService {
         return { success: true, trialInfo };
       }
 
-      // Call trial activation API
+      // Call trial activation API with product type detection
+      // Product type is detected from key prefix in backend, but we pass it explicitly for clarity
       const response = await apiClient.post<{
         status: string;
         trial_file?: SignedTrialFile;
@@ -112,6 +116,7 @@ export class TrialService {
         {
           trial_key: cleanKey,
           device_id: deviceId,
+          product_type: productType, // Pass detected product type
         },
         {
           retries: 2,

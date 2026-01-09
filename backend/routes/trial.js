@@ -9,7 +9,26 @@ const TRIAL_DURATION_DAYS = 7;
 
 router.post('/signup', async (req, res) => {
   try {
-    const { email } = req.body;
+    const { email, product_type } = req.body;
+    
+    // Detect product type from origin/referer header if not provided
+    let detectedProductType = product_type || 'lpv';
+    
+    // Check referer/origin headers to determine product type
+    const referer = req.headers.referer || req.headers.origin || '';
+    const hostname = referer ? new URL(referer).hostname : '';
+    
+    // Detect LLV from hostname
+    if (hostname.includes('locallegacyvault.com')) {
+      detectedProductType = 'llv';
+    } else if (hostname.includes('localpasswordvault.com') || !hostname) {
+      detectedProductType = 'lpv';
+    }
+    
+    // Override with explicit product_type if provided
+    if (product_type === 'llv' || product_type === 'lpv') {
+      detectedProductType = product_type;
+    }
     
     if (!email) {
       return res.status(400).json({ 
@@ -79,7 +98,8 @@ router.post('/signup', async (req, res) => {
       });
     }
     
-    const trialKey = generateTrialKey();
+    // Generate trial key with product-specific prefix
+    const trialKey = generateTrialKey(detectedProductType);
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + TRIAL_DURATION_DAYS);
     
@@ -88,6 +108,7 @@ router.post('/signup', async (req, res) => {
         email: normalizedEmail,
         trial_key: trialKey,
         expires_at: expiresAt.toISOString(),
+        product_type: detectedProductType, // Store product type with trial
       });
     } catch (dbError) {
       if (dbError.code === '23505' || dbError.message?.includes('unique')) {

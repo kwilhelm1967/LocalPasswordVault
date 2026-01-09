@@ -349,8 +349,8 @@ export class LicenseService {
       
       const cleanKey = validation.cleaned;
 
-      // Check if this is a trial key (starts with TRIA-)
-      if (cleanKey.startsWith('TRIA-')) {
+      // Check if this is a trial key (starts with TRIA- for LPV or LLVT- for LLV)
+      if (cleanKey.startsWith('TRIA-') || cleanKey.startsWith('LLVT-')) {
         // Route to trial activation
         const result = await trialService.activateTrial(cleanKey);
         if (result.success && result.trialInfo) {

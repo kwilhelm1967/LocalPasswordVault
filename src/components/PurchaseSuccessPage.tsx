@@ -457,8 +457,10 @@ export const PurchaseSuccessPage: React.FC = () => {
     // LLV keys start with 'LLVP' or 'LLVF', LPV keys start with 'PERS' or 'FMLY'
     if (keys.length > 0) {
       // Detect product type from first key prefix
+      // LLV keys: LLVP, LLVF, LLVT (trial)
+      // LPV keys: PERS, FMLY, TRIA (trial)
       const firstKey = keys[0].toUpperCase();
-      const isLLV = firstKey.startsWith('LLVP') || firstKey.startsWith('LLVF');
+      const isLLV = firstKey.startsWith('LLVP') || firstKey.startsWith('LLVF') || firstKey.startsWith('LLVT');
       const productType = isLLV ? 'llv' : 'lpv';
       const productName = isLLV ? 'Local Legacy Vault' : 'Local Password Vault';
       const downloadBaseUrl = isLLV ? 'https://locallegacyvault.com' : 'https://localpasswordvault.com';
@@ -483,6 +485,14 @@ export const PurchaseSuccessPage: React.FC = () => {
           } else if (upperKey.startsWith('LLVP')) {
             planType = 'llv_personal';
             detectedProductType = 'llv';
+          } else if (upperKey.startsWith('LLVT')) {
+            // LLV trial key
+            planType = 'trial';
+            detectedProductType = 'llv';
+          } else if (upperKey.startsWith('TRIA')) {
+            // LPV trial key
+            planType = 'trial';
+            detectedProductType = 'lpv';
           }
           
           return {

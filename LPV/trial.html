@@ -445,10 +445,14 @@
         try {
           console.log('[Trial Signup] Making request to:', `${API_BASE_URL}/api/trial/signup`);
           
+          // Detect product type from current website domain
+          const isLLV = window.location.hostname.includes('locallegacyvault.com');
+          const productType = isLLV ? 'llv' : 'lpv';
+          
           const response = await fetch(`${API_BASE_URL}/api/trial/signup`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email }),
+            body: JSON.stringify({ email, product_type: productType }),
           });
           
           console.log('[Trial Signup] Response status:', response.status, response.statusText);
