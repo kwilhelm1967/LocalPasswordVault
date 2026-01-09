@@ -7,7 +7,7 @@ const router = express.Router();
 router.post('/session', async (req, res) => {
   try {
     const { planType, email } = req.body;
-    const validPlanTypes = ['personal', 'family', 'llv_personal', 'llv_family'];
+    const validPlanTypes = ['personal', 'family', 'llv_personal', 'llv_family', 'afterpassing_addon', 'afterpassing_standalone'];
     
     if (!planType || !validPlanTypes.includes(planType)) {
       return res.status(400).json({ 
@@ -18,9 +18,17 @@ router.post('/session', async (req, res) => {
     
     // Determine website URL based on product type
     const isLLV = planType.startsWith('llv_');
-    const baseUrl = isLLV 
-      ? (process.env.LLV_WEBSITE_URL || 'https://locallegacyvault.com')
-      : (process.env.WEBSITE_URL || 'https://localpasswordvault.com');
+    const isAfterPassing = planType.startsWith('afterpassing_');
+    let baseUrl;
+    
+    if (isAfterPassing) {
+      baseUrl = process.env.AFTERPASSING_WEBSITE_URL || 'https://afterpassingguide.com';
+    } else if (isLLV) {
+      baseUrl = process.env.LLV_WEBSITE_URL || 'https://locallegacyvault.com';
+    } else {
+      baseUrl = process.env.WEBSITE_URL || 'https://localpasswordvault.com';
+    }
+    
     const successUrl = `${baseUrl}/purchase/success?session_id={CHECKOUT_SESSION_ID}`;
     const cancelUrl = `${baseUrl}/pricing?cancelled=true`;
     
@@ -240,6 +248,13 @@ router.get('/products', (req, res) => {
       productType: product.productType,
     })),
   });
+});
+
+// Alias for /session endpoint (backward compatibility)
+router.post('/', async (req, res) => {
+  // Forward to /session endpoint
+  req.url = '/session';
+  router.handle(req, res);
 });
 
 module.exports = router;

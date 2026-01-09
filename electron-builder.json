@@ -94,10 +94,7 @@
     ],
     "icon": "assets/icons/icon.ico",
     "requestedExecutionLevel": "asInvoker",
-    "publisherName": "Local Password Vault",
-    "sign": "${CSC_LINK}",
-    "signingHashAlgorithms": ["sha256"],
-    "verifyUpdateCodeSignature": true
+    "publisherName": "Local Password Vault"
   },
   
   "nsis": {
@@ -113,7 +110,7 @@
     "installerHeaderIcon": "assets/icons/icon.ico",
     "deleteAppDataOnUninstall": false,
     "differentialPackage": true,
-    "license": "LICENSE",
+    "license": "docs/TERMS_OF_SERVICE.md",
     "warningsAsErrors": false
   },
   

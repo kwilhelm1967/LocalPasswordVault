@@ -1,46 +1,38 @@
-import { useEffect } from "react";
-
 /**
- * Custom hook for synchronizing vault lock status across Electron windows
+ * useVaultStatusSync Hook
  * 
- * Listens for vault status changes from Electron's main process and updates
- * the local lock state accordingly. This ensures all windows stay in sync
- * when the vault is locked or unlocked.
- * 
- * @param isElectron - Whether the app is running in Electron
- * @param setIsLocked - Function to update the locked state
- * 
- * @example
- * ```typescript
- * const [isLocked, setIsLocked] = useState(true);
- * useVaultStatusSync(isElectron, setIsLocked);
- * ```
+ * Syncs vault lock status with Electron main process.
  */
+
+import { useEffect } from "react";
+import { useElectron } from "./useElectron";
+
 export const useVaultStatusSync = (
   isElectron: boolean,
-  setIsLocked: (locked: boolean) => void
+  setIsLocked: React.Dispatch<React.SetStateAction<boolean>>
 ) => {
+  const { ipcRenderer } = useElectron();
+
   useEffect(() => {
-    if (!isElectron || !window.electronAPI?.onVaultStatusChange) return;
+    if (!isElectron || !ipcRenderer) {
+      return;
+    }
 
-    const handleVaultStatusChange = (_event: unknown, unlocked: boolean) => {
-      setIsLocked(!unlocked);
+    // Listen for vault lock/unlock events from main process
+    const handleVaultLocked = () => {
+      setIsLocked(true);
     };
 
-    window.electronAPI.onVaultStatusChange(handleVaultStatusChange);
+    const handleVaultUnlocked = () => {
+      setIsLocked(false);
+    };
+
+    ipcRenderer.on?.("vault-locked", handleVaultLocked);
+    ipcRenderer.on?.("vault-unlocked", handleVaultUnlocked);
+
     return () => {
-      window.electronAPI?.removeVaultStatusListener?.();
+      ipcRenderer.removeListener?.("vault-locked", handleVaultLocked);
+      ipcRenderer.removeListener?.("vault-unlocked", handleVaultUnlocked);
     };
-  }, [isElectron, setIsLocked]);
+  }, [isElectron, ipcRenderer, setIsLocked]);
 };
-
-
-
-
-
-
-
-
-
-
-

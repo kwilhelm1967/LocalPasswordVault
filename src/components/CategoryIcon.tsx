@@ -8,7 +8,13 @@ import {
   Mail,
   ChartNoAxesCombined,
   Folder,
-  FileChartColumn,
+  FolderOpen,
+  FileEdit,
+  FilePenLine,
+  Users,
+  Users2,
+  Clipboard,
+  ClipboardList,
 } from "lucide-react";
 
 interface CategoryIconProps {
@@ -44,7 +50,19 @@ export const CategoryIcon: React.FC<CategoryIconProps> = ({
     case "TrendingUp":
       return <ChartNoAxesCombined {...props} />;
     case "FileText":
-      return <FileChartColumn {...props} />;
+      return <FilePenLine {...props} />;
+    case "FileEdit":
+      return <FilePenLine {...props} />;
+    case "Users":
+      return <Users2 {...props} />;
+    case "Users2":
+      return <Users2 {...props} />;
+    case "Folder":
+      return <Folder {...props} />;
+    case "Clipboard":
+      return <ClipboardList {...props} />;
+    case "ClipboardList":
+      return <ClipboardList {...props} />;
     default:
       return <Folder {...props} />;
   }

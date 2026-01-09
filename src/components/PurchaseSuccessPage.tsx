@@ -126,6 +126,11 @@ export const PurchaseSuccessPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const detectedOS = getOS();
+  
+  // Local Password Vault - no LLV domain detection needed
+  const defaultProductType = 'lpv';
+  const defaultProductName = 'Local Password Vault';
+  const defaultWebsiteUrl = 'https://localpasswordvault.com';
 
   // Hide textured background pattern on purchase success page
   useEffect(() => {
@@ -174,15 +179,15 @@ export const PurchaseSuccessPage: React.FC = () => {
                     downloadBaseUrl: 'https://localpasswordvault.com',
                   },
                   {
-                    productType: 'llv',
-                    productName: 'Local Legacy Vault',
+                    productType: 'lpv',
+                    productName: 'Local Password Vault',
                     licenses: [
-                      { licenseKey: 'LLVP-TEST-WXYZ-1234', planType: 'llv_personal', productType: 'llv', maxDevices: 1 },
+                      { licenseKey: 'PERS-TEST-1234-5678', planType: 'personal', productType: 'lpv', maxDevices: 1 },
                     ],
-                    downloadBaseUrl: 'https://locallegacyvault.com',
+                    downloadBaseUrl: 'https://localpasswordvault.com',
                   },
                 ]);
-                setLicenseKeys(['PERS-TEST-1234-5678', 'FAMI-TEST-ABCD-EFGH', 'LLVP-TEST-WXYZ-1234']);
+                setLicenseKeys(['PERS-TEST-1234-5678', 'FAMI-TEST-ABCD-EFGH']);
                 setIsBundle(true);
                 setPlanName("Bundle Purchase");
                 setCustomerEmail("test@example.com");
@@ -239,9 +244,12 @@ export const PurchaseSuccessPage: React.FC = () => {
         extractKeysFromURL(urlParams);
       } catch (err: any) {
         // Error handled via setError - no console output needed
-        const errorMessage = err?.message || "Failed to load license keys. Please check your email or contact support@localpasswordvault.com";
+        const supportEmail = 'support@localpasswordvault.com';
+        const errorMessage = err?.message || `Failed to load license keys. Please check your email or contact ${supportEmail}`;
         setError(errorMessage);
       } finally {
+        // CRITICAL FIX: Always set loading to false, even on error
+        // This prevents infinite spinner
         setIsLoading(false);
       }
     };
@@ -254,19 +262,25 @@ export const PurchaseSuccessPage: React.FC = () => {
       // Use apiClient for better error handling and retry logic
       const { apiClient } = await import("../utils/apiClient");
       
-      const response = await apiClient.get<{
-        success: boolean;
-        pending?: boolean;
-        isBundle?: boolean;
-        data?: any;
-        error?: string;
-      }>(
-        `/api/checkout/session/${sessionId}`,
-        {
-          retries: 5,
-          timeout: 60000, // 60 seconds total
-        }
-      );
+      // CRITICAL FIX: Add timeout and better error handling to prevent infinite spinner
+      const response = await Promise.race([
+        apiClient.get<{
+          success: boolean;
+          pending?: boolean;
+          isBundle?: boolean;
+          data?: any;
+          error?: string;
+        }>(
+          `/api/checkout/session/${sessionId}`,
+          {
+            retries: 2, // Reduced from 5 to fail faster
+            timeout: 10000, // Reduced from 60s to 10s to prevent long waits
+          }
+        ),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Request timeout')), 15000)
+        )
+      ]) as Awaited<ReturnType<typeof apiClient.get>>;
       
       const data = response.data;
       
@@ -306,14 +320,7 @@ export const PurchaseSuccessPage: React.FC = () => {
             downloadBaseUrl: 'https://localpasswordvault.com',
           });
         }
-        if (groups['llv']) {
-          productGroupsList.push({
-            productType: 'llv',
-            productName: 'Local Legacy Vault',
-            licenses: groups['llv'],
-            downloadBaseUrl: 'https://locallegacyvault.com',
-          });
-        }
+        // LLV bundles not supported in Local Password Vault repository
         
         setProductGroups(productGroupsList);
         
@@ -338,14 +345,14 @@ export const PurchaseSuccessPage: React.FC = () => {
         
         setProductGroups([{
           productType: productType,
-          productName: productType === 'llv' ? 'Local Legacy Vault' : 'Local Password Vault',
+          productName: 'Local Password Vault',
           licenses: data.data.licenses.map((license: any) => ({
             licenseKey: license.licenseKey || license.license_key,
             planType: license.planType || planType,
             productType: license.productType || productType,
             maxDevices: license.maxDevices || license.max_devices || 1,
           })),
-          downloadBaseUrl: productType === 'llv' ? 'https://locallegacyvault.com' : 'https://localpasswordvault.com',
+          downloadBaseUrl: 'https://localpasswordvault.com',
         }]);
       }
       // Handle single purchase
@@ -358,14 +365,14 @@ export const PurchaseSuccessPage: React.FC = () => {
         const productType = data.data.productType || 'lpv';
         setProductGroups([{
           productType: productType,
-          productName: productType === 'llv' ? 'Local Legacy Vault' : 'Local Password Vault',
+          productName: 'Local Password Vault',
           licenses: [{
             licenseKey: data.data.licenseKey,
             planType: data.data.planType,
             productType: productType,
             maxDevices: data.data.maxDevices || 1,
           }],
-          downloadBaseUrl: productType === 'llv' ? 'https://locallegacyvault.com' : 'https://localpasswordvault.com',
+          downloadBaseUrl: 'https://localpasswordvault.com',
         }]);
       }
       
@@ -429,6 +436,23 @@ export const PurchaseSuccessPage: React.FC = () => {
       } else {
         setPlanName("Personal Vault");
       }
+    }
+    
+    // CRITICAL FIX: Set product groups based on domain when extracting from URL
+    // This ensures correct branding when keys come from URL params
+    if (keys.length > 0) {
+      // Local Password Vault - only LPV licenses
+      setProductGroups([{
+        productType: 'lpv',
+        productName: 'Local Password Vault',
+        licenses: keys.map(key => ({
+          licenseKey: key,
+          planType: key.startsWith('FMLY') ? 'family' : 'personal',
+          productType: 'lpv',
+          maxDevices: 1,
+        })),
+        downloadBaseUrl: 'https://localpasswordvault.com',
+      }]);
     }
   };
 
@@ -547,11 +571,11 @@ export const PurchaseSuccessPage: React.FC = () => {
               <Shield className="w-6 h-6" style={{ color: colors.cyan }} />
             </div>
             <span className="text-lg font-semibold" style={{ color: colors.textPrimary, fontFamily: "'Space Grotesk', sans-serif" }}>
-              Local Password Vault
+              {defaultProductName}
             </span>
           </div>
           <a
-            href="https://localpasswordvault.com"
+            href={defaultWebsiteUrl}
             className="text-sm flex items-center space-x-1 transition-colors px-3 py-2 rounded-lg font-semibold"
             style={{ 
               background: colors.gradientCyan,
@@ -1282,7 +1306,7 @@ export const PurchaseSuccessPage: React.FC = () => {
                     1
                   </span>
                   <span className="text-sm" style={{ color: colors.textSecondary }}>
-                    Download and install Local Password Vault for your platform
+                    Download and install {defaultProductName} for your platform
                   </span>
                 </li>
                 <li className="flex items-start gap-3">
@@ -1321,7 +1345,7 @@ export const PurchaseSuccessPage: React.FC = () => {
               <p className="text-xs" style={{ color: colors.textMuted }}>
                 Need help? Contact{" "}
                 <a
-                  href="mailto:support@localpasswordvault.com"
+                  href={`mailto:support@localpasswordvault.com`}
                   style={{ color: colors.cyan }}
                   className="hover:underline font-semibold"
                 >
@@ -1339,7 +1363,7 @@ export const PurchaseSuccessPage: React.FC = () => {
         style={{ borderColor: colors.borderSubtle }}
       >
         <div className="max-w-4xl mx-auto text-center text-sm" style={{ color: colors.textMuted }}>
-          © 2025 Local Password Vault. All rights reserved.
+          © 2025 {defaultProductName}. All rights reserved.
         </div>
       </footer>
     </div>

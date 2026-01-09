@@ -12,7 +12,7 @@
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
   
   <style>
     :root {
@@ -82,26 +82,23 @@
     }
 
     .logo-icon {
-      width: 44px;
-      height: 44px;
-      background: var(--bg-dark);
-      border-radius: 10px;
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 4px 12px var(--cyan-glow), inset 0 0 0 1px var(--cyan-dark);
     }
 
     .logo-icon svg {
-      width: 24px;
-      height: 24px;
+      width: 28px;
+      height: 28px;
       stroke: var(--cyan);
       fill: none;
+      stroke-width: 2.5;
+      filter: drop-shadow(0 0 2px rgba(6, 182, 212, 0.5));
     }
 
     .logo-text {
-      font-family: 'Space Grotesk', sans-serif;
-      font-size: 1.15rem;
+      font-family: 'Poppins', sans-serif;
+      font-size: 1.2rem;
       font-weight: 600;
       color: var(--text-primary);
     }
@@ -206,20 +203,16 @@
     }
 
     .category-icon {
-      width: 64px;
-      height: 64px;
-      background: var(--bg-card);
-      border-radius: 16px;
       display: flex;
       align-items: center;
       justify-content: center;
-      border: 1px solid var(--cyan-dark);
     }
 
     .category-icon svg {
-      width: 32px;
-      height: 32px;
+      width: 36px;
+      height: 36px;
       stroke: var(--cyan);
+      stroke-width: 2.5;
     }
 
     .category-header h2 {

@@ -37,6 +37,26 @@ const PRODUCTS = {
     maxDevices: 5,
     productType: 'llv',
   },
+  // AfterPassing Guide Add-On (requires LLV)
+  afterpassing_addon: {
+    name: 'AfterPassing Guide Add-On',
+    description: 'Guidance and templates add-on for Local Legacy Vault users',
+    price: 1900,
+    priceId: process.env.STRIPE_PRICE_AFTERPASSING_ADDON,
+    maxDevices: 1,
+    productType: 'afterpassing',
+    requiresLLV: true,
+  },
+  // AfterPassing Guide Standalone (independent product)
+  afterpassing_standalone: {
+    name: 'AfterPassing Guide',
+    description: 'Standalone guidance and templates for end-of-life planning',
+    price: 3900,
+    priceId: process.env.STRIPE_PRICE_AFTERPASSING_STANDALONE,
+    maxDevices: 1,
+    productType: 'afterpassing',
+    requiresLLV: false,
+  },
 };
 
 function getProductByPriceId(priceId) {

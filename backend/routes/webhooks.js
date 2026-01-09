@@ -5,7 +5,9 @@ const {
   generatePersonalKey, 
   generateFamilyKey, 
   generateLLVPersonalKey, 
-  generateLLVFamilyKey 
+  generateLLVFamilyKey,
+  generateAfterPassingAddonKey,
+  generateAfterPassingStandaloneKey
 } = require('../services/licenseGenerator');
 const { sendPurchaseEmail, sendBundleEmail } = require('../services/email');
 const logger = require('../utils/logger');
@@ -274,6 +276,14 @@ async function handleCheckoutCompleted(session) {
       planType = 'llv_family';
       numKeys = 5;
       keyGenerator = generateLLVFamilyKey;
+    } else if (product.key === 'afterpassing_addon') {
+      planType = 'afterpassing_addon';
+      numKeys = 1;
+      keyGenerator = generateAfterPassingAddonKey;
+    } else if (product.key === 'afterpassing_standalone') {
+      planType = 'afterpassing_standalone';
+      numKeys = 1;
+      keyGenerator = generateAfterPassingStandaloneKey;
     } else {
       logger.warn('Unknown product key', {
         productKey: product.key,

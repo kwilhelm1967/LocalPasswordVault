@@ -285,13 +285,26 @@ const useEntryManagement = (
 function App() {
   // Handle purchase success page FIRST - before any other logic
   // This ensures it shows immediately when redirected from Stripe
+  // CRITICAL FIX: Do NOT intercept static HTML files (trial-success.html, success.html, etc.)
+  // These should be served as static files, not handled by React app
   const urlParams = new URLSearchParams(window.location.search);
   const pathname = window.location.pathname;
   const hasSessionId = urlParams.get('session_id');
   const hasKey = urlParams.get('key') || urlParams.get('license');
   const isPurchaseSuccessPath = pathname === '/purchase/success' || pathname.includes('purchase/success');
   
-  if (hasSessionId || hasKey || isPurchaseSuccessPath) {
+  // DO NOT intercept if this is a static HTML file request
+  // Static files like trial-success.html should be served directly by the server
+  const isStaticHtmlFile = pathname.endsWith('.html') && 
+                          (pathname.includes('trial-success') || 
+                           pathname.includes('success.html') ||
+                           pathname.includes('purchase-success.html'));
+  
+  // Only show React PurchaseSuccessPage for:
+  // 1. /purchase/success route (React app route)
+  // 2. session_id parameter (Stripe redirect)
+  // 3. key parameter BUT only if NOT a static HTML file
+  if ((hasSessionId || isPurchaseSuccessPath) || (hasKey && !isStaticHtmlFile)) {
     return (
       <Suspense fallback={<LoadingFallback />}>
         <PurchaseSuccessPage />
@@ -836,14 +849,46 @@ function App() {
   }, [appStatus?.trialInfo.isExpired, appStatus?.canUseApp, appStatus?.isLicensed, checkStatusImmediately]);
 
   // Show loading state while app status is being determined
-  if (!appStatus) {
+  // Add timeout fallback to prevent infinite loading
+  // CRITICAL: If loading takes more than 10 seconds, show license screen instead of infinite spinner
+  const [loadingTimeout, setLoadingTimeout] = useState(false);
+  
+  useEffect(() => {
+    if (isLoading && !appStatus) {
+      const timeout = setTimeout(() => {
+        setLoadingTimeout(true);
+      }, 10000); // 10 second timeout
+      return () => clearTimeout(timeout);
+    } else {
+      setLoadingTimeout(false);
+    }
+  }, [isLoading, appStatus]);
+  
+  if (!appStatus && isLoading && !loadingTimeout) {
+    // Show loading for max 10 seconds, then show license screen
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-white text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
           <p className="text-lg">Loading application...</p>
+          <p className="text-sm text-slate-400 mt-2">If this takes too long, please check your connection</p>
         </div>
       </div>
+    );
+  }
+  
+  // If loading timed out or finished without status, show license screen
+  if (!appStatus && (loadingTimeout || !isLoading)) {
+    return <LicenseScreen />;
+  }
+  
+  // If loading failed or timed out, show license screen
+  if (!appStatus && !isLoading) {
+    // Force show license screen if status check failed
+    return (
+      <Suspense fallback={<LoadingFallback />}>
+        <LicenseScreen />
+      </Suspense>
     );
   }
 

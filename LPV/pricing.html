@@ -12,7 +12,7 @@
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
   
   <style>
     :root {
@@ -24,6 +24,9 @@
       --cyan-dark: #0891b2;
       --cyan-glow: rgba(6, 182, 212, 0.3);
       --green: #10b981;
+      --gold: #c9a24e;
+      --gold-dark: #a6873e;
+      --gradient-gold: linear-gradient(135deg, #c9a24e 0%, #a6873e 100%);
       --text-primary: #f9fafb;
       --text-secondary: #9ca3af;
       --text-muted: #6b7280;
@@ -38,9 +41,9 @@
     nav { position: fixed; top: 0; left: 0; right: 0; z-index: 1000; padding: 1rem 2rem; background: rgba(6, 9, 18, 0.95); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border-subtle); }
     .nav-container { max-width: 1600px; width: 92%; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; }
     .logo { display: flex; align-items: center; gap: 12px; text-decoration: none; }
-    .logo-icon { width: 44px; height: 44px; background: var(--bg-dark); border-radius: 10px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px var(--cyan-glow), inset 0 0 0 1px var(--cyan-dark); }
-    .logo-icon svg { width: 24px; height: 24px; stroke: var(--cyan); fill: none; }
-    .logo-text { font-family: 'Space Grotesk', sans-serif; font-size: 1.15rem; font-weight: 600; color: var(--text-primary); }
+    .logo-icon { display: flex; align-items: center; justify-content: center; }
+    .logo-icon svg { width: 28px; height: 28px; stroke: var(--cyan); fill: none; stroke-width: 2.5; filter: drop-shadow(0 0 2px rgba(6, 182, 212, 0.5)); }
+    .logo-text { font-family: 'Poppins', sans-serif; font-size: 1.2rem; font-weight: 600; color: var(--text-primary); }
     .nav-links { display: flex; align-items: center; gap: 2rem; }
     .nav-links a { color: var(--text-secondary); text-decoration: none; font-size: 0.95rem; font-weight: 500; transition: color 0.2s; }
     .nav-links a:hover, .nav-links a.active { color: var(--cyan); }
@@ -49,6 +52,26 @@
     .hero { padding: 80px 2rem 20px; text-align: center; background: linear-gradient(180deg, var(--bg-dark) 0%, var(--bg-darker) 100%); }
     .hero h1 { font-family: 'Space Grotesk', sans-serif; font-size: clamp(2.5rem, 5vw, 4rem); font-weight: 700; margin-bottom: 1rem; }
     .hero p { font-size: 1.2rem; color: var(--text-secondary); max-width: 600px; margin: 0 auto; }
+    .platform-notice {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      margin-top: 1rem;
+      margin-bottom: 0;
+    }
+    
+    @media (max-width: 768px) {
+      .platform-notice {
+        font-size: 1rem;
+        color: var(--cyan);
+        font-weight: 600;
+        margin-top: 1.5rem;
+        padding: 12px 20px;
+        background: rgba(6, 182, 212, 0.1);
+        border: 1px solid rgba(6, 182, 212, 0.2);
+        border-radius: 8px;
+        display: inline-block;
+      }
+    }
 
     .pricing-section { padding: 20px 2rem 60px; max-width: 1200px; margin: 0 auto; }
     .pricing-grid { 
@@ -106,6 +129,7 @@
       font-weight: 600; 
       margin-bottom: 0.5rem;
       line-height: 1.3;
+      text-align: center;
     }
     .pricing-card .subtitle { 
       color: var(--text-secondary); 
@@ -113,12 +137,23 @@
       margin-bottom: 1.5rem;
       line-height: 1.5;
       min-height: 2.25em;
+      text-align: center;
     }
     .pricing-card .price { 
       font-size: 3rem; 
       font-weight: 700; 
       margin-bottom: 0.25rem;
       line-height: 1;
+    }
+    .pricing-card .price .currency {
+      font-size: 0.5em;
+      vertical-align: super;
+      color: var(--cyan);
+      font-weight: 600;
+      margin-right: 0.5em;
+    }
+    .pricing-card .price .amount {
+      color: var(--text-primary);
     }
     .pricing-card .period { 
       color: var(--text-muted); 
@@ -280,29 +315,99 @@
     }
     .bundle-price {
       display: flex;
-      align-items: baseline;
+      align-items: flex-end;
       flex-wrap: wrap;
       gap: 0.5rem;
       margin-bottom: 1.25rem;
       padding-bottom: 1rem;
       border-bottom: 1px solid var(--border-subtle);
-      align-items: center;
     }
     .bundle-price .price {
       font-size: 2.5rem;
       font-weight: 700;
       line-height: 1;
+      font-family: 'Space Grotesk', sans-serif;
+    }
+
+    .bundle-price .price .currency {
+      font-size: 0.5em;
+      vertical-align: super;
+      color: var(--cyan);
+      font-weight: 600;
+      margin-right: 0.3em;
+    }
+
+    .bundle-price .price .amount {
+      color: var(--text-primary);
+    }
+
+    /* Inline price styling for text mentions */
+    .inline-price {
+      display: inline;
+    }
+
+    .inline-price .currency {
+      font-size: 0.9em;
+      vertical-align: top;
+      font-weight: 600;
+      color: var(--cyan);
+    }
+
+    .inline-price .amount {
+      font-weight: 700;
     }
     .bundle-price .original {
       font-size: 1.1rem;
       color: var(--text-muted);
-      text-decoration: line-through;
       line-height: 1;
+    }
+    .bundle-price .original .currency {
+      font-size: 0.5em;
+      vertical-align: super;
+      color: var(--cyan);
+      font-weight: 600;
+      text-decoration: none;
+      margin-right: 0.5em;
+    }
+    .bundle-price .original .amount {
+      text-decoration: line-through;
+      color: var(--text-muted);
+    }
+    .bundle-price .original .amount {
+      text-decoration: line-through;
+      color: var(--text-muted);
     }
     .bundle-price .savings {
       font-size: 0.85rem;
-      color: var(--green);
       font-weight: 600;
+      color: var(--green);
+    }
+    .bundle-price .savings .currency {
+      font-size: 0.5em;
+      vertical-align: super;
+      color: var(--cyan);
+      font-weight: 600;
+      margin-right: 0.5em;
+    }
+    .bundle-price .savings .amount {
+      color: var(--green);
+    }
+
+    /* Inline price styling for text mentions */
+    .inline-price {
+      display: inline;
+    }
+
+    .inline-price .currency {
+      font-size: 0.9em;
+      vertical-align: top;
+      font-weight: 600;
+      color: var(--cyan);
+    }
+
+    .inline-price .amount {
+      font-weight: 700;
+    }
       background: rgba(16, 185, 129, 0.1);
       padding: 4px 10px;
       border-radius: 6px;
@@ -312,6 +417,7 @@
       list-style: none;
       margin-bottom: auto;
       padding: 0;
+      flex-grow: 1;
     }
     .bundle-features li {
       display: flex;
@@ -338,7 +444,7 @@
       display: flex;
       flex-direction: column;
       gap: 0.75rem;
-      margin-top: 1.5rem;
+      margin-top: auto;
     }
     .bundle-cta {
       display: block;
@@ -371,9 +477,9 @@
     .bundle-info {
       text-align: center;
       padding: 1.75rem;
-      background: rgba(6, 182, 212, 0.05);
+      background: rgba(201, 162, 78, 0.05);
       border-radius: 16px;
-      border: 1px solid var(--cyan-dark);
+      border: 2px solid var(--gold);
       margin-top: 2rem;
       margin-bottom: 0;
       max-width: 900px;
@@ -390,11 +496,11 @@
       margin-bottom: 0;
     }
     .bundle-info strong {
-      color: var(--text-primary);
-      font-weight: 600;
+      color: var(--gold);
+      font-weight: 700;
     }
     .bundle-info a {
-      color: var(--cyan);
+      color: var(--gold);
       text-decoration: none;
       font-weight: 600;
       transition: color 0.2s;
@@ -402,7 +508,7 @@
       margin-top: 0.25rem;
     }
     .bundle-info a:hover {
-      color: var(--cyan-light);
+      color: var(--gold-dark);
       text-decoration: underline;
     }
 
@@ -487,6 +593,7 @@
   <section class="hero">
     <h1>Own Your Security For Life</h1>
     <p>No subscriptions. No cloud storage. No tracking. Just total control of your passwords.</p>
+    <p class="platform-notice">Available for Windows, macOS, and Linux</p>
   </section>
 
   <section class="pricing-section">
@@ -494,7 +601,7 @@
       <div class="pricing-card trial">
         <h3>Free Trial</h3>
         <p class="subtitle">Try before you buy</p>
-        <div class="price">$0</div>
+        <div class="price"><span class="currency">$</span><span class="amount">0</span></div>
         <div class="period">7 days free</div>
         <ul>
           <li>Full access to all features</li>
@@ -509,7 +616,7 @@
       <div class="pricing-card popular">
         <h3>Personal Vault</h3>
         <p class="subtitle">Best for individuals</p>
-        <div class="price">$49</div>
+        <div class="price"><span class="currency">$</span><span class="amount">49</span></div>
         <div class="period">one-time payment</div>
         <ul>
           <li>Lifetime license</li>
@@ -525,7 +632,7 @@
       <div class="pricing-card best-value">
         <h3>Family Vault</h3>
         <p class="subtitle">Best for families</p>
-        <div class="price">$79</div>
+        <div class="price"><span class="currency">$</span><span class="amount">79</span></div>
         <div class="period">one-time payment</div>
         <ul>
           <li>Everything in Personal</li>
@@ -560,9 +667,9 @@
           <h3>Personal Bundle</h3>
           <p class="bundle-desc">Local Password Vault + Local Legacy Vault for one user</p>
           <div class="bundle-price">
-            <span class="price">$89</span>
-            <span class="original">$98</span>
-            <span class="savings">Save $9</span>
+            <span class="price"><span class="currency">$</span><span class="amount">89</span></span>
+            <span class="original"><span class="currency">$</span><span class="amount">98</span></span>
+            <span class="savings">Save <span class="currency">$</span><span class="amount">9</span></span>
           </div>
           <ul class="bundle-features">
             <li>LPV Personal Vault (1 device)</li>
@@ -581,9 +688,9 @@
           <h3>Family Bundle</h3>
           <p class="bundle-desc">Local Password Vault + Local Legacy Vault for your entire family</p>
           <div class="bundle-price">
-            <span class="price">$139</span>
-            <span class="original">$157</span>
-            <span class="savings">Save $18</span>
+            <span class="price"><span class="currency">$</span><span class="amount">139</span></span>
+            <span class="original"><span class="currency">$</span><span class="amount">157</span></span>
+            <span class="savings">Save <span class="currency">$</span><span class="amount">18</span></span>
           </div>
           <ul class="bundle-features">
             <li>LPV Family Vault (5 devices)</li>
@@ -612,7 +719,7 @@
     </div>
 
     <div class="comparison-section">
-      <h2>Compare Plans</h2>
+      <h2>Compare Password Vault Plans</h2>
       <p style="text-align: center; color: var(--text-secondary); margin-bottom: 2rem;">Choose what's right for you</p>
       <table class="comparison-table">
         <thead>

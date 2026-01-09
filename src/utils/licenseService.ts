@@ -89,8 +89,9 @@ export class LicenseService {
   private static readonly DEVICE_ID_STORAGE = "app_device_id";
   private static readonly LOCAL_LICENSE_FILE = "lpv_license_file";
   
-  // Cached device fingerprint
+  // Cached device fingerprint (persisted to avoid recalculation)
   private cachedDeviceId: string | null = null;
+  private deviceIdPromise: Promise<string> | null = null;
 
   static getInstance(): LicenseService {
     if (!LicenseService.instance) {
@@ -101,21 +102,48 @@ export class LicenseService {
 
   /**
    * Get current device fingerprint (cached for performance)
+   * Uses localStorage cache to avoid recalculating on every app start
    */
   async getDeviceId(): Promise<string> {
+    // Return cached value immediately if available
     if (this.cachedDeviceId) {
       return this.cachedDeviceId;
     }
-    this.cachedDeviceId = await getLPVDeviceFingerprint();
-    return this.cachedDeviceId;
+
+    // Check localStorage cache first (persists across app restarts)
+    const cachedId = localStorage.getItem('_cached_device_id');
+    if (cachedId) {
+      this.cachedDeviceId = cachedId;
+      return cachedId;
+    }
+
+    // If already calculating, return the same promise (avoid duplicate calculations)
+    if (this.deviceIdPromise) {
+      return this.deviceIdPromise;
+    }
+
+    // Calculate device fingerprint (this can be slow)
+    this.deviceIdPromise = getLPVDeviceFingerprint().then(id => {
+      this.cachedDeviceId = id;
+      // Cache in localStorage for next app start
+      localStorage.setItem('_cached_device_id', id);
+      this.deviceIdPromise = null;
+      return id;
+    });
+
+    return this.deviceIdPromise;
   }
 
   /**
    * Get the current license and trial status
+   * Optimized: Runs license and trial checks in parallel for faster loading
    */
   async getAppStatus(): Promise<AppLicenseStatus> {
-    const licenseInfo = await this.getLicenseInfo();
-    const trialInfo = await trialService.getTrialInfo();
+    // Run license and trial checks in parallel (faster than sequential)
+    const [licenseInfo, trialInfo] = await Promise.all([
+      this.getLicenseInfo(),
+      trialService.getTrialInfo()
+    ]);
 
     let canUseApp = false;
     let requiresPurchase = false;
@@ -222,6 +250,7 @@ export class LicenseService {
   /**
    * Get current license information
    * Performs offline validation first
+   * Optimized: Only validates device binding if needed (defers expensive operations)
    */
   async getLicenseInfo(): Promise<LicenseInfo> {
     const key = localStorage.getItem(LicenseService.LICENSE_KEY_STORAGE);
@@ -238,13 +267,22 @@ export class LicenseService {
     }
 
     // For trial licenses, check expiration (local only, no network)
+    // No device validation needed for trials - they're device-bound by design
     if (type === 'trial') {
-      // Trial expiration is handled by trialService using signed trial files
-      // No network calls needed - uses signed trial file with cryptographically signed start_date
+      return {
+        isValid: true,
+        type,
+        key,
+        activatedDate: activatedDateStr ? new Date(activatedDateStr) : null,
+      };
     }
 
     // For non-trial licenses, validate device binding locally
-    if (type !== 'trial') {
+    // Only do this if we have a local license file (optimization)
+    const hasLocalLicense = localStorage.getItem(LicenseService.LOCAL_LICENSE_FILE);
+    if (hasLocalLicense) {
+      // Defer device validation - do it in background if possible
+      // For now, we'll do it synchronously but cache the device ID
       const localValidation = await this.validateLocalLicense();
       if (!localValidation.valid && !localValidation.requiresTransfer) {
         // No local license file - might need re-activation
@@ -275,7 +313,13 @@ export class LicenseService {
    * 4. Handle response (activated, device_mismatch, invalid)
    * 5. On success, save local license file
    */
-  async activateLicense(licenseKey: string): Promise<{ 
+  async activateLicense(
+    licenseKey: string,
+    options?: {
+      onProgress?: (stage: 'connecting' | 'sending' | 'receiving' | 'processing') => void;
+      onRetry?: (attempt: number, totalRetries: number, delay: number) => void;
+    }
+  ): Promise<{ 
     success: boolean; 
     error?: string; 
     licenseType?: LicenseType;
@@ -340,18 +384,8 @@ export class LicenseService {
         }
       }
 
-      // Log activation attempt with full details for diagnosis
       const apiBaseUrl = environment.environment.licenseServerUrl;
       const activationUrl = `${apiBaseUrl}/api/lpv/license/activate`;
-      
-      // Console log for debugging (visible in DevTools)
-      console.log('[License Service] Attempting activation:', {
-        url: activationUrl,
-        baseUrl: apiBaseUrl,
-        endpoint: '/api/lpv/license/activate',
-        licenseKey: cleanKey.substring(0, 12) + '...', // Log partial key for security
-        deviceId: deviceId.substring(0, 16) + '...', // Log partial device ID
-      });
       
       devLog('[License Service] Attempting activation:', {
         url: activationUrl,
@@ -371,7 +405,9 @@ export class LicenseService {
           },
           {
             retries: 2,
-            timeout: 10000,
+            timeout: 15000, // Increased timeout for better reliability
+            onProgress: options?.onProgress,
+            onRetry: options?.onRetry,
           }
         )
       );
@@ -458,11 +494,10 @@ export class LicenseService {
       };
 
     } catch (error) {
-      // Enhanced error logging for diagnosis
       const apiBaseUrl = environment.environment.licenseServerUrl;
       const activationUrl = `${apiBaseUrl}/api/lpv/license/activate`;
       
-      devError("[License Service] Activation failed - Full Error Details:", {
+      devError("[License Service] Activation failed:", {
         url: activationUrl,
         errorType: error?.constructor?.name || typeof error,
         errorCode: (error as any)?.code,
@@ -470,14 +505,6 @@ export class LicenseService {
         errorStatus: (error as any)?.status,
         errorDetails: (error as any)?.details,
         fullError: error,
-      });
-      
-      // Also log to console for production visibility (electron-log will capture)
-      console.error("[License Service] ACTIVATION ERROR:", {
-        url: activationUrl,
-        errorCode: (error as any)?.code,
-        errorMessage: (error as any)?.message,
-        errorStatus: (error as any)?.status,
       });
 
       // Handle API errors from apiClient
@@ -872,7 +899,7 @@ export class LicenseService {
    */
   isFamilyPlan(): boolean {
     const type = localStorage.getItem(LicenseService.LICENSE_TYPE_STORAGE);
-    return type === 'family' || type === 'llv_family';
+    return type === 'family';
   }
 
   /**

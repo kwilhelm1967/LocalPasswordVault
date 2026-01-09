@@ -43,6 +43,15 @@ function generateLLVFamilyKey() {
   return generateLicenseKey('LLVF');
 }
 
+function generateAfterPassingAddonKey() {
+  return generateLicenseKey('AFPA');
+}
+
+function generateAfterPassingStandaloneKey() {
+  // Generate with prefix AFPG (AfterPassing Guide)
+  return generateLicenseKey('AFPG');
+}
+
 function isValidFormat(key) {
   if (!key || typeof key !== 'string') return false;
   const cleanKey = key.toUpperCase().replace(/[^A-Z0-9-]/g, '');
@@ -69,6 +78,11 @@ function getPlanTypeFromKey(key) {
       return 'llv_personal';
     case 'LLVF':
       return 'llv_family';
+    case 'AFPA': // AfterPassing Guide Add-On
+      return 'afterpassing_addon';
+    case 'AFCS': // Legacy (backward compatibility)
+    case 'AFPG': // AfterPassing Guide Standalone
+      return 'afterpassing_standalone';
     case 'TRIA':
       return 'trial';
     default:
@@ -83,6 +97,8 @@ module.exports = {
   generateFamilyKey,
   generateLLVPersonalKey,
   generateLLVFamilyKey,
+  generateAfterPassingAddonKey,
+  generateAfterPassingStandaloneKey,
   isValidFormat,
   normalizeKey,
   getPlanTypeFromKey,

@@ -14,7 +14,7 @@ import React, { useState, useEffect } from "react";
 import {
   Shield,
   Key,
-  Users,
+  Users2,
   Calendar,
   Monitor,
   CheckCircle,
@@ -128,8 +128,6 @@ export const LicenseStatusDashboard: React.FC<LicenseStatusDashboardProps> = ({
     const types: Record<string, string> = {
       personal: 'Personal License',
       family: 'Family License',
-      llv_personal: 'Local Legacy Vault - Personal',
-      llv_family: 'Local Legacy Vault - Family',
       trial: '7-Day Trial',
     };
     return types[type || ''] || 'Unknown';
@@ -137,13 +135,13 @@ export const LicenseStatusDashboard: React.FC<LicenseStatusDashboardProps> = ({
 
   const getLicenseTypeColor = (type: LicenseType | null): string => {
     if (type === 'trial') return colors.warningAmber;
-    if (type === 'family' || type === 'llv_family') return colors.steelBlue400;
+    if (type === 'family') return colors.steelBlue400;
     return colors.successGreen;
   };
 
   const getLicenseTypeIcon = (type: LicenseType | null) => {
-    if (type === 'family' || type === 'llv_family') {
-      return <Users className="w-5 h-5" />;
+    if (type === 'family') {
+      return <Users2 className="w-5 h-5" strokeWidth={1.5} />;
     }
     if (type === 'trial') {
       return <Clock className="w-5 h-5" />;
@@ -447,7 +445,7 @@ export const LicenseStatusDashboard: React.FC<LicenseStatusDashboardProps> = ({
             <div>
               <span className="text-sm text-slate-400 block mb-1">Product</span>
               <span className="text-sm text-slate-300">
-                {localLicense?.product_type === 'llv' ? 'Local Legacy Vault' : 'Local Password Vault'}
+                Local Password Vault
               </span>
             </div>
 
@@ -490,7 +488,7 @@ export const LicenseStatusDashboard: React.FC<LicenseStatusDashboardProps> = ({
                 border: `1px solid ${colors.steelBlue400}30`,
               }}
             >
-              <Users className="w-4 h-4" />
+              <Users2 className="w-4 h-4" strokeWidth={1.5} />
               Manage Devices
             </button>
           )}

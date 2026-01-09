@@ -55,6 +55,8 @@ export class TrialService {
   private warningPopupCallbacks: ((state: WarningPopupState) => void)[] = [];
   private expirationConfirmed: boolean = false;
   private expirationConfirmationCount: number = 0;
+  // Cache device ID to avoid recalculating (shared with licenseService cache)
+  private cachedDeviceId: string | null = null;
 
   static getInstance(): TrialService {
     if (!TrialService.instance) {
@@ -292,8 +294,24 @@ export class TrialService {
       };
     }
 
-    // Verify device binding
-    const currentDeviceId = await getLPVDeviceFingerprint();
+    // Verify device binding (use cached device ID if available)
+    let currentDeviceId: string;
+    if (this.cachedDeviceId) {
+      currentDeviceId = this.cachedDeviceId;
+    } else {
+      // Check localStorage cache first (shared with licenseService)
+      const cachedId = localStorage.getItem('_cached_device_id');
+      if (cachedId) {
+        this.cachedDeviceId = cachedId;
+        currentDeviceId = cachedId;
+      } else {
+        // Calculate if not cached (expensive operation)
+        currentDeviceId = await getLPVDeviceFingerprint();
+        this.cachedDeviceId = currentDeviceId;
+        localStorage.setItem('_cached_device_id', currentDeviceId);
+      }
+    }
+    
     if (trialFile.device_id !== currentDeviceId) {
       devError('Device mismatch detected for trial');
       return {

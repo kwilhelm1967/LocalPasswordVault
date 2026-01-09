@@ -43,7 +43,7 @@ import React, { useState, useEffect } from "react";
 import {
   Shield,
   Clock,
-  Clipboard,
+  ClipboardCheck,
   Eye,
   EyeOff,
   Key,
@@ -68,7 +68,7 @@ import {
   Smartphone,
   ExternalLink,
   Globe,
-  FileText,
+  FileEdit,
 } from "lucide-react";
 import { APP_VERSION } from "../config/changelog";
 import { generateRecoveryPhrase, storeRecoveryPhrase } from "../utils/recoveryPhrase";
@@ -588,8 +588,8 @@ export const Settings: React.FC<SettingsProps> = ({
         <BouncyCard variant="accent">
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
             <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center flex-shrink-0">
-                <Clock className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={1.5} style={{ color: colors.brandGold }} />
+              <div className="flex items-center justify-center flex-shrink-0">
+                <Clock className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={2} style={{ color: colors.brandGold }} />
               </div>
               <div className="min-w-0">
                 <h3 style={{ color: colors.warmIvory }} className="font-semibold mb-0.5 sm:mb-1 text-sm sm:text-base">Auto-Lock</h3>
@@ -608,8 +608,8 @@ export const Settings: React.FC<SettingsProps> = ({
         <BouncyCard variant="accent">
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
             <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center flex-shrink-0">
-                <Clipboard className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={1.5} style={{ color: colors.brandGold }} />
+              <div className="flex items-center justify-center flex-shrink-0">
+                <ClipboardCheck className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={2} style={{ color: colors.brandGold }} />
               </div>
               <div className="min-w-0">
                 <h3 style={{ color: colors.warmIvory }} className="font-semibold mb-0.5 sm:mb-1 text-sm sm:text-base">Clipboard</h3>
@@ -628,10 +628,10 @@ export const Settings: React.FC<SettingsProps> = ({
         <BouncyCard variant="accent">
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
             <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center flex-shrink-0">
+              <div className="flex items-center justify-center flex-shrink-0">
                 {settings.showPasswordsDefault 
-                  ? <Eye className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={1.5} style={{ color: colors.brandGold }} />
-                  : <EyeOff className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={1.5} style={{ color: colors.brandGold }} />
+                  ? <Eye className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={2} style={{ color: colors.brandGold }} />
+                  : <EyeOff className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={2} style={{ color: colors.brandGold }} />
                 }
               </div>
               <div className="min-w-0">
@@ -650,10 +650,10 @@ export const Settings: React.FC<SettingsProps> = ({
         <BouncyCard variant="accent">
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
             <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center flex-shrink-0">
+              <div className="flex items-center justify-center flex-shrink-0">
                 {settings.soundEffectsEnabled 
-                  ? <Volume2 className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={1.5} style={{ color: colors.brandGold }} />
-                  : <VolumeX className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={1.5} style={{ color: colors.brandGold }} />
+                  ? <Volume2 className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={2} style={{ color: colors.brandGold }} />
+                  : <VolumeX className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={2} style={{ color: colors.brandGold }} />
                 }
               </div>
               <div className="min-w-0">
@@ -685,8 +685,8 @@ export const Settings: React.FC<SettingsProps> = ({
         {/* Recovery Phrase */}
         <BouncyCard onClick={handleStartRegenerate} variant="accent">
           <div className="flex items-center gap-3 sm:gap-4">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center flex-shrink-0">
-              <RefreshCw className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={1.5} style={{ color: colors.brandGold }} />
+            <div className="flex items-center justify-center flex-shrink-0">
+              <RefreshCw className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={2} style={{ color: colors.brandGold }} />
             </div>
             <div className="flex-1 min-w-0">
               <h3 style={{ color: colors.warmIvory }} className="font-semibold mb-0.5 sm:mb-1 text-sm sm:text-base">Recovery Phrase</h3>
@@ -699,8 +699,8 @@ export const Settings: React.FC<SettingsProps> = ({
         {/* Password Hint */}
         <BouncyCard onClick={() => setShowHintModal(true)} variant="accent">
           <div className="flex items-center gap-3 sm:gap-4">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center flex-shrink-0">
-              <HelpCircle className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={1.5} style={{ color: colors.brandGold }} />
+            <div className="flex items-center justify-center flex-shrink-0">
+              <HelpCircle className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={2} style={{ color: colors.brandGold }} />
             </div>
             <div className="flex-1 min-w-0">
               <h3 style={{ color: colors.warmIvory }} className="font-semibold mb-0.5 sm:mb-1 text-sm sm:text-base">Password Hint</h3>
@@ -719,8 +719,8 @@ export const Settings: React.FC<SettingsProps> = ({
         <BouncyCard onClick={onExport} variant="accent">
           <div className="flex flex-col gap-2 sm:gap-3">
             <div className="flex items-center gap-3 sm:gap-4">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center flex-shrink-0">
-                <Download className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={1.5} style={{ color: colors.brandGold }} />
+              <div className="flex items-center justify-center flex-shrink-0">
+                <Download className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={2} style={{ color: colors.brandGold }} />
               </div>
               <div className="flex-1 min-w-0">
                 <h3 style={{ color: colors.warmIvory }} className="font-semibold mb-0.5 sm:mb-1 text-sm sm:text-base">Export to Excel</h3>
@@ -747,8 +747,8 @@ export const Settings: React.FC<SettingsProps> = ({
 
         <BouncyCard onClick={onImport} variant="accent">
           <div className="flex items-center gap-3 sm:gap-4">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center flex-shrink-0">
-              <Upload className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={1.5} style={{ color: colors.brandGold }} />
+            <div className="flex items-center justify-center flex-shrink-0">
+              <Upload className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={2} style={{ color: colors.brandGold }} />
             </div>
             <div className="flex-1 min-w-0">
               <h3 style={{ color: colors.warmIvory }} className="font-semibold mb-0.5 sm:mb-1 text-sm sm:text-base">Import from File</h3>
@@ -760,8 +760,8 @@ export const Settings: React.FC<SettingsProps> = ({
 
         <BouncyCard onClick={() => setShowEncryptedExportModal(true)} variant="accent">
           <div className="flex items-center gap-3 sm:gap-4">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center flex-shrink-0">
-              <Shield className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={1.5} style={{ color: colors.brandGold }} />
+            <div className="flex items-center justify-center flex-shrink-0">
+              <Shield className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={2} style={{ color: colors.brandGold }} />
             </div>
             <div className="flex-1 min-w-0">
               <h3 style={{ color: colors.warmIvory }} className="font-semibold mb-0.5 sm:mb-1 text-sm sm:text-base">Secure Backup</h3>
@@ -778,8 +778,8 @@ export const Settings: React.FC<SettingsProps> = ({
 
         <BouncyCard onClick={() => setShowEncryptedImportModal(true)} variant="accent">
           <div className="flex items-center gap-3 sm:gap-4">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center flex-shrink-0">
-              <Lock className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={1.5} style={{ color: colors.brandGold }} />
+            <div className="flex items-center justify-center flex-shrink-0">
+              <Lock className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={2} style={{ color: colors.brandGold }} />
             </div>
             <div className="flex-1 min-w-0">
               <h3 style={{ color: colors.warmIvory }} className="font-semibold mb-0.5 sm:mb-1 text-sm sm:text-base">Restore Secure Backup</h3>
@@ -796,8 +796,8 @@ export const Settings: React.FC<SettingsProps> = ({
 
         <BouncyCard onClick={() => setShowMobileAccess(true)} variant="accent">
           <div className="flex items-center gap-3 sm:gap-4">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center flex-shrink-0">
-              <Smartphone className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={1.5} style={{ color: colors.brandGold }} />
+            <div className="flex items-center justify-center flex-shrink-0">
+              <Smartphone className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={2} style={{ color: colors.brandGold }} />
             </div>
             <div className="flex-1 min-w-0">
               <h3 style={{ color: colors.warmIvory }} className="font-semibold mb-0.5 sm:mb-1 text-sm sm:text-base">Mobile Access</h3>
@@ -819,11 +819,8 @@ export const Settings: React.FC<SettingsProps> = ({
         ].map((item, i) => (
           <BouncyCard key={i} variant="accent" className="!p-3">
             <div className="flex items-center gap-2.5">
-              <div 
-                className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
-                style={{ backgroundColor: `${colors.steelBlue500}10` }}
-              >
-                <item.icon className="w-3.5 h-3.5" strokeWidth={1.5} style={{ color: colors.brandGold }} />
+              <div className="flex items-center justify-center flex-shrink-0">
+                <item.icon className="w-3.5 h-3.5" strokeWidth={2} style={{ color: colors.brandGold }} />
               </div>
               <p className="text-slate-400 text-xs">{item.label}</p>
               <p style={{ color: colors.warmIvory }} className="font-medium text-xs">{item.value}</p>
@@ -948,8 +945,8 @@ export const Settings: React.FC<SettingsProps> = ({
       <SectionTitle>Danger Zone</SectionTitle>
       <BouncyCard onClick={() => setShowClearConfirm(true)} variant="danger">
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-slate-700/50">
-            <Trash2 className="w-6 h-6 text-slate-400" strokeWidth={1.5} />
+          <div className="flex items-center justify-center">
+            <Trash2 className="w-6 h-6 text-red-400" strokeWidth={2} />
           </div>
           <div className="flex-1">
             <h3 className="text-red-400 font-semibold mb-1">Clear All Data</h3>
@@ -1186,14 +1183,8 @@ export const Settings: React.FC<SettingsProps> = ({
             }}
           >
             <div className="text-center mb-6">
-              <div 
-                className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
-                style={{ 
-                  backgroundColor: `${colors.steelBlue500}15`,
-                  border: `2px solid ${colors.steelBlue500}30`,
-                }}
-              >
-                <RefreshCw className="w-8 h-8" strokeWidth={1.5} style={{ color: colors.brandGold }} />
+              <div className="flex items-center justify-center mx-auto mb-4">
+                <RefreshCw className="w-8 h-8" strokeWidth={2} style={{ color: colors.brandGold }} />
               </div>
               <h3 style={{ color: colors.warmIvory }} className="text-xl font-bold mb-2">New Recovery Phrase</h3>
               <p className="text-slate-400 text-sm">
@@ -1239,7 +1230,7 @@ export const Settings: React.FC<SettingsProps> = ({
                     className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg transition-colors"
                     style={{ backgroundColor: `${colors.steelBlue500}15`, color: phraseCopied ? "#10b981" : colors.steelBlue400 }}
                   >
-                    {phraseCopied ? <Check className="w-3.5 h-3.5" /> : <Clipboard className="w-3.5 h-3.5" />}
+                    {phraseCopied ? <Check className="w-3.5 h-3.5" /> : <ClipboardCheck className="w-3.5 h-3.5" />}
                     {phraseCopied ? "Copied!" : "Copy"}
                   </button>
                 </div>

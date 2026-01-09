@@ -119,8 +119,30 @@
       font-size: 1.25rem;
       color: var(--text-secondary);
       max-width: 600px;
-      margin: 0 auto 48px;
+      margin: 0 auto 1rem;
       line-height: 1.7;
+    }
+    
+    .platform-notice {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+      margin-bottom: 48px;
+    }
+    
+    @media (max-width: 768px) {
+      .platform-notice {
+        font-size: 1rem;
+        color: var(--cyan);
+        font-weight: 600;
+        margin-top: 1rem;
+        margin-bottom: 1.5rem;
+        padding: 12px 20px;
+        background: rgba(6, 182, 212, 0.1);
+        border: 1px solid rgba(6, 182, 212, 0.2);
+        border-radius: 8px;
+        display: inline-block;
+      }
     }
 
     /* Bundle Card */
@@ -178,9 +200,6 @@
     }
 
     .product-icon {
-      width: 80px;
-      height: 80px;
-      border-radius: 20px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -188,18 +207,19 @@
     }
 
     .product-icon.cyan {
-      background: rgba(6, 182, 212, 0.15);
-      border: 2px solid var(--cyan-dark);
+      background: transparent;
+      border: none;
     }
 
     .product-icon.gold {
-      background: rgba(201, 162, 78, 0.15);
-      border: 2px solid var(--gold-dark);
+      background: transparent;
+      border: none;
     }
 
     .product-icon svg {
-      width: 40px;
-      height: 40px;
+      width: 48px;
+      height: 48px;
+      stroke-width: 2.5;
     }
 
     .product-icon.cyan svg { stroke: var(--cyan); }
@@ -258,8 +278,9 @@
     }
 
     .bundle-price .currency {
-      font-size: 2rem;
+      font-size: 1.75rem;
       vertical-align: top;
+      font-weight: 600;
       background: var(--gradient-bundle);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
@@ -271,6 +292,21 @@
       font-size: 5rem;
       font-weight: 700;
       line-height: 1;
+    }
+
+    /* Inline price styling for text mentions */
+    .inline-price {
+      display: inline;
+    }
+
+    .inline-price .currency {
+      font-size: 0.9em;
+      vertical-align: top;
+      font-weight: 600;
+    }
+
+    .inline-price .amount {
+      font-weight: 700;
     }
 
     .savings-badge {
@@ -613,6 +649,7 @@
       
       <h1>Complete Protection<br><span class="gradient">For Your Entire Family</span></h1>
       <p class="hero-subtitle">Secure your daily passwords and organize your legacy—together. Two essential tools, one discounted bundle.</p>
+      <p class="platform-notice">Available for Windows, macOS, and Linux</p>
 
       <div class="bundle-card">
         <div class="products-grid">

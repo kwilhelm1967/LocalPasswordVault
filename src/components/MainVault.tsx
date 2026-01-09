@@ -79,7 +79,7 @@ import {
   Clock,
   CheckSquare,
   Square,
-  FileText,
+  FileEdit,
   // Category icons
   Grid3X3,
   CircleDollarSign,
@@ -146,7 +146,7 @@ const categoryIconMap: Record<string, LucideIcon> = {
   Mail,
   Briefcase,
   TrendingUp,
-  FileText,
+  FileText: FileEdit, // Map "FileText" string to FileEdit icon component
   Key, // fallback
 };
 

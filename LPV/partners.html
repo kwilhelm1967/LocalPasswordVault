@@ -12,7 +12,7 @@
   
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
   
   <style>
     :root {
@@ -45,9 +45,9 @@
     nav { position: fixed; top: 0; left: 0; right: 0; z-index: 1000; padding: 1rem 2rem; background: rgba(6, 9, 18, 0.95); backdrop-filter: blur(20px); border-bottom: 1px solid var(--border-subtle); }
     .nav-container { max-width: 1600px; width: 92%; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; }
     .logo { display: flex; align-items: center; gap: 12px; text-decoration: none; }
-    .logo-icon { width: 44px; height: 44px; background: var(--bg-dark); border-radius: 10px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px var(--cyan-glow), inset 0 0 0 1px var(--cyan-dark); }
-    .logo-icon svg { width: 24px; height: 24px; stroke: var(--cyan); fill: none; }
-    .logo-text { font-family: 'Space Grotesk', sans-serif; font-size: 1.15rem; font-weight: 600; color: var(--text-primary); }
+    .logo-icon { display: flex; align-items: center; justify-content: center; }
+    .logo-icon svg { width: 28px; height: 28px; stroke: var(--cyan); fill: none; stroke-width: 2.5; filter: drop-shadow(0 0 2px rgba(6, 182, 212, 0.5)); }
+    .logo-text { font-family: 'Poppins', sans-serif; font-size: 1.2rem; font-weight: 600; color: var(--text-primary); }
     .nav-links { display: flex; align-items: center; gap: 2rem; }
     .nav-links a { color: var(--text-secondary); text-decoration: none; font-size: 0.95rem; font-weight: 500; transition: color 0.2s; }
     .nav-links a:hover { color: var(--cyan); }
@@ -363,10 +363,6 @@
     }
 
     .payout-item .icon {
-      width: 48px;
-      height: 48px;
-      background: rgba(6, 182, 212, 0.1);
-      border-radius: 12px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -374,9 +370,10 @@
     }
 
     .payout-item .icon svg {
-      width: 24px;
-      height: 24px;
+      width: 32px;
+      height: 32px;
       stroke: var(--cyan);
+      stroke-width: 2.5;
     }
 
     .payout-item p {

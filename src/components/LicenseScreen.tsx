@@ -58,7 +58,7 @@ import { analyticsService } from "../utils/analyticsService";
 import { licenseService, AppLicenseStatus } from "../utils/licenseService";
 import { devError } from "../utils/devLog";
 import { withErrorHandling } from "../utils/errorHandling";
-import { ERROR_MESSAGES, getErrorMessage } from "../constants/errorMessages";
+import { ERROR_MESSAGES } from "../constants/errorMessages";
 import { EulaAgreement } from "./EulaAgreement";
 import { DownloadInstructions } from "./DownloadInstructions";
 import { DownloadPage } from "./DownloadPage";
@@ -70,6 +70,7 @@ import { LicenseTransferDialog } from "./LicenseTransferDialog";
 import { DeviceManagementScreen } from "./DeviceManagementScreen";
 import { LicenseStatusDashboard } from "./LicenseStatusDashboard";
 import { LoadingSpinner } from "./LoadingSpinner";
+import { testNetworkConnectivity } from "../utils/networkDiagnostics";
 
 interface LicenseScreenProps {
   onLicenseValid: () => void;
@@ -90,6 +91,12 @@ const LicenseScreenComponent: React.FC<LicenseScreenProps> = ({
   const [isActivatingTrial, setIsActivatingTrial] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [trialKeyError, setTrialKeyError] = useState<string | null>(null);
+  const [activationProgress, setActivationProgress] = useState<{
+    stage: 'checking' | 'connecting' | 'sending' | 'receiving' | 'processing' | null;
+    retryAttempt?: number;
+    totalRetries?: number;
+    retryDelay?: number;
+  }>({ stage: null });
 
   // Flow state variables
   const [showExpiredTrialScreen, setShowExpiredTrialScreen] = useState(false);
@@ -335,13 +342,58 @@ const LicenseScreenComponent: React.FC<LicenseScreenProps> = ({
   };
 
   const handleEulaAccept = async () => {
-
     setIsActivating(true);
     setError(null);
+    setActivationProgress({ stage: 'checking' });
+
+    // Add timeout safeguard to ensure loading state is always cleared
+    const timeoutId = setTimeout(() => {
+      if (isActivating) {
+        console.error('[LicenseScreen] Activation timeout - clearing loading state');
+        setIsActivating(false);
+        setActivationProgress({ stage: null });
+        setError('Activation timed out. Please check your internet connection and try again.');
+      }
+    }, 60000); // 60 seconds (longer than retries + processing time)
 
     try {
+      // Pre-flight connectivity check (quick, non-blocking)
+      setActivationProgress({ stage: 'checking' });
+      try {
+        const connectivityTest = await Promise.race([
+          testNetworkConnectivity(),
+          new Promise(resolve => setTimeout(() => resolve({ success: true }), 3000)) // 3s max for pre-check
+        ]);
+        
+        if (connectivityTest && typeof connectivityTest === 'object' && 'success' in connectivityTest && !connectivityTest.success) {
+          // Connectivity check failed, but continue anyway (might be false negative)
+          devError('[LicenseScreen] Pre-flight connectivity check failed, but continuing with activation');
+        }
+      } catch (preCheckError) {
+        // Ignore pre-check errors, continue with activation
+        devError('[LicenseScreen] Pre-flight check error (non-fatal):', preCheckError);
+      }
+
+      setActivationProgress({ stage: 'connecting' });
       const cleanKey = licenseKey.trim().toUpperCase();
-      const result = await licenseService.activateLicense(cleanKey);
+      
+      // Enhanced activation with progress callbacks
+      const result = await licenseService.activateLicense(cleanKey, {
+        onProgress: (stage) => {
+          setActivationProgress({ stage: stage as any });
+        },
+        onRetry: (attempt, total, delay) => {
+          setActivationProgress({ 
+            stage: 'connecting', 
+            retryAttempt: attempt, 
+            totalRetries: total, 
+            retryDelay: delay 
+          });
+        }
+      });
+      
+      // Clear timeout on success
+      clearTimeout(timeoutId);
 
       if (result.success) {
         analyticsService.trackLicenseEvent(
@@ -404,26 +456,47 @@ const LicenseScreenComponent: React.FC<LicenseScreenProps> = ({
         );
       }
     } catch (error) {
-      // For caught exceptions, use getErrorMessage to transform generic errors
-      // But for API errors from licenseService, we already have the message
-      const enhancedError = getErrorMessage(error);
+      // Clear timeout on error
+      clearTimeout(timeoutId);
+      setActivationProgress({ stage: null });
       
-      // Store the license key for retry if it's a network error
-      if (error instanceof TypeError && error.message.includes("fetch")) {
+      // Only catch unexpected exceptions (shouldn't happen for API errors)
+      // API errors come through as result.error, not exceptions
+      devError("Unexpected error during license activation:", error);
+      
+      // Check if this is a real network error (no HTTP response)
+      const isNetworkError = error instanceof TypeError && error.message.includes("fetch");
+      
+      // Check if it's an ApiError with network error code
+      const isApiNetworkError = error && typeof error === 'object' && 'code' in error && 
+        (error.code === 'NETWORK_ERROR' || error.code === 'REQUEST_TIMEOUT' || error.code === 'REQUEST_ABORTED');
+      
+      if (isNetworkError || isApiNetworkError) {
         setPendingLicenseKey(licenseKey);
+        const networkError = isApiNetworkError && typeof error === 'object' && 'message' in error
+          ? (error.message as string)
+          : ERROR_MESSAGES.NETWORK.UNABLE_TO_CONNECT_ACTIVATION_ONLY;
+        setError(networkError);
+      } else {
+        // For other unexpected errors, show generic message
+        const errorMessage = error instanceof Error ? error.message : 
+          (error && typeof error === 'object' && 'message' in error ? String(error.message) : String(error));
+        setError(`An unexpected error occurred: ${errorMessage}. Please try again or contact support@LocalPasswordVault.com`);
       }
-
-      setError(enhancedError);
+      
       analyticsService.trackLicenseEvent(
         "license_activation_error",
         undefined,
         {
-          error: error instanceof Error ? error.message : "Unknown error",
-          enhancedError,
+          error: error instanceof Error ? error.message : 
+            (error && typeof error === 'object' && 'message' in error ? String(error.message) : "Unknown error"),
+          errorType: (isNetworkError || isApiNetworkError) ? "network" : "unexpected",
         }
       );
     } finally {
+      clearTimeout(timeoutId);
       setIsActivating(false);
+      setActivationProgress({ stage: null });
     }
   };
 
@@ -539,16 +612,9 @@ const LicenseScreenComponent: React.FC<LicenseScreenProps> = ({
       const environment = (await import("../config/environment")).default;
       const apiBaseUrl = environment.environment.licenseServerUrl;
       
-      // Determine product keys based on bundle type
-      const items = bundleType === "personal"
-        ? [
-            { productKey: 'personal', quantity: 1 },      // LPV Personal
-            { productKey: 'llv_personal', quantity: 1 }   // LLV Personal
-          ]
-        : [
-            { productKey: 'family', quantity: 1 },      // LPV Family
-            { productKey: 'llv_family', quantity: 1 }   // LLV Family
-          ];
+      // Bundle purchases are not available in Local Password Vault
+      // This function should not be called in LPV repository
+      throw new Error("Bundle purchases are not available");
       
       // Create bundle checkout session
       const response = await fetch(`${apiBaseUrl}/api/checkout/bundle`, {
@@ -871,7 +937,7 @@ const LicenseScreenComponent: React.FC<LicenseScreenProps> = ({
                       color: '#5B82B8',
                     }}
                   >
-                    <Users className="w-4 h-4" />
+                    <Users2 className="w-4 h-4" />
                     <span>Manage Devices ({maxDevices} max)</span>
                   </button>
                 )}
@@ -925,13 +991,26 @@ const LicenseScreenComponent: React.FC<LicenseScreenProps> = ({
                       <div className="flex-1">
                         <p className="text-xs font-semibold mb-0.5" style={{ color: '#D97706' }}>Activation Error</p>
                         <p className="text-xs text-slate-200 mb-2">{error}</p>
-                        {(error.includes("connect") || error.includes("network")) && pendingLicenseKey && (
+                        {(error.includes("connect") || error.includes("network") || error.includes("timeout") || error.includes("DNS")) && pendingLicenseKey && (
                           <div className="mt-2 space-y-2">
                             <button
-                              onClick={() => {
+                              onClick={async () => {
                                 setError(null);
                                 setLicenseKey(pendingLicenseKey);
-                                handleActivateLicense();
+                                // Quick connectivity check before retry
+                                setActivationProgress({ stage: 'checking' });
+                                try {
+                                  const connectivity = await testNetworkConnectivity();
+                                  if (!connectivity.success) {
+                                    setError(`Connection test failed: ${connectivity.summary || 'Unable to reach server'}. Please check your internet connection and try again.`);
+                                    setActivationProgress({ stage: null });
+                                    return;
+                                  }
+                                } catch (checkError) {
+                                  // Continue anyway - might be false negative
+                                  devError('[LicenseScreen] Connectivity check failed, but continuing:', checkError);
+                                }
+                                await handleActivateLicense();
                               }}
                               disabled={isActivating}
                               className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded text-xs font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
@@ -942,7 +1021,7 @@ const LicenseScreenComponent: React.FC<LicenseScreenProps> = ({
                               }}
                             >
                               <RefreshCw className={`w-3 h-3 ${isActivating ? 'animate-spin' : ''}`} />
-                              <span>Retry Activation</span>
+                              <span>Retry with Connection Check</span>
                             </button>
                             <div className="p-2 rounded text-xs" style={{ backgroundColor: 'rgba(0, 0, 0, 0.2)' }}>
                               <p className="text-slate-300">Troubleshooting:</p>
@@ -993,7 +1072,16 @@ const LicenseScreenComponent: React.FC<LicenseScreenProps> = ({
                     {isActivating ? (
                       <>
                         <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        <span>Activating...</span>
+                        <span>
+                          {activationProgress.stage === 'checking' && 'Checking connection...'}
+                          {activationProgress.stage === 'connecting' && activationProgress.retryAttempt 
+                            ? `Retrying (${activationProgress.retryAttempt}/${activationProgress.totalRetries})...`
+                            : activationProgress.stage === 'connecting' && 'Connecting...'}
+                          {activationProgress.stage === 'sending' && 'Sending request...'}
+                          {activationProgress.stage === 'receiving' && 'Receiving response...'}
+                          {activationProgress.stage === 'processing' && 'Processing...'}
+                          {!activationProgress.stage && 'Activating...'}
+                        </span>
                       </>
                     ) : (
                         <>
@@ -1167,7 +1255,7 @@ const LicenseScreenComponent: React.FC<LicenseScreenProps> = ({
                   </div>
 
                   <div className="text-center mb-6">
-                    <Users className="w-12 h-12 text-purple-400 mx-auto mb-4" />
+                    <Users2 className="w-12 h-12 text-purple-400 mx-auto mb-4" strokeWidth={1.5} />
                     <h3 className="text-xl font-semibold text-white mb-2">
                       Family Vault
                     </h3>
@@ -1210,79 +1298,6 @@ const LicenseScreenComponent: React.FC<LicenseScreenProps> = ({
                 </div>
               </div>
 
-              {/* Bundle Options */}
-              <div className="mt-8 pt-8 border-t border-slate-700/50">
-                <div className="text-center mb-6">
-                  <h3 className="text-lg font-semibold text-white mb-2">
-                    Complete Security Bundle
-                  </h3>
-                  <p className="text-slate-400 text-sm">
-                    Get both Local Password Vault and Local Legacy Vault together
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Personal Bundle */}
-                  <div className="bg-gradient-to-br from-blue-900/30 to-purple-900/30 border-2 border-blue-500/50 rounded-xl p-6">
-                    <div className="text-center mb-4">
-                      <h4 className="text-lg font-semibold text-white mb-2">
-                        Personal Bundle
-                      </h4>
-                      <div className="text-2xl font-bold text-white mb-1">
-                        $89
-                      </div>
-                      <p className="text-slate-400 text-xs line-through">$98</p>
-                      <p className="text-green-400 text-xs font-medium mt-1">Save $9</p>
-                    </div>
-                    <ul className="space-y-2 mb-4 text-sm text-slate-300">
-                      <li className="flex items-center space-x-2">
-                        <CheckCircle className="w-4 h-4 text-green-400 flex-shrink-0" />
-                        <span>LPV Personal + LLV Personal</span>
-                      </li>
-                      <li className="flex items-center space-x-2">
-                        <CheckCircle className="w-4 h-4 text-green-400 flex-shrink-0" />
-                        <span>2 lifetime licenses</span>
-                      </li>
-                    </ul>
-                    <button
-                      onClick={() => handleBundlePurchase("personal")}
-                      className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-medium transition-all text-center"
-                    >
-                      Buy Personal Bundle - $89
-                    </button>
-                  </div>
-
-                  {/* Family Bundle */}
-                  <div className="bg-gradient-to-br from-purple-900/30 to-pink-900/30 border-2 border-purple-500/50 rounded-xl p-6">
-                    <div className="text-center mb-4">
-                      <h4 className="text-lg font-semibold text-white mb-2">
-                        Family Bundle
-                      </h4>
-                      <div className="text-2xl font-bold text-white mb-1">
-                        $179
-                      </div>
-                      <p className="text-slate-400 text-xs line-through">$208</p>
-                      <p className="text-green-400 text-xs font-medium mt-1">Save $29</p>
-                    </div>
-                    <ul className="space-y-2 mb-4 text-sm text-slate-300">
-                      <li className="flex items-center space-x-2">
-                        <CheckCircle className="w-4 h-4 text-green-400 flex-shrink-0" />
-                        <span>LPV Family + LLV Family</span>
-                      </li>
-                      <li className="flex items-center space-x-2">
-                        <CheckCircle className="w-4 h-4 text-green-400 flex-shrink-0" />
-                        <span>10 total device licenses</span>
-                      </li>
-                    </ul>
-                    <button
-                      onClick={() => handleBundlePurchase("family")}
-                      className="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 px-4 rounded-lg font-medium transition-all text-center"
-                    >
-                      Buy Family Bundle - $179
-                    </button>
-                  </div>
-                </div>
-              </div>
 
               <div className="text-center mt-6">
                 <button

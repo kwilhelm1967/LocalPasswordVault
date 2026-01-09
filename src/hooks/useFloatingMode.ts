@@ -1,41 +1,24 @@
-import { useMemo, useEffect } from "react";
-
 /**
- * Custom hook for detecting and managing floating panel mode
+ * useFloatingMode Hook
  * 
- * Detects if the app is running in floating panel mode (via #floating hash)
- * and configures Electron's always-on-top behavior if applicable.
- * 
- * @param isElectron - Whether the app is running in Electron
- * @returns Boolean indicating if floating mode is active
- * 
- * @example
- * ```typescript
- * const isFloating = useFloatingMode(isElectron);
- * if (isFloating) {
- *   // Adjust UI for floating panel
- * }
- * ```
+ * Determines if the app should run in floating mode (Electron only).
  */
-export const useFloatingMode = (isElectron: boolean) => {
-  const isFloatingMode = useMemo(() => window.location.hash === "#floating", []);
+
+import { useState, useEffect } from "react";
+
+export const useFloatingMode = (isElectron: boolean): boolean => {
+  const [isFloatingMode, setIsFloatingMode] = useState(false);
 
   useEffect(() => {
-    if (isElectron && isFloatingMode && window.electronAPI?.setAlwaysOnTop) {
-      window.electronAPI.setAlwaysOnTop(true);
+    if (!isElectron) {
+      setIsFloatingMode(false);
+      return;
     }
-  }, [isElectron, isFloatingMode]);
+
+    // Check for floating mode preference
+    const savedMode = localStorage.getItem("floatingMode");
+    setIsFloatingMode(savedMode === "true");
+  }, [isElectron]);
 
   return isFloatingMode;
 };
-
-
-
-
-
-
-
-
-
-
-
