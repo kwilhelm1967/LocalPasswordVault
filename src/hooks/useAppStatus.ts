@@ -6,6 +6,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { licenseService, AppLicenseStatus } from "../utils/licenseService";
+import { devError } from "../utils/devLog";
 
 export const useAppStatus = () => {
   const [appStatus, setAppStatus] = useState<AppLicenseStatus | null>(null);
@@ -13,9 +14,8 @@ export const useAppStatus = () => {
 
   const updateAppStatus = useCallback(async () => {
     try {
-      // Reduced timeout from 10s to 5s for faster fallback
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error("App status check timed out")), 5000)
+        setTimeout(() => reject(new Error("App status check timed out")), 3000)
       );
       
       const status = await Promise.race([
@@ -25,7 +25,7 @@ export const useAppStatus = () => {
       
       setAppStatus(status);
     } catch (error) {
-      console.error("Failed to get app status:", error);
+      devError("Failed to get app status:", error);
       // Set a default status to prevent infinite loading
       // This allows the app to show the license screen even if status check fails
       setAppStatus({
@@ -53,8 +53,7 @@ export const useAppStatus = () => {
   useEffect(() => {
     updateAppStatus();
     
-    // Check status periodically
-    const interval = setInterval(updateAppStatus, 60000); // Every minute
+    const interval = setInterval(updateAppStatus, 60000);
     
     return () => clearInterval(interval);
   }, [updateAppStatus]);

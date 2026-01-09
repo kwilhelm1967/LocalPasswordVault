@@ -74,7 +74,7 @@ const loadLanguage = async (langCode: string) => {
         break;
     }
   } catch (error) {
-    console.error(`Failed to load language ${langCode}:`, error);
+    // Error loading language - use fallback
   }
 };
 

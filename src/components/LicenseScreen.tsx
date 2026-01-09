@@ -207,7 +207,6 @@ const LicenseScreenComponent: React.FC<LicenseScreenProps> = ({
     }
     analyticsService.trackConversion("purchase_started", { source: "expired_trial" });
 
-    // Hide floating button when user goes to purchase
     if (window.electronAPI?.hideFloatingButton) {
       try {
         window.electronAPI.hideFloatingButton();
@@ -259,7 +258,7 @@ const LicenseScreenComponent: React.FC<LicenseScreenProps> = ({
       if (!signal.aborted) {
         if (error) {
           devError('Failed to load max devices:', error);
-          setMaxDevices(1); // Fallback value
+          setMaxDevices(1);
         } else if (data !== null) {
           setMaxDevices(data);
         }
@@ -272,32 +271,26 @@ const LicenseScreenComponent: React.FC<LicenseScreenProps> = ({
     };
   }, []);
 
-  // Show expired trial screen when trial is expired
   useEffect(() => {
     if (localStorageTrialInfo.isExpired && !showExpiredTrialScreen && !showKeyActivationScreen && !showRecoveryOptions) {
       setShowExpiredTrialScreen(true);
     }
   }, [localStorageTrialInfo.isExpired, showExpiredTrialScreen, showKeyActivationScreen, showRecoveryOptions]);
 
-  // CRITICAL FIX: Show key activation screen for new users without license/trial
-  // This ensures LLV users (and LPV users) land on key entry screen, not landing/pricing page
+  // Show key activation screen for new users without license/trial
   useEffect(() => {
-    if (!appStatus) return; // Wait for appStatus to load
+    if (!appStatus || showKeyActivationScreen || showExpiredTrialScreen || showRecoveryOptions) return;
     
-    // If user has no license and no expired trial, show key activation screen immediately
     const hasNoLicense = !appStatus.isLicensed && !appStatus.trialInfo.hasTrial;
     const hasNoExpiredTrial = !localStorageTrialInfo.isExpired;
-    const shouldShowKeyScreen = hasNoLicense && hasNoExpiredTrial && !showExpiredTrialScreen && !showKeyActivationScreen && !showRecoveryOptions;
     
-    if (shouldShowKeyScreen) {
+    if (hasNoLicense && hasNoExpiredTrial) {
       setShowKeyActivationScreen(true);
     }
-  }, [appStatus, localStorageTrialInfo.isExpired, showExpiredTrialScreen, showKeyActivationScreen, showRecoveryOptions]);
+  }, [appStatus?.isLicensed, appStatus?.trialInfo.hasTrial, localStorageTrialInfo.isExpired, showExpiredTrialScreen, showKeyActivationScreen, showRecoveryOptions]);
 
-  // Hide floating button when expired trial screen is shown
   useEffect(() => {
     if (showExpiredTrialScreen && window.electronAPI?.hideFloatingButton) {
-      // Hide floating button when trial expires
       try {
         window.electronAPI.hideFloatingButton();
       } catch (error) {
@@ -339,7 +332,7 @@ const LicenseScreenComponent: React.FC<LicenseScreenProps> = ({
         } catch (error) {
           if (!signal.aborted) {
             devError('Failed to load license file:', error);
-            setMaxDevices(1); // Fallback value
+            setMaxDevices(1);
           }
         }
       };
@@ -364,35 +357,30 @@ const LicenseScreenComponent: React.FC<LicenseScreenProps> = ({
     // Add timeout safeguard to ensure loading state is always cleared
     const timeoutId = setTimeout(() => {
       if (isActivating) {
-        console.error('[LicenseScreen] Activation timeout - clearing loading state');
+        devError('[LicenseScreen] Activation timeout - clearing loading state');
         setIsActivating(false);
         setActivationProgress({ stage: null });
         setError('Activation timed out. Please check your internet connection and try again.');
       }
-    }, 60000); // 60 seconds (longer than retries + processing time)
+    }, 60000);
 
     try {
-      // Pre-flight connectivity check (quick, non-blocking)
       setActivationProgress({ stage: 'checking' });
       try {
         const connectivityTest = await Promise.race([
           testNetworkConnectivity(),
-          new Promise(resolve => setTimeout(() => resolve({ success: true }), 3000)) // 3s max for pre-check
+          new Promise(resolve => setTimeout(() => resolve({ success: true }), 2000))
         ]);
         
         if (connectivityTest && typeof connectivityTest === 'object' && 'success' in connectivityTest && !connectivityTest.success) {
-          // Connectivity check failed, but continue anyway (might be false negative)
           devError('[LicenseScreen] Pre-flight connectivity check failed, but continuing with activation');
         }
       } catch (preCheckError) {
-        // Ignore pre-check errors, continue with activation
         devError('[LicenseScreen] Pre-flight check error (non-fatal):', preCheckError);
       }
 
       setActivationProgress({ stage: 'connecting' });
       const cleanKey = licenseKey.trim().toUpperCase();
-      
-      // Enhanced activation with progress callbacks
       const result = await licenseService.activateLicense(cleanKey, {
         onProgress: (stage) => {
           setActivationProgress({ stage: stage as any });

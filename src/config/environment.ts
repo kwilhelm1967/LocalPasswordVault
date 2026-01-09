@@ -56,12 +56,8 @@ function validateEnvironment(): void {
   }
 
   if (missing.length > 0 && import.meta.env.DEV) {
-    // Only warn in development - production uses defaults silently
-    // Using console.warn here is acceptable for startup configuration warnings
     // eslint-disable-next-line no-console
-    console.warn(
-      `[Config] Missing environment variables: ${missing.join(", ")}. Using defaults.`
-    );
+    console.warn(`[Config] Missing environment variables: ${missing.join(", ")}. Using defaults.`);
   }
 }
 
@@ -87,13 +83,9 @@ function sanitizeConfig(): Environment {
     "https://api.localpasswordvault.com"
   );
 
-  // Validate URL - only warn in development
   if (!isValidUrl(licenseServerUrl) && import.meta.env.DEV) {
-    // Using console.warn here is acceptable for startup configuration warnings
     // eslint-disable-next-line no-console
-    console.warn(
-      `[Config] Invalid license server URL: ${licenseServerUrl}. Using default.`
-    );
+    console.warn(`[Config] Invalid license server URL: ${licenseServerUrl}. Using default.`);
   }
 
   return {

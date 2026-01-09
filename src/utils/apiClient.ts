@@ -191,13 +191,6 @@ class ApiClient {
         
         if (hasElectronAPI) {
           try {
-            // Log request for debugging
-            console.log('[API Client] Making request:', {
-              url: fullUrl,
-              method: processedConfig.method || 'POST',
-              endpoint: endpoint,
-            });
-            
             const electronResponse = await window.electronAPI.httpRequest(fullUrl, {
               method: processedConfig.method,
               headers: processedConfig.headers,
@@ -207,15 +200,6 @@ class ApiClient {
             if (!electronResponse.ok) {
               const errorData = electronResponse.data || {};
               const errorMessage = errorData.error || errorData.message || `HTTP ${electronResponse.status}: ${electronResponse.statusText}`;
-              
-              // Log HTTP error for debugging
-              console.error('[API Client] HTTP Error Response:', {
-                url: fullUrl,
-                method: processedConfig.method || 'POST',
-                status: electronResponse.status,
-                statusText: electronResponse.statusText,
-                responseBody: errorData,
-              });
               
               throw {
                 code: 'HTTP_ERROR',
@@ -247,19 +231,6 @@ class ApiClient {
             
             devError('[API Client] Electron HTTP request failed:', errorDetails);
             
-            // Log to console for debugging (visible in DevTools)
-            console.error('[API Client] Request Failed:', errorDetails);
-            
-            // Log to production logs if available
-            if (typeof window !== 'undefined' && window.electronAPI) {
-              try {
-                // Use console.error which electron-log will capture
-                console.error('[API Client] Activation Request Failed:', errorDetails);
-              } catch (logError) {
-                // Ignore logging errors
-              }
-            }
-            
             // Don't fall back to fetch - throw the error so it's handled properly
             throw {
               code: electronError.code || 'NETWORK_ERROR',
@@ -286,8 +257,7 @@ class ApiClient {
           const errorData = await response.json().catch(() => ({}));
           const errorMessage = errorData.error || errorData.message || response.statusText;
           
-          // Log HTTP error for debugging
-          console.error('[API Client] HTTP Error Response:', {
+          devError('[API Client] HTTP Error Response:', {
             url: fullUrl,
             method: processedConfig.method || 'POST',
             status: response.status,

@@ -7,6 +7,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { PasswordEntry } from "../types";
 import { useElectron } from "./useElectron";
+import { devError } from "../utils/devLog";
 
 interface UseVaultDataParams {
   isLocked: boolean;
@@ -42,7 +43,7 @@ export const useVaultData = (
         }
       }
     } catch (error) {
-      console.error("Failed to load entries:", error);
+      devError("Failed to load entries:", error);
       setEntries([]);
     }
   }, [isLocked, isElectron, ipcRenderer, loadSharedEntries]);
@@ -62,7 +63,7 @@ export const useVaultData = (
           localStorage.setItem("vault_entries", JSON.stringify(newEntries));
         }
       } catch (error) {
-        console.error("Failed to save entries:", error);
+        devError("Failed to save entries:", error);
       }
     }
   }, [isLocked, isElectron, ipcRenderer, saveSharedEntries]);

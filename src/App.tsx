@@ -283,27 +283,17 @@ const useEntryManagement = (
 };
 
 function App() {
-  // Handle purchase success page FIRST - before any other logic
-  // This ensures it shows immediately when redirected from Stripe
-  // CRITICAL FIX: Do NOT intercept static HTML files (trial-success.html, success.html, etc.)
-  // These should be served as static files, not handled by React app
   const urlParams = new URLSearchParams(window.location.search);
   const pathname = window.location.pathname;
   const hasSessionId = urlParams.get('session_id');
   const hasKey = urlParams.get('key') || urlParams.get('license');
   const isPurchaseSuccessPath = pathname === '/purchase/success' || pathname.includes('purchase/success');
   
-  // DO NOT intercept if this is a static HTML file request
-  // Static files like trial-success.html should be served directly by the server
   const isStaticHtmlFile = pathname.endsWith('.html') && 
                           (pathname.includes('trial-success') || 
                            pathname.includes('success.html') ||
                            pathname.includes('purchase-success.html'));
   
-  // Only show React PurchaseSuccessPage for:
-  // 1. /purchase/success route (React app route)
-  // 2. session_id parameter (Stripe redirect)
-  // 3. key parameter BUT only if NOT a static HTML file
   if ((hasSessionId || isPurchaseSuccessPath) || (hasKey && !isStaticHtmlFile)) {
     return (
       <Suspense fallback={<LoadingFallback />}>
@@ -975,7 +965,6 @@ function App() {
     );
   }
 
-  // Download page
   if (showDownloadPage) {
     return (
       <Suspense fallback={<LoadingFallback />}>
@@ -992,9 +981,7 @@ function App() {
     );
   }
 
-  // SAFETY CHECK: Don't allow login screen if trial is expired
   if (isLocked) {
-    // Double-check trial status before showing login screen
     if (appStatus?.trialInfo.isExpired) {
       return (
         <Suspense fallback={<LoadingFallback />}>
