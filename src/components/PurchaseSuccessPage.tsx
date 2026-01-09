@@ -76,35 +76,40 @@ interface ProductGroup {
   downloadBaseUrl: string;
 }
 
-const getPlatforms = (baseUrl: string): PlatformDownload[] => [
-  {
-    id: "windows",
-    name: "Windows",
-    icon: <Monitor className="w-6 h-6" />,
-    fileType: ".exe installer",
-    fileSize: "~85 MB",
-    requirements: "Windows 10 or later (64-bit)",
-    downloadUrl: getDownloadUrl('windows'),
-  },
-  {
-    id: "macos",
-    name: "macOS",
-    icon: <Apple className="w-6 h-6" />,
-    fileType: ".dmg installer",
-    fileSize: "~95 MB",
-    requirements: "macOS 10.15 (Catalina) or later",
-    downloadUrl: getDownloadUrl('macos'),
-  },
-  {
-    id: "linux",
-    name: "Linux",
-    icon: <Terminal className="w-6 h-6" />,
-    fileType: ".AppImage",
-    fileSize: "~90 MB",
-    requirements: "Ubuntu 18.04+ or equivalent",
-    downloadUrl: getDownloadUrl('linux'),
-  },
-];
+const getPlatforms = (baseUrl: string, productType: string = 'lpv'): PlatformDownload[] => {
+  // Determine product type for download URLs
+  const downloadProductType = productType === 'llv' ? 'llv' : 'lpv';
+  
+  return [
+    {
+      id: "windows",
+      name: "Windows",
+      icon: <Monitor className="w-6 h-6" />,
+      fileType: ".exe installer",
+      fileSize: "~85 MB",
+      requirements: "Windows 10 or later (64-bit)",
+      downloadUrl: getDownloadUrl('windows', downloadProductType),
+    },
+    {
+      id: "macos",
+      name: "macOS",
+      icon: <Apple className="w-6 h-6" />,
+      fileType: ".dmg installer",
+      fileSize: "~95 MB",
+      requirements: "macOS 10.15 (Catalina) or later",
+      downloadUrl: getDownloadUrl('macos', downloadProductType),
+    },
+    {
+      id: "linux",
+      name: "Linux",
+      icon: <Terminal className="w-6 h-6" />,
+      fileType: ".AppImage",
+      fileSize: "~90 MB",
+      requirements: "Ubuntu 18.04+ or equivalent",
+      downloadUrl: getDownloadUrl('linux', downloadProductType),
+    },
+  ];
+};
 
 // Detect user's operating system
 const getOS = (): string => {
@@ -320,8 +325,14 @@ export const PurchaseSuccessPage: React.FC = () => {
             downloadBaseUrl: 'https://localpasswordvault.com',
           });
         }
-        // LOCKED: LLV bundles not supported in Local Password Vault repository
-        // Local Legacy Vault downloads must be handled in the LocalLegacyVault repository
+        if (groups['llv']) {
+          productGroupsList.push({
+            productType: 'llv',
+            productName: 'Local Legacy Vault',
+            licenses: groups['llv'],
+            downloadBaseUrl: 'https://locallegacyvault.com',
+          });
+        }
         
         setProductGroups(productGroupsList);
         
@@ -364,16 +375,19 @@ export const PurchaseSuccessPage: React.FC = () => {
         
         // Determine product type for single purchase (default to LPV)
         const productType = data.data.productType || 'lpv';
+        const productName = productType === 'llv' ? 'Local Legacy Vault' : 'Local Password Vault';
+        const downloadBaseUrl = productType === 'llv' ? 'https://locallegacyvault.com' : 'https://localpasswordvault.com';
+        
         setProductGroups([{
           productType: productType,
-          productName: 'Local Password Vault',
+          productName: productName,
           licenses: [{
             licenseKey: data.data.licenseKey,
             planType: data.data.planType,
             productType: productType,
             maxDevices: data.data.maxDevices || 1,
           }],
-          downloadBaseUrl: 'https://localpasswordvault.com',
+          downloadBaseUrl: downloadBaseUrl,
         }]);
       }
       
@@ -439,20 +453,46 @@ export const PurchaseSuccessPage: React.FC = () => {
       }
     }
     
-    // CRITICAL FIX: Set product groups based on domain when extracting from URL
-    // This ensures correct branding when keys come from URL params
+    // CRITICAL FIX: Set product groups based on license key prefix
+    // LLV keys start with 'LLVP' or 'LLVF', LPV keys start with 'PERS' or 'FMLY'
     if (keys.length > 0) {
-      // Local Password Vault - only LPV licenses
+      // Detect product type from first key prefix
+      const firstKey = keys[0].toUpperCase();
+      const isLLV = firstKey.startsWith('LLVP') || firstKey.startsWith('LLVF');
+      const productType = isLLV ? 'llv' : 'lpv';
+      const productName = isLLV ? 'Local Legacy Vault' : 'Local Password Vault';
+      const downloadBaseUrl = isLLV ? 'https://locallegacyvault.com' : 'https://localpasswordvault.com';
+      
       setProductGroups([{
-        productType: 'lpv',
-        productName: 'Local Password Vault',
-        licenses: keys.map(key => ({
-          licenseKey: key,
-          planType: key.startsWith('FMLY') ? 'family' : 'personal',
-          productType: 'lpv',
-          maxDevices: 1,
-        })),
-        downloadBaseUrl: 'https://localpasswordvault.com',
+        productType: productType,
+        productName: productName,
+        licenses: keys.map(key => {
+          const upperKey = key.toUpperCase();
+          let planType = 'personal';
+          let detectedProductType = 'lpv';
+          
+          if (upperKey.startsWith('FMLY')) {
+            planType = 'family';
+            detectedProductType = 'lpv';
+          } else if (upperKey.startsWith('PERS')) {
+            planType = 'personal';
+            detectedProductType = 'lpv';
+          } else if (upperKey.startsWith('LLVF')) {
+            planType = 'llv_family';
+            detectedProductType = 'llv';
+          } else if (upperKey.startsWith('LLVP')) {
+            planType = 'llv_personal';
+            detectedProductType = 'llv';
+          }
+          
+          return {
+            licenseKey: key,
+            planType: planType,
+            productType: detectedProductType,
+            maxDevices: 1,
+          };
+        }),
+        downloadBaseUrl: downloadBaseUrl,
       }]);
     }
   };
@@ -526,8 +566,8 @@ export const PurchaseSuccessPage: React.FC = () => {
   };
 
   // Sort platforms to show detected OS first
-  const getSortedPlatforms = (baseUrl: string) => {
-    const platforms = getPlatforms(baseUrl);
+  const getSortedPlatforms = (baseUrl: string, productType: string = 'lpv') => {
+    const platforms = getPlatforms(baseUrl, productType);
     return [...platforms].sort((a, b) => {
       if (a.id === detectedOS) return -1;
       if (b.id === detectedOS) return 1;
@@ -1241,7 +1281,7 @@ export const PurchaseSuccessPage: React.FC = () => {
                 </h2>
 
                 <div className="grid grid-cols-3 gap-3">
-                  {getSortedPlatforms(productGroups[0].downloadBaseUrl).map((platform) => {
+                  {getSortedPlatforms(productGroups[0].downloadBaseUrl, productGroups[0].productType).map((platform) => {
                   return (
                     <button
                       key={platform.id}
