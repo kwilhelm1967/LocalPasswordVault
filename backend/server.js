@@ -48,7 +48,7 @@ const allowedOrigins = [
 ];
 
 if (process.env.NODE_ENV === 'development') {
-  allowedOrigins.push('http://localhost:5173', 'http://localhost:3000');
+  allowedOrigins.push('http://localhost:5173', 'http://localhost:3000', 'http://localhost:8080');
 }
 
 // Allow Electron app requests (file:// and electron:// protocols)
