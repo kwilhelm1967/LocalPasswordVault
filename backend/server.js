@@ -48,7 +48,7 @@ const allowedOrigins = [
 ];
 
 if (process.env.NODE_ENV === 'development') {
-  allowedOrigins.push('http://localhost:5173', 'http://localhost:3000', 'http://localhost:8080');
+  allowedOrigins.push('http://localhost:5173', 'http://localhost:3000');
 }
 
 // Allow Electron app requests (file:// and electron:// protocols)
@@ -57,10 +57,6 @@ const corsOptions = {
   origin: function (origin, callback) {
     // Allow requests with no origin (like Electron apps, mobile apps, or curl)
     if (!origin) {
-      return callback(null, true);
-    }
-    // Allow localhost origins for local development/testing (regardless of NODE_ENV)
-    if (origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:')) {
       return callback(null, true);
     }
     // Allow requests from allowed origins
@@ -129,9 +125,9 @@ app.use((req, res, next) => {
   next();
 });
 
-// Webhook endpoints need raw body for signature verification
+// Webhook endpoint needs raw body for Stripe signature verification
 app.use((req, res, next) => {
-  if (req.originalUrl === '/api/webhooks/stripe' || req.originalUrl === '/api/webhooks/github') {
+  if (req.originalUrl === '/api/webhooks/stripe') {
     next();
   } else {
     express.json()(req, res, next);
@@ -181,65 +177,6 @@ app.get('/metrics', (req, res) => {
     timestamp: new Date().toISOString(),
     metrics: summary,
   });
-});
-
-// GitHub webhook endpoint for auto-deployment
-app.post('/api/webhooks/github', express.raw({ type: 'application/json' }), async (req, res) => {
-  const crypto = require('crypto');
-  const { exec } = require('child_process');
-  const { promisify } = require('util');
-  const execAsync = promisify(exec);
-  
-  const signature = req.headers['x-hub-signature-256'];
-  const webhookSecret = process.env.GITHUB_WEBHOOK_SECRET;
-  
-  // Verify webhook signature if secret is configured
-  if (webhookSecret && signature) {
-    const hmac = crypto.createHmac('sha256', webhookSecret);
-    const digest = 'sha256=' + hmac.update(JSON.stringify(req.body)).digest('hex');
-    if (signature !== digest) {
-      return res.status(401).json({ error: 'Invalid signature' });
-    }
-  }
-  
-  try {
-    const event = JSON.parse(req.body.toString());
-    
-    // Only process push events to main branch
-    if (event.ref === 'refs/heads/main' && event.repository?.full_name === 'kwilhelm1967/Vault') {
-      logger.info('GitHub webhook: Auto-deploying', { 
-        commit: event.head_commit?.id,
-        message: event.head_commit?.message,
-        requestId: req.requestId 
-      });
-      
-      const backendPath = __dirname;
-      
-      // Pull latest code
-      const { stdout: pullOutput, stderr: pullError } = await execAsync('git pull origin main', { cwd: backendPath });
-      logger.info('Auto-deploy: Git pull completed', { output: pullOutput, error: pullError, requestId: req.requestId });
-      
-      // Restart PM2 process
-      const { stdout: restartOutput, stderr: restartError } = await execAsync('pm2 restart lpv-api', { cwd: backendPath });
-      logger.info('Auto-deploy: PM2 restart completed', { output: restartOutput, error: restartError, requestId: req.requestId });
-      
-      res.json({
-        success: true,
-        message: 'Auto-deployment completed',
-        commit: event.head_commit?.id,
-        timestamp: new Date().toISOString(),
-      });
-    } else {
-      res.json({ success: true, message: 'Event ignored (not main branch push)' });
-    }
-  } catch (error) {
-    logger.error('GitHub webhook deployment failed', error, { requestId: req.requestId });
-    res.status(500).json({
-      success: false,
-      error: error.message,
-      timestamp: new Date().toISOString(),
-    });
-  }
 });
 
 // Apply rate limiting to specific routes
