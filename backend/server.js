@@ -129,9 +129,9 @@ app.use((req, res, next) => {
   next();
 });
 
-// Webhook endpoint needs raw body for Stripe signature verification
+// Webhook endpoints need raw body for signature verification
 app.use((req, res, next) => {
-  if (req.originalUrl === '/api/webhooks/stripe') {
+  if (req.originalUrl === '/api/webhooks/stripe' || req.originalUrl === '/api/webhooks/github') {
     next();
   } else {
     express.json()(req, res, next);
