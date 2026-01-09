@@ -278,25 +278,32 @@ export class LicenseService {
     }
 
     // For non-trial licenses, validate device binding locally
-    // Only do this if we have a local license file (optimization)
+    // MUST have a local license file for non-trial licenses
     const hasLocalLicense = localStorage.getItem(LicenseService.LOCAL_LICENSE_FILE);
-    if (hasLocalLicense) {
-      // Defer device validation - do it in background if possible
-      // For now, we'll do it synchronously but cache the device ID
-      const localValidation = await this.validateLocalLicense();
-      if (!localValidation.valid && !localValidation.requiresTransfer) {
-        // No local license file - might need re-activation
-        return {
-          isValid: false,
-          type: null,
-          key: null,
-          activatedDate: null,
-        };
-      }
+    if (!hasLocalLicense) {
+      // No local license file - license is not valid
+      return {
+        isValid: false,
+        type: null,
+        key: null,
+        activatedDate: null,
+      };
+    }
+
+    // Validate the local license file
+    const localValidation = await this.validateLocalLicense();
+    if (!localValidation.valid && !localValidation.requiresTransfer) {
+      // Local license file is invalid - might need re-activation
+      return {
+        isValid: false,
+        type: null,
+        key: null,
+        activatedDate: null,
+      };
     }
 
     return {
-      isValid: true,
+      isValid: localValidation.valid,
       type,
       key,
       activatedDate: activatedDateStr ? new Date(activatedDateStr) : null,
