@@ -463,14 +463,7 @@
           }
           
           if (data.success) {
-            if (successMsg) {
-              successMsg.textContent = data.message || 'Trial key sent! Check your email.';
-              successMsg.style.display = 'block';
-            }
-            
-            setTimeout(() => {
-              window.location.href = `trial-success-lpv.html?email=${encodeURIComponent(email)}&key=${encodeURIComponent(data.trialKey || '')}`;
-            }, 1500);
+            window.location.href = `trial-success-lpv.html?email=${encodeURIComponent(email)}&key=${encodeURIComponent(data.trialKey || '')}`;
           } else {
             // Show actual API error message
             const errorMessage = data.error || data.message || 'Failed to create trial';
