@@ -85,20 +85,12 @@ async function sendEmailViaBrevo({ to, subject, html, text }) {
   try {
     // Brevo v3: API key is set in authentications, just call the method
     const result = await apiInstance.sendTransacEmail(sendSmtpEmail);
-    // Mask email address for privacy in console logs
-    const maskedEmail = logger && typeof logger.maskEmail === 'function' 
-      ? logger.maskEmail(to) 
-      : `${to.substring(0, 3)}***@${to.split('@')[1] || 'unknown'}`;
-    console.log(`[EMAIL] ✅ Email sent successfully to: ${maskedEmail}`);
+    console.log(`[EMAIL] ✅ Email sent successfully to: ${to}`);
     return result;
   } catch (error) {
     const errorMessage = error.response?.body?.message || error.message || 'Unknown error';
     const errorCode = error.response?.body?.code || error.status || 'UNKNOWN';
-    // Mask email address for privacy in console logs
-    const maskedEmail = logger && typeof logger.maskEmail === 'function' 
-      ? logger.maskEmail(to) 
-      : `${to.substring(0, 3)}***@${to.split('@')[1] || 'unknown'}`;
-    console.error(`[EMAIL] ❌ Failed to send email to ${maskedEmail}:`, errorMessage, `(Code: ${errorCode})`);
+    console.error(`[EMAIL] ❌ Failed to send email to ${to}:`, errorMessage, `(Code: ${errorCode})`);
     if (logger && typeof logger.error === 'function') {
       logger.error('Brevo API error', error, {
         operation: 'email_send',
