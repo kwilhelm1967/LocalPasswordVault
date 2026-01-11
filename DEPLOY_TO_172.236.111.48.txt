@@ -1,0 +1,116 @@
+================================================================================
+DEPLOY BACKEND TO SERVER 172.236.111.48
+================================================================================
+
+STEP 1: Access Linode Server (No SSH - Use Web Console)
+---------------------------------------------------------
+1. Open your web browser
+2. Go to: https://cloud.linode.com
+3. Log in to your account
+4. Click "Linodes" in the left menu
+5. Find your server with IP: 172.236.111.48
+6. Click on it
+7. Click "Launch LISH Console" or "Weblish" button
+8. A terminal window opens in your browser
+
+You'll see: root@localhost:~#
+
+
+STEP 2: Navigate to Backend Directory
+--------------------------------------
+Type this command:
+
+cd /var/www/lpv-api/backend
+
+Press Enter
+
+(If that doesn't work, try: cd /root/Vault/backend)
+
+
+STEP 3: Pull Latest Changes from GitHub
+----------------------------------------
+Type this command:
+
+git pull origin main
+
+Press Enter
+
+You should see:
+- "Updating..." 
+- Then "Fast-forward" or "Already up to date"
+
+
+STEP 4: Restart the Backend Server
+-----------------------------------
+Type this command:
+
+pm2 restart lpv-api
+
+Press Enter
+
+You should see:
+- "[PM2] Restarting lpv-api..."
+- Then "[PM2] Success"
+
+
+STEP 5: Verify Server is Running
+---------------------------------
+Type this command:
+
+pm2 status
+
+Press Enter
+
+Look for "lpv-api" - should show "online" in green
+
+
+STEP 6: Check Logs (Optional)
+------------------------------
+Type this command:
+
+pm2 logs lpv-api --lines 20
+
+Press Enter
+
+Shows recent server messages - look for "Server running" or any errors
+
+
+================================================================================
+DONE!
+================================================================================
+
+If pm2 status shows "lpv-api" as "online", your server is restarted!
+
+The backend will now generate LLVT- keys for LLV trial signups.
+
+
+================================================================================
+IF YOU GET ERRORS:
+================================================================================
+
+Problem: "cd /var/www/lpv-api/backend" doesn't work
+Solution:
+1. Type: find / -name "server.js" -type f 2>/dev/null
+2. Press Enter
+3. Wait 10-30 seconds
+4. It will show the path to your backend folder
+5. Use that path instead
+
+Example: 
+If it shows: /root/Vault/backend/server.js
+Then type: cd /root/Vault/backend
+
+
+Problem: "git pull" says "Permission denied"
+Solution:
+Make sure you're in the right directory. Try:
+- cd /root/Vault/backend
+- Or: cd ~/Vault/backend
+
+
+Problem: "pm2 restart lpv-api" says "process not found"
+Solution:
+Try starting it instead:
+- pm2 start server.js --name lpv-api
+
+================================================================================

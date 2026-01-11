@@ -28,6 +28,7 @@ declare global {
       // Version and platform
       getVersion: () => Promise<string>;
       getPlatform: () => Promise<string>;
+      getAppName: () => Promise<string>;
 
       // Event listeners
       onLockVault: (callback: () => void) => void;
@@ -73,6 +74,7 @@ declare global {
       onEntriesChanged: (callback: (event: ElectronEvent) => void) => void;
       removeEntriesChangedListener: (callback: (event: ElectronEvent) => void) => void;
       openExternal: (url: string) => Promise<boolean>;
+      downloadFile: (url: string) => Promise<boolean>;
 
       // Trial/License management for floating button security
       saveTrialInfo: (trialInfo: {

@@ -168,17 +168,6 @@ export const WhatsNewModal: React.FC<WhatsNewModalProps> = ({ isOpen, onClose })
   );
 };
 
-// Hook to check if user should see What's New
-export const useWhatsNew = () => {
-  const [shouldShow, setShouldShow] = useState(false);
-
-  useEffect(() => {
-    const lastSeenVersion = localStorage.getItem('last_seen_version');
-    if (!lastSeenVersion || lastSeenVersion !== APP_VERSION) {
-      setShouldShow(true);
-    }
-  }, []);
-
-  return { shouldShow, dismiss: () => setShouldShow(false) };
-};
+// Re-export hook from hooks directory for backward compatibility
+export { useWhatsNew } from "../hooks/useWhatsNew";
 

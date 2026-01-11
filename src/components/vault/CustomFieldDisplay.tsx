@@ -24,7 +24,7 @@
 import React, { useState } from "react";
 import { Eye, EyeOff, Copy, Check } from "lucide-react";
 import { CustomField } from "../../types";
-import { clearClipboardAfterTimeout, getVaultSettings } from "../Settings";
+import { clearClipboardAfterTimeout, getVaultSettings } from "../../utils/settingsUtils";
 
 interface CustomFieldDisplayProps {
   /** Custom field to display */

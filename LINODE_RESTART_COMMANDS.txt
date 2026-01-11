@@ -1,0 +1,74 @@
+================================================================================
+COMMANDS TO RUN IN LINODE CONSOLE
+(No SSH needed - use browser console at cloud.linode.com)
+Server IP: 172.236.111.48
+================================================================================
+
+STEP 1: Navigate to backend directory
+--------------------------------------
+cd /var/www/lpv-api/backend
+
+Press Enter
+
+(If that doesn't work, try: cd /root/Vault/backend)
+
+
+STEP 2: Pull latest changes from GitHub
+----------------------------------------
+git pull origin main
+
+Press Enter
+
+(You should see: "Updating..." and then "Fast-forward" or "Already up to date")
+
+
+STEP 3: Restart the backend server
+-----------------------------------
+pm2 restart lpv-api
+
+Press Enter
+
+(You should see: "[PM2] Restarting lpv-api..." and then "[PM2] Success")
+
+
+STEP 4: Verify server is running
+---------------------------------
+pm2 status
+
+Press Enter
+
+(Look for "lpv-api" - should show "online" in green)
+
+
+STEP 5: Check logs (optional)
+------------------------------
+pm2 logs lpv-api --lines 20
+
+Press Enter
+
+(Shows recent server messages - look for "Server running" or any errors)
+
+
+================================================================================
+DONE!
+================================================================================
+
+If pm2 status shows "lpv-api" as "online", your server is restarted!
+
+The backend will now generate LLVT- keys for LLV trial signups.
+
+================================================================================
+IF YOU GET ERRORS:
+================================================================================
+
+If "cd /var/www/lpv-api/backend" doesn't work:
+1. Type: find / -name "server.js" -type f 2>/dev/null
+2. Press Enter
+3. Wait 10-30 seconds
+4. It will show the path to your backend folder
+5. Use that path instead
+
+Example: If it shows /root/Vault/backend/server.js
+Then type: cd /root/Vault/backend
+
+================================================================================

@@ -7,7 +7,7 @@ const router = express.Router();
 router.post('/session', async (req, res) => {
   try {
     const { planType, email } = req.body;
-    const validPlanTypes = ['personal', 'family', 'llv_personal', 'llv_family', 'afterpassing_addon', 'afterpassing_standalone'];
+    const validPlanTypes = ['personal', 'family', 'llv_personal', 'llv_family', 'aftercare_addon', 'aftercare_standalone', 'afterpassing_standalone'];
     
     if (!planType || !validPlanTypes.includes(planType)) {
       return res.status(400).json({ 
@@ -18,11 +18,11 @@ router.post('/session', async (req, res) => {
     
     // Determine website URL based on product type
     const isLLV = planType.startsWith('llv_');
-    const isAfterPassing = planType.startsWith('afterpassing_');
+    const isAftercare = planType.startsWith('aftercare_') || planType.startsWith('afterpassing_');
     let baseUrl;
     
-    if (isAfterPassing) {
-      baseUrl = process.env.AFTERPASSING_WEBSITE_URL || 'https://afterpassingguide.com';
+    if (isAftercare) {
+      baseUrl = process.env.AFTERPASSING_WEBSITE_URL || process.env.AFTERCARE_WEBSITE_URL || 'https://afterpassingguide.com';
     } else if (isLLV) {
       baseUrl = process.env.LLV_WEBSITE_URL || 'https://locallegacyvault.com';
     } else {

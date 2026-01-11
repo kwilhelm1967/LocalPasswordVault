@@ -15,6 +15,8 @@ import {
 import environment from "../config/environment";
 import { LoadingSpinner } from "./LoadingSpinner";
 import { getDownloadUrl } from "../config/downloadUrls";
+import { licenseService } from "../utils/licenseService";
+import { useAppStatus } from "../hooks/useAppStatus";
 
 // CSS for checkmark animation
 const checkmarkStyles = `
@@ -130,12 +132,130 @@ export const PurchaseSuccessPage: React.FC = () => {
   const [planName, setPlanName] = useState<string>("Lifetime License");
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [manualLicenseKey, setManualLicenseKey] = useState<string>("");
+  const [isActivatingManualKey, setIsActivatingManualKey] = useState<boolean>(false);
+  const [manualKeyError, setManualKeyError] = useState<string | null>(null);
+  const [showManualKeyInput, setShowManualKeyInput] = useState<boolean>(false);
+  const { updateAppStatus } = useAppStatus();
   const detectedOS = getOS();
+
+  // Format license key input
+  const formatLicenseKey = (value: string) => {
+    const cleaned = value.replace(/[^A-Z0-9]/g, "");
+    const formatted = cleaned.match(/.{1,4}/g)?.join("-") || cleaned;
+    return formatted.substring(0, 19); // XXXX-XXXX-XXXX-XXXX
+  };
+
+  // Handle manual license key entry
+  const handleManualKeyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatLicenseKey(e.target.value.toUpperCase());
+    setManualLicenseKey(formatted);
+    setManualKeyError(null);
+  };
+
+  // Activate manually entered license key
+  const handleActivateManualKey = async () => {
+    if (!manualLicenseKey.trim()) return;
+
+    setIsActivatingManualKey(true);
+    setManualKeyError(null);
+
+    try {
+      const result = await licenseService.activateLicense(manualLicenseKey.trim());
+
+      if (result.success) {
+        // Refresh app status
+        await updateAppStatus();
+        // Reload page to show main app
+        window.location.href = '/';
+      } else {
+        setManualKeyError(result.error || "Invalid license key. Please check and try again.");
+      }
+    } catch (err: any) {
+      setManualKeyError(err?.message || "Failed to activate license key. Please try again.");
+    } finally {
+      setIsActivatingManualKey(false);
+    }
+  };
+
+  const handleManualKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && manualLicenseKey.trim()) {
+      handleActivateManualKey();
+    }
+  };
   
-  // Local Password Vault - no LLV domain detection needed
-  const defaultProductType = 'lpv';
-  const defaultProductName = 'Local Password Vault';
-  const defaultWebsiteUrl = 'https://localpasswordvault.com';
+  // Detect app type from app name or environment
+  const [appType, setAppType] = useState<'lpv' | 'llv'>('lpv');
+  const [defaultProductName, setDefaultProductName] = useState<string>('Local Password Vault');
+  const [defaultWebsiteUrl, setDefaultWebsiteUrl] = useState<string>('https://localpasswordvault.com');
+  const [appTypeDetected, setAppTypeDetected] = useState<boolean>(false);
+
+  // Detect app type on mount - MUST complete before loading licenses
+  // CRITICAL: Multiple detection methods with aggressive LLV detection
+  useEffect(() => {
+    const detectAppType = async () => {
+      try {
+        let detectedType: 'lpv' | 'llv' = 'lpv';
+        
+        // Method 1: Check Electron app name (PRIMARY METHOD - MOST RELIABLE)
+        if (typeof window !== 'undefined' && window.electronAPI?.getAppName) {
+          try {
+            const appName = await window.electronAPI.getAppName();
+            console.log('[PurchaseSuccessPage] ===== APP TYPE DETECTION =====');
+            console.log('[PurchaseSuccessPage] App name from Electron:', appName);
+            const appNameLower = (appName || '').toLowerCase();
+            
+            // AGGRESSIVE: Check for "legacy" in app name (case-insensitive)
+            if (appNameLower.includes('legacy')) {
+              console.log('[PurchaseSuccessPage] ✅ DETECTED LLV from app name:', appName);
+              detectedType = 'llv';
+            } else {
+              console.log('[PurchaseSuccessPage] ⚠️ App name does not contain "legacy":', appName);
+              console.log('[PurchaseSuccessPage] ⚠️ Defaulting to LPV');
+            }
+          } catch (e) {
+            console.error('[PurchaseSuccessPage] ❌ Failed to get app name:', e);
+          }
+        } else {
+          console.warn('[PurchaseSuccessPage] ⚠️ Electron API not available or getAppName not found');
+        }
+        
+        // Method 2: Check window location/path for LLV indicators
+        if (detectedType === 'lpv' && typeof window !== 'undefined') {
+          const hostname = window.location.hostname?.toLowerCase() || '';
+          const pathname = window.location.pathname?.toLowerCase() || '';
+          if (hostname.includes('legacy') || pathname.includes('legacy')) {
+            console.log('[PurchaseSuccessPage] ✅ DETECTED LLV from URL:', { hostname, pathname });
+            detectedType = 'llv';
+          }
+        }
+        
+        console.log('[PurchaseSuccessPage] ===== FINAL DETECTED TYPE:', detectedType.toUpperCase(), '=====');
+        
+        if (detectedType === 'llv') {
+          setAppType('llv');
+          setDefaultProductName('Local Legacy Vault');
+          setDefaultWebsiteUrl('https://locallegacyvault.com');
+          console.log('[PurchaseSuccessPage] ✅ SET TO LLV - All downloads will use LLV URLs');
+        } else {
+          setAppType('lpv');
+          setDefaultProductName('Local Password Vault');
+          setDefaultWebsiteUrl('https://localpasswordvault.com');
+          console.log('[PurchaseSuccessPage] ⚠️ SET TO LPV - All downloads will use LPV URLs');
+        }
+      } catch (error) {
+        console.error('[PurchaseSuccessPage] ❌ App type detection failed:', error);
+        // CRITICAL: Default to LPV if detection fails (conservative approach)
+        setAppType('lpv');
+        setDefaultProductName('Local Password Vault');
+        setDefaultWebsiteUrl('https://localpasswordvault.com');
+      } finally {
+        setAppTypeDetected(true); // Mark detection as complete
+        console.log('[PurchaseSuccessPage] ✅ App type detection complete');
+      }
+    };
+    detectAppType();
+  }, []);
 
   // Hide textured background pattern on purchase success page
   useEffect(() => {
@@ -145,8 +265,13 @@ export const PurchaseSuccessPage: React.FC = () => {
     };
   }, []);
 
-  // Fetch session data or extract keys from URL
+  // Fetch session data or extract keys from URL - wait for app type detection
   useEffect(() => {
+    // Wait for app type detection to complete before loading licenses
+    if (!appTypeDetected) {
+      return;
+    }
+    
     const loadLicenseKeys = async () => {
       setIsLoading(true);
       setError(null);
@@ -260,7 +385,7 @@ export const PurchaseSuccessPage: React.FC = () => {
     };
     
     loadLicenseKeys();
-  }, []);
+  }, [appTypeDetected, appType]); // Wait for app type to be detected before loading licenses
 
   const fetchSessionData = async (sessionId: string) => {
     try {
@@ -303,15 +428,40 @@ export const PurchaseSuccessPage: React.FC = () => {
         const allKeys: string[] = [];
         const groups: { [key: string]: ProductLicense[] } = {};
         
-        // Group licenses by product type
-        data.data.licenses.forEach((license: ProductLicense) => {
-          allKeys.push(license.licenseKey);
-          const productType = license.productType || 'lpv';
-          if (!groups[productType]) {
-            groups[productType] = [];
-          }
-          groups[productType].push(license);
-        });
+    // Group licenses by product type based on actual license data
+    data.data.licenses.forEach((license: ProductLicense) => {
+      allKeys.push(license.licenseKey);
+      // Use actual product type from license, or detect from key prefix
+      let productType = license.productType || 'lpv';
+      
+      // Detect from key prefix if productType not set
+      const upperKey = (license.licenseKey || '').toUpperCase();
+      if (upperKey.startsWith('LLVP') || upperKey.startsWith('LLVF') || upperKey.startsWith('LLVT')) {
+        productType = 'llv';
+      } else if (upperKey.startsWith('PERS') || upperKey.startsWith('FMLY') || upperKey.startsWith('TRIA')) {
+        productType = 'lpv';
+      }
+      
+      // CRITICAL: Only show product groups that match THIS app's type
+      // If this is LPV app, only show LPV licenses
+      // If this is LLV app, only show LLV licenses
+      if (appType === 'lpv' && productType !== 'lpv') {
+        // Skip LLV licenses in LPV app
+        return;
+      }
+      if (appType === 'llv' && productType !== 'llv') {
+        // Skip LPV licenses in LLV app
+        return;
+      }
+      
+      if (!groups[productType]) {
+        groups[productType] = [];
+      }
+      groups[productType].push({
+        ...license,
+        productType: productType,
+      });
+    });
         
         setLicenseKeys(allKeys);
         
@@ -327,8 +477,8 @@ export const PurchaseSuccessPage: React.FC = () => {
             downloadBaseUrl: 'https://localpasswordvault.com',
           });
         }
-        // LLV purchases get direct download links to LLV application from GitHub releases
-        if (groups['llv']) {
+        // Show LLV product group only if this is LLV app
+        if (groups['llv'] && appType === 'llv') {
           productGroupsList.push({
             productType: 'llv',
             productName: 'Local Legacy Vault',
@@ -352,23 +502,38 @@ export const PurchaseSuccessPage: React.FC = () => {
         const allKeys = data.data.licenses.map((license: any) => license.licenseKey || license.license_key);
         setLicenseKeys(allKeys);
         
-        // Determine product type (all licenses should be same product type)
-        const productType = data.data.licenses[0]?.productType || 'lpv';
-        const planType = data.data.licenses[0]?.planType || 'family';
+        // Detect product type from first license
+        const firstLicense = data.data.licenses[0];
+        let detectedProductType = firstLicense?.productType || 'lpv';
         
-        setPlanName(planType === "family" ? "Family Vault" : "Multi-Device License");
+        // Detect from key prefix if productType not set
+        const upperKey = (firstLicense?.licenseKey || firstLicense?.license_key || '').toUpperCase();
+        if (upperKey.startsWith('LLVP') || upperKey.startsWith('LLVF') || upperKey.startsWith('LLVT')) {
+          detectedProductType = 'llv';
+        } else if (upperKey.startsWith('PERS') || upperKey.startsWith('FMLY') || upperKey.startsWith('TRIA')) {
+          detectedProductType = 'lpv';
+        }
         
-        setProductGroups([{
-          productType: productType,
-          productName: 'Local Password Vault',
-          licenses: data.data.licenses.map((license: any) => ({
-            licenseKey: license.licenseKey || license.license_key,
-            planType: license.planType || planType,
-            productType: license.productType || productType,
-            maxDevices: license.maxDevices || license.max_devices || 1,
-          })),
-          downloadBaseUrl: 'https://localpasswordvault.com',
-        }]);
+        // Only show licenses that match THIS app's type
+        if ((appType === 'lpv' && detectedProductType === 'lpv') || (appType === 'llv' && detectedProductType === 'llv')) {
+          const planType = firstLicense?.planType || 'family';
+          const productName = detectedProductType === 'llv' ? 'Local Legacy Vault' : 'Local Password Vault';
+          const downloadBaseUrl = detectedProductType === 'llv' ? 'https://locallegacyvault.com' : 'https://localpasswordvault.com';
+          
+          setPlanName(planType === "family" ? "Family Vault" : "Multi-Device License");
+          
+          setProductGroups([{
+            productType: detectedProductType,
+            productName: productName,
+            licenses: data.data.licenses.map((license: any) => ({
+              licenseKey: license.licenseKey || license.license_key,
+              planType: license.planType || planType,
+              productType: detectedProductType,
+              maxDevices: license.maxDevices || license.max_devices || 1,
+            })),
+            downloadBaseUrl: downloadBaseUrl,
+          }]);
+        }
       }
       // Handle single purchase
       else if (data.data?.licenseKey) {
@@ -376,22 +541,34 @@ export const PurchaseSuccessPage: React.FC = () => {
         setLicenseKeys([data.data.licenseKey]);
         setPlanName(data.data.planType === "family" ? "Family Vault" : "Personal Vault");
         
-        // Determine product type for single purchase (default to LPV)
-        const productType = data.data.productType || 'lpv';
-        const productName = productType === 'llv' ? 'Local Legacy Vault' : 'Local Password Vault';
-        const downloadBaseUrl = productType === 'llv' ? 'https://locallegacyvault.com' : 'https://localpasswordvault.com';
+        // Detect product type from license key or backend data
+        let detectedProductType = data.data.productType || 'lpv';
         
-        setProductGroups([{
-          productType: productType,
-          productName: productName,
-          licenses: [{
-            licenseKey: data.data.licenseKey,
-            planType: data.data.planType,
-            productType: productType,
-            maxDevices: data.data.maxDevices || 1,
-          }],
-          downloadBaseUrl: downloadBaseUrl,
-        }]);
+        // Detect from key prefix if productType not set
+        const upperKey = (data.data.licenseKey || '').toUpperCase();
+        if (upperKey.startsWith('LLVP') || upperKey.startsWith('LLVF') || upperKey.startsWith('LLVT')) {
+          detectedProductType = 'llv';
+        } else if (upperKey.startsWith('PERS') || upperKey.startsWith('FMLY') || upperKey.startsWith('TRIA')) {
+          detectedProductType = 'lpv';
+        }
+        
+        // Only show licenses that match THIS app's type
+        if ((appType === 'lpv' && detectedProductType === 'lpv') || (appType === 'llv' && detectedProductType === 'llv')) {
+          const productName = detectedProductType === 'llv' ? 'Local Legacy Vault' : 'Local Password Vault';
+          const downloadBaseUrl = detectedProductType === 'llv' ? 'https://locallegacyvault.com' : 'https://localpasswordvault.com';
+          
+          setProductGroups([{
+            productType: detectedProductType,
+            productName: productName,
+            licenses: [{
+              licenseKey: data.data.licenseKey,
+              planType: data.data.planType,
+              productType: detectedProductType,
+              maxDevices: data.data.maxDevices || 1,
+            }],
+            downloadBaseUrl: downloadBaseUrl,
+          }]);
+        }
       }
       
       // Set email if available
@@ -456,57 +633,52 @@ export const PurchaseSuccessPage: React.FC = () => {
       }
     }
     
-    // CRITICAL FIX: Set product groups based on license key prefix
-    // LLV keys start with 'LLVP' or 'LLVF', LPV keys start with 'PERS' or 'FMLY'
+    // Detect product type from keys and match to app type
     if (keys.length > 0) {
       // Detect product type from first key prefix
-      // LLV keys: LLVP, LLVF, LLVT (trial)
-      // LPV keys: PERS, FMLY, TRIA (trial)
       const firstKey = keys[0].toUpperCase();
-      const isLLV = firstKey.startsWith('LLVP') || firstKey.startsWith('LLVF') || firstKey.startsWith('LLVT');
-      const productType = isLLV ? 'llv' : 'lpv';
-      const productName = isLLV ? 'Local Legacy Vault' : 'Local Password Vault';
-      const downloadBaseUrl = isLLV ? 'https://locallegacyvault.com' : 'https://localpasswordvault.com';
+      const isLLVKey = firstKey.startsWith('LLVP') || firstKey.startsWith('LLVF') || firstKey.startsWith('LLVT');
+      const detectedProductType = isLLVKey ? 'llv' : 'lpv';
       
-      setProductGroups([{
-        productType: productType,
-        productName: productName,
-        licenses: keys.map(key => {
-          const upperKey = key.toUpperCase();
-          let planType = 'personal';
-          let detectedProductType = 'lpv';
-          
-          if (upperKey.startsWith('FMLY')) {
-            planType = 'family';
-            detectedProductType = 'lpv';
-          } else if (upperKey.startsWith('PERS')) {
-            planType = 'personal';
-            detectedProductType = 'lpv';
-          } else if (upperKey.startsWith('LLVF')) {
-            planType = 'llv_family';
-            detectedProductType = 'llv';
-          } else if (upperKey.startsWith('LLVP')) {
-            planType = 'llv_personal';
-            detectedProductType = 'llv';
-          } else if (upperKey.startsWith('LLVT')) {
-            // LLV trial key
-            planType = 'trial';
-            detectedProductType = 'llv';
-          } else if (upperKey.startsWith('TRIA')) {
-            // LPV trial key
-            planType = 'trial';
-            detectedProductType = 'lpv';
-          }
-          
-          return {
-            licenseKey: key,
-            planType: planType,
-            productType: detectedProductType,
-            maxDevices: 1,
-          };
-        }),
-        downloadBaseUrl: downloadBaseUrl,
-      }]);
+      // CRITICAL: Only show product groups that match THIS app's type
+      // LPV app users should only see LPV success page and downloads
+      // LLV app users should only see LLV success page and downloads
+      if ((appType === 'lpv' && detectedProductType === 'lpv') || (appType === 'llv' && detectedProductType === 'llv')) {
+        const productType = detectedProductType;
+        const productName = productType === 'llv' ? 'Local Legacy Vault' : 'Local Password Vault';
+        const downloadBaseUrl = productType === 'llv' ? 'https://locallegacyvault.com' : 'https://localpasswordvault.com';
+        
+        setProductGroups([{
+          productType: productType,
+          productName: productName,
+          licenses: keys.map(key => {
+            const upperKey = key.toUpperCase();
+            let planType = 'personal';
+            
+            if (upperKey.startsWith('FMLY')) {
+              planType = 'family';
+            } else if (upperKey.startsWith('PERS')) {
+              planType = 'personal';
+            } else if (upperKey.startsWith('LLVF')) {
+              planType = 'llv_family';
+            } else if (upperKey.startsWith('LLVP')) {
+              planType = 'llv_personal';
+            } else if (upperKey.startsWith('LLVT')) {
+              planType = 'trial';
+            } else if (upperKey.startsWith('TRIA')) {
+              planType = 'trial';
+            }
+            
+            return {
+              licenseKey: key,
+              planType: planType,
+              productType: productType, // Use detected product type
+              maxDevices: 1,
+            };
+          }),
+          downloadBaseUrl: downloadBaseUrl,
+        }]);
+      }
     }
   };
 
@@ -557,7 +729,38 @@ export const PurchaseSuccessPage: React.FC = () => {
   };
 
   const handleDownload = (platform: PlatformDownload) => {
-    window.open(platform.downloadUrl, "_blank");
+    // CRITICAL FIX: ALWAYS regenerate URL using detected appType - IGNORE platform.downloadUrl
+    // This ensures we NEVER use a stale URL from when appType wasn't detected yet
+    if (!appTypeDetected) {
+      console.error('[PurchaseSuccessPage] Download attempted before appType detection!');
+      alert('Please wait for the page to fully load before downloading.');
+      return;
+    }
+    
+    // FORCE use of detected appType - completely ignore platform.downloadUrl
+    const correctUrl = getDownloadUrl(platform.id as 'windows' | 'macos' | 'linux', appType);
+    
+    console.log('[PurchaseSuccessPage] Download requested:', {
+      platform: platform.id,
+      originalUrl: platform.downloadUrl,
+      appType: appType,
+      appTypeDetected: appTypeDetected,
+      FORCED_URL: correctUrl
+    });
+    
+    // CRITICAL: Use Electron downloadFile API if available
+    if (window.electronAPI?.downloadFile) {
+      window.electronAPI.downloadFile(correctUrl);
+    } else {
+      // Fallback: Use anchor element to trigger Electron's download handler
+      const link = document.createElement('a');
+      link.href = correctUrl;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
   };
 
   const handleCopyProductKeys = async (keys: string[]) => {
@@ -580,7 +783,19 @@ export const PurchaseSuccessPage: React.FC = () => {
 
   // Sort platforms to show detected OS first
   const getSortedPlatforms = (baseUrl: string, productType: string = 'lpv') => {
-    const platforms = getPlatforms(baseUrl, productType);
+    // CRITICAL: Always use detected appType, not the passed productType
+    // This ensures Legacy Vault app ALWAYS shows Legacy Vault downloads
+    const actualProductType = appTypeDetected ? appType : (productType === 'llv' ? 'llv' : 'lpv');
+    
+    console.log('[PurchaseSuccessPage] getSortedPlatforms called:', {
+      baseUrl,
+      productType,
+      appType,
+      appTypeDetected,
+      actualProductType
+    });
+    
+    const platforms = getPlatforms(baseUrl, actualProductType);
     return [...platforms].sort((a, b) => {
       if (a.id === detectedOS) return -1;
       if (b.id === detectedOS) return 1;
@@ -628,19 +843,7 @@ export const PurchaseSuccessPage: React.FC = () => {
               {defaultProductName}
             </span>
           </div>
-          <a
-            href={defaultWebsiteUrl}
-            className="text-sm flex items-center space-x-1 transition-colors px-3 py-2 rounded-lg font-semibold"
-            style={{ 
-              background: colors.gradientCyan,
-              color: colors.bgDarker
-            }}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <span>Visit Website</span>
-            <ExternalLink className="w-4 h-4" />
-          </a>
+          {/* REMOVED: Website link to prevent browser opening - app should stay internal */}
         </div>
       </header>
 
@@ -739,6 +942,87 @@ export const PurchaseSuccessPage: React.FC = () => {
             </div>
           )}
 
+          {/* Manual License Key Entry - Show when no keys loaded */}
+          {!isLoading && !error && licenseKeys.length === 0 && productGroups.length === 0 && (
+            <div className="mb-5">
+              <h2 
+                className="text-lg md:text-xl font-semibold mb-3 md:mb-3.5"
+                style={{ 
+                  color: colors.textPrimary,
+                  fontFamily: "'Space Grotesk', sans-serif"
+                }}
+              >
+                Enter Your License Key
+              </h2>
+              <div
+                className="rounded-[12px] p-4 md:p-5"
+                style={{
+                  backgroundColor: colors.bgDarker,
+                  border: `1px solid ${colors.borderSubtle}`,
+                }}
+              >
+                <p className="text-sm mb-4" style={{ color: colors.textSecondary }}>
+                  Enter your license key below to activate {defaultProductName} and get started.
+                </p>
+                
+                <div className="space-y-3">
+                  <div>
+                    <label 
+                      htmlFor="manual-license-key"
+                      className="block text-sm font-medium mb-2"
+                      style={{ color: colors.textPrimary }}
+                    >
+                      License Key
+                    </label>
+                    <input
+                      id="manual-license-key"
+                      type="text"
+                      value={manualLicenseKey}
+                      onChange={handleManualKeyChange}
+                      onKeyPress={handleManualKeyPress}
+                      placeholder="XXXX-XXXX-XXXX-XXXX"
+                      disabled={isActivatingManualKey}
+                      className="w-full px-4 py-3 rounded-lg text-lg font-mono tracking-wider"
+                      style={{
+                        backgroundColor: colors.bgCard,
+                        border: `1px solid ${manualKeyError ? '#ef4444' : colors.borderSubtle}`,
+                        color: colors.textPrimary,
+                      }}
+                      maxLength={19}
+                    />
+                    {manualKeyError && (
+                      <p className="text-sm mt-2" style={{ color: '#ef4444' }}>
+                        {manualKeyError}
+                      </p>
+                    )}
+                  </div>
+                  
+                  <button
+                    onClick={handleActivateManualKey}
+                    disabled={!manualLicenseKey.trim() || isActivatingManualKey}
+                    className="w-full px-6 py-3 rounded-lg font-semibold text-base transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    style={{
+                      background: colors.gradientCyan,
+                      color: colors.bgDarker,
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!e.currentTarget.disabled) {
+                        e.currentTarget.style.transform = 'translateY(-2px)';
+                        e.currentTarget.style.boxShadow = `0 8px 24px ${colors.cyanGlow}`;
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.boxShadow = 'none';
+                    }}
+                  >
+                    {isActivatingManualKey ? "Activating..." : "Activate License Key"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
             {/* Bundle: Product Groups */}
             {!isLoading && !error && isBundle && productGroups.length > 0 && (
               <div className="mb-5">
@@ -767,7 +1051,9 @@ export const PurchaseSuccessPage: React.FC = () => {
 
             {!isLoading && !error && isBundle && productGroups.length > 0 && productGroups.map((group, groupIndex) => {
             const groupKeys = group.licenses.map(l => l.licenseKey);
-            const sortedPlatforms = getSortedPlatforms(group.downloadBaseUrl, group.productType);
+            // CRITICAL: Always use appType for download URLs, not group.productType
+            // This ensures Legacy Vault app shows Legacy Vault downloads
+            const sortedPlatforms = getSortedPlatforms(group.downloadBaseUrl, appType);
             const isFamilyPlan = groupKeys.length >= 5;
             
             return (
@@ -1281,7 +1567,7 @@ export const PurchaseSuccessPage: React.FC = () => {
           )}
 
             {/* Single Purchase: Download Section */}
-            {!isLoading && !error && !isBundle && productGroups.length > 0 && (
+            {!isLoading && !error && !isBundle && appTypeDetected && (
               <div className="mb-5">
                 <h2 
                   className="text-lg md:text-xl font-semibold mb-3 md:mb-3.5"
@@ -1294,7 +1580,10 @@ export const PurchaseSuccessPage: React.FC = () => {
                 </h2>
 
                 <div className="grid grid-cols-3 gap-3">
-                  {getSortedPlatforms(productGroups[0].downloadBaseUrl, productGroups[0].productType).map((platform) => {
+                  {/* CRITICAL FIX: Always use detected appType for download URLs */}
+                  {/* This ensures Legacy Vault app shows Legacy Vault downloads, not LPV downloads */}
+                  {/* Use defaultWebsiteUrl which is set based on appType */}
+                  {getSortedPlatforms(defaultWebsiteUrl, appType).map((platform) => {
                   return (
                     <button
                       key={platform.id}

@@ -46,6 +46,27 @@ const calculateStrength = (pwd: string): { score: number; label: string; color: 
 
 export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
   const [password, setPassword] = useState("");
+  const [productName, setProductName] = useState<string>('Local Password Vault');
+  
+  // Detect app type to show correct product name
+  useEffect(() => {
+    const detectAppType = async () => {
+      try {
+        if (typeof window !== 'undefined' && window.electronAPI?.getAppName) {
+          const appName = await window.electronAPI.getAppName();
+          if (appName?.toLowerCase().includes('legacy')) {
+            setProductName('Local Legacy Vault');
+          } else {
+            setProductName('Local Password Vault');
+          }
+        }
+      } catch (error) {
+        // Default to Local Password Vault if detection fails
+        setProductName('Local Password Vault');
+      }
+    };
+    detectAppType();
+  }, []);
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -268,9 +289,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
           </div>
           <h1
             id="login-title"
-            className="text-xl font-bold text-white tracking-tight"
+            className="text-xl font-semibold text-white tracking-tight"
+            style={{ fontFamily: "'Space Grotesk', sans-serif" }}
           >
-            Local Password Vault
+            {productName}
           </h1>
           <p
             className="text-slate-500 text-xs mt-1 flex items-center justify-center gap-1.5"

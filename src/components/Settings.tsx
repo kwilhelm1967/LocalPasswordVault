@@ -39,7 +39,7 @@
  * Uses bouncy card animations for visual feedback on interactions.
  */
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense, lazy } from "react";
 import {
   Shield,
   Clock,
@@ -75,7 +75,10 @@ import { generateRecoveryPhrase, storeRecoveryPhrase } from "../utils/recoveryPh
 import { storageService } from "../utils/storage";
 import { devError, devWarn } from "../utils/devLog";
 import { getErrorLogger } from "../utils/errorHandling";
-import { MobileAccess } from "./MobileAccess";
+import { type VaultSettings, SETTINGS_KEYS, DEFAULT_SETTINGS } from "../utils/settingsUtils";
+
+// Lazy load MobileAccess to avoid static import conflict
+const MobileAccess = lazy(() => import("./MobileAccess").then(module => ({ default: module.MobileAccess })));
 
 // Color palette
 const colors = {
@@ -89,26 +92,7 @@ const colors = {
   goldDark: "#B89B4D",
 };
 
-// Settings storage keys
-const SETTINGS_KEYS = {
-  AUTO_LOCK_TIMEOUT: "vault_auto_lock_timeout",
-  CLIPBOARD_CLEAR_TIMEOUT: "vault_clipboard_clear_timeout",
-  SHOW_PASSWORDS_DEFAULT: "vault_show_passwords_default",
-};
-
-export interface VaultSettings {
-  autoLockTimeout: number;
-  clipboardClearTimeout: number;
-  showPasswordsDefault: boolean;
-  soundEffectsEnabled: boolean;
-}
-
-const DEFAULT_SETTINGS: VaultSettings = {
-  autoLockTimeout: 5,
-  clipboardClearTimeout: 30,
-  showPasswordsDefault: false,
-  soundEffectsEnabled: false, // OFF by default
-};
+// Settings storage keys and defaults are now imported from settingsUtils
 
 export interface SettingsProps {
   onExport: () => void;
@@ -1392,7 +1376,9 @@ export const Settings: React.FC<SettingsProps> = ({
 
       {/* Mobile Access Modal */}
       {showMobileAccess && (
-        <MobileAccess onClose={() => setShowMobileAccess(false)} />
+        <Suspense fallback={<div className="flex items-center justify-center p-8 min-h-[200px]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div></div>}>
+          <MobileAccess onClose={() => setShowMobileAccess(false)} />
+        </Suspense>
       )}
 
       <style>{`
@@ -1408,67 +1394,6 @@ export const Settings: React.FC<SettingsProps> = ({
   );
 };
 
-// Export settings utilities
-export const getVaultSettings = (): VaultSettings => {
-  let soundEffectsEnabled = false;
-  try {
-    const vaultSettings = localStorage.getItem('vault_settings');
-    if (vaultSettings) {
-      const parsed = JSON.parse(vaultSettings);
-      soundEffectsEnabled = parsed.soundEffectsEnabled ?? false;
-    }
-  } catch (error) {
-    devError("Failed to parse vault settings in getVaultSettings:", error);
-  }
-  
-  return {
-    autoLockTimeout: parseInt(localStorage.getItem(SETTINGS_KEYS.AUTO_LOCK_TIMEOUT) || String(DEFAULT_SETTINGS.autoLockTimeout)),
-    clipboardClearTimeout: parseInt(localStorage.getItem(SETTINGS_KEYS.CLIPBOARD_CLEAR_TIMEOUT) || String(DEFAULT_SETTINGS.clipboardClearTimeout)),
-    showPasswordsDefault: localStorage.getItem(SETTINGS_KEYS.SHOW_PASSWORDS_DEFAULT) === "true",
-    soundEffectsEnabled,
-  };
-};
-
-// Track the last copied text to verify before clearing
-let lastCopiedText: string | null = null;
-let clearTimeoutId: NodeJS.Timeout | null = null;
-
-export const clearClipboardAfterTimeout = (timeout: number, copiedText?: string) => {
-  // Store the copied text for verification
-  if (copiedText) {
-    lastCopiedText = copiedText;
-  }
-  
-  // Clear any existing timeout
-  if (clearTimeoutId) {
-    clearTimeout(clearTimeoutId);
-    clearTimeoutId = null;
-  }
-  
-  if (timeout > 0) {
-    clearTimeoutId = setTimeout(async () => {
-      try {
-        // Try to read clipboard to verify it still has our content
-        // Note: This may fail due to permissions, in which case we clear anyway
-        try {
-          const currentClipboard = await navigator.clipboard.readText();
-          
-          // Only clear if clipboard still contains our copied text
-          if (currentClipboard === lastCopiedText) {
-            await navigator.clipboard.writeText("");
-          }
-        } catch (readError) {
-          // If we can't read clipboard (permission denied), clear it anyway for safety
-          devWarn("Clipboard read denied, clearing anyway:", readError);
-          await navigator.clipboard.writeText("");
-        }
-      } catch (clearError) {
-        // Clipboard clear failed - non-critical
-        devWarn("Clipboard clear failed:", clearError);
-      } finally {
-        lastCopiedText = null;
-        clearTimeoutId = null;
-      }
-    }, timeout * 1000);
-  }
-};
+// Re-export utilities for backward compatibility (deprecated - use from utils/settingsUtils)
+export { getVaultSettings, clearClipboardAfterTimeout } from "../utils/settingsUtils";
+export type { VaultSettings } from "../utils/settingsUtils";

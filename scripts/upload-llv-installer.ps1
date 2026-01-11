@@ -1,6 +1,11 @@
 # Upload Local Legacy Vault Installer to GitHub Releases
 # This script uploads the LLV installer to the LocalLegacyVault repository
 # 
+# ⚠️ CRITICAL WARNING ⚠️
+# This script should ONLY be used from the LocalLegacyVault repository.
+# DO NOT use this script if you built the installer from this repository (LocalPasswordVault).
+# Legacy Vault MUST be built from its own repository (kwilhelm1967/LocalLegacyVault).
+# 
 # LOCKED IN: This script is for Local Legacy Vault (LLV) ONLY
 # Repository: kwilhelm1967/LocalLegacyVault
 # NEVER use kwilhelm1967/Vault - that is a different product/repository

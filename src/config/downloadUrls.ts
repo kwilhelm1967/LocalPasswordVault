@@ -6,7 +6,10 @@
  * LOCKED IN: Repository mapping - NEVER CHANGE
  * - kwilhelm1967/Vault = Local Password Vault (LPV) ONLY
  * - kwilhelm1967/LocalLegacyVault = Local Legacy Vault (LLV) ONLY
- * - This repository (LocalPasswordVault) serves both products but uses different repositories
+ * 
+ * IMPORTANT: This repository (LocalPasswordVault) is for Password Vault ONLY.
+ * Legacy Vault MUST be built from the kwilhelm1967/LocalLegacyVault repository.
+ * Download URLs correctly point to the LocalLegacyVault repository for LLV installers.
  */
 
 // LOCKED: Local Password Vault repository - NEVER CHANGE TO LocalLegacyVault
@@ -29,11 +32,12 @@ const LPV_DOWNLOAD_URLS: DownloadUrls = {
 };
 
 // LOCKED: Local Legacy Vault downloads - ALWAYS uses kwilhelm1967/LocalLegacyVault repository
-// NOTE: Actual filenames from upload script: "Local Legacy Vault Setup 1.2.0-x64.exe" (spaces, -x64 suffix)
+// NOTE: GitHub filename uses DOTS: "Local.Legacy.Vault.Setup.1.2.0-x64.exe" (dots, -x64 suffix)
+// URL must use dots (.) to match GitHub filename: Local.Legacy.Vault.Setup.1.2.0-x64.exe
 const LLV_DOWNLOAD_URLS: DownloadUrls = {
-  windows: `https://github.com/${LLV_GITHUB_REPO}/releases/download/V${VERSION}/Local%20Legacy%20Vault%20Setup%20${VERSION}-x64.exe`,
-  macos: `https://github.com/${LLV_GITHUB_REPO}/releases/latest/download/Local%20Legacy%20Vault-${VERSION}-mac.dmg`,
-  linux: `https://github.com/${LLV_GITHUB_REPO}/releases/latest/download/Local%20Legacy%20Vault-${VERSION}.AppImage`,
+  windows: `https://github.com/${LLV_GITHUB_REPO}/releases/download/V${VERSION}/Local.Legacy.Vault.Setup.${VERSION}-x64.exe`,
+  macos: `https://github.com/${LLV_GITHUB_REPO}/releases/latest/download/Local.Legacy.Vault-${VERSION}-mac.dmg`,
+  linux: `https://github.com/${LLV_GITHUB_REPO}/releases/latest/download/Local.Legacy.Vault-${VERSION}.AppImage`,
 };
 
 export const getDownloadUrl = (

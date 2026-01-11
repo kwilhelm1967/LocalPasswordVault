@@ -5,6 +5,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
   // System info only
   getVersion: () => ipcRenderer.invoke("app-version"),
   getPlatform: () => ipcRenderer.invoke("platform"),
+  getAppName: () => ipcRenderer.invoke("app-name"),
 
   // Secure event listeners with validation
   onLockVault: (callback) => {
@@ -69,6 +70,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
   showMainWindow: () => ipcRenderer.invoke("show-main-window"),
 
   // Secure external URL opening with validation
+  // CRITICAL: Block all external URL opening to prevent browser/landing page redirects
   openExternal: (url) => {
     if (typeof url === 'string' && url.match(/^https?:\/\//)) {
       return ipcRenderer.invoke("open-external", url);

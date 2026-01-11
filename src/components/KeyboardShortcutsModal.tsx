@@ -178,34 +178,6 @@ export const KeyboardShortcutsModal: React.FC<KeyboardShortcutsModalProps> = ({
   );
 };
 
-// Hook to manage keyboard shortcuts modal and global ? key listener
-export const useKeyboardShortcuts = () => {
-  const [isOpen, setIsOpen] = React.useState(false);
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't trigger if user is typing in an input
-      if (
-        e.target instanceof HTMLInputElement ||
-        e.target instanceof HTMLTextAreaElement
-      ) {
-        return;
-      }
-
-      if (e.key === "?") {
-        e.preventDefault();
-        setIsOpen(true);
-      }
-    };
-
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, []);
-
-  return {
-    isShortcutsOpen: isOpen,
-    openShortcuts: () => setIsOpen(true),
-    closeShortcuts: () => setIsOpen(false),
-  };
-};
+// Re-export hook from hooks directory for backward compatibility
+export { useKeyboardShortcuts } from "../hooks/useKeyboardShortcuts";
 
