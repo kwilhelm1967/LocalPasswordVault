@@ -29,19 +29,26 @@ function initializeBrevoClient() {
 }
 
 // Initialize Brevo client, but don't fail if logger isn't ready yet
+let emailServiceReady = false;
 try {
   initializeBrevoClient();
+  emailServiceReady = true;
+  // Log successful initialization to console for visibility
+  console.log('[EMAIL] ✅ Email service initialized successfully');
 } catch (error) {
+  emailServiceReady = false;
   // Only log if logger is fully initialized
   if (logger && typeof logger.error === 'function') {
     const errorCode = logger.ERROR_CODES?.EMAIL_INIT_ERROR || 'ERR_EMAIL_001';
     logger.error('Email service initialization failed', error, {
       operation: 'email_init',
       service: 'brevo',
+      errorMessage: error.message,
     }, errorCode);
   } else {
     // Fallback for when logger isn't ready (e.g., during test setup)
-    console.error('Email service initialization failed:', error.message);
+    console.error('[EMAIL] ❌ Email service initialization failed:', error.message);
+    console.error('[EMAIL] Check BREVO_API_KEY environment variable');
   }
 }
 
@@ -60,7 +67,9 @@ function loadTemplate(templateName, variables = {}) {
 
 async function sendEmailViaBrevo({ to, subject, html, text }) {
   if (!apiInstance) {
-    throw new Error('Brevo API client not initialized');
+    const errorMsg = 'Brevo API client not initialized. Check BREVO_API_KEY environment variable.';
+    console.error('[EMAIL] ❌', errorMsg);
+    throw new Error(errorMsg);
   }
 
   const sendSmtpEmail = new brevo.SendSmtpEmail();
@@ -75,17 +84,22 @@ async function sendEmailViaBrevo({ to, subject, html, text }) {
 
   try {
     // Brevo v3: API key is set in authentications, just call the method
-    return await apiInstance.sendTransacEmail(sendSmtpEmail);
+    const result = await apiInstance.sendTransacEmail(sendSmtpEmail);
+    console.log(`[EMAIL] ✅ Email sent successfully to: ${to}`);
+    return result;
   } catch (error) {
     const errorMessage = error.response?.body?.message || error.message || 'Unknown error';
     const errorCode = error.response?.body?.code || error.status || 'UNKNOWN';
-    logger.error('Brevo API error', error, {
-      operation: 'email_send',
-      service: 'brevo',
-      brevoErrorCode: errorCode,
-      recipient: to,
-      subject: subject,
-    }, logger.ERROR_CODES?.EMAIL_SEND_ERROR || 'ERR_EMAIL_002');
+    console.error(`[EMAIL] ❌ Failed to send email to ${to}:`, errorMessage, `(Code: ${errorCode})`);
+    if (logger && typeof logger.error === 'function') {
+      logger.error('Brevo API error', error, {
+        operation: 'email_send',
+        service: 'brevo',
+        brevoErrorCode: errorCode,
+        recipient: to,
+        subject: subject,
+      }, logger.ERROR_CODES?.EMAIL_SEND_ERROR || 'ERR_EMAIL_002');
+    }
     throw new Error(`Email send failed: ${errorMessage} (Code: ${errorCode})`);
   }
 }
@@ -350,10 +364,14 @@ async function sendEmail({ to, subject, html, text }) {
 
 async function verifyConnection() {
   if (!apiInstance) {
-    logger.error('Email service connection failed - API instance not initialized', null, {
-      operation: 'email_verify',
-      service: 'brevo',
-    }, logger.ERROR_CODES?.EMAIL_INIT_ERROR || 'ERR_EMAIL_001');
+    const errorMsg = 'Email service connection failed - API instance not initialized. BREVO_API_KEY may be missing.';
+    console.error('[EMAIL] ❌', errorMsg);
+    if (logger && typeof logger.error === 'function') {
+      logger.error('Email service connection failed - API instance not initialized', null, {
+        operation: 'email_verify',
+        service: 'brevo',
+      }, logger.ERROR_CODES?.EMAIL_INIT_ERROR || 'ERR_EMAIL_001');
+    }
     return false;
   }
 
@@ -598,6 +616,11 @@ Please respond to this ticket through the support dashboard.
   }
 }
 
+// Export email service status
+function isEmailServiceReady() {
+  return emailServiceReady && apiInstance !== undefined && apiInstance !== null;
+}
+
 module.exports = {
   sendPurchaseEmail,
   sendBundleEmail,
@@ -608,4 +631,5 @@ module.exports = {
   sendTicketResponseEmail,
   verifyConnection,
   loadTemplate,
+  isEmailServiceReady,
 };
