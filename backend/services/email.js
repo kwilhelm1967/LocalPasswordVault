@@ -101,11 +101,33 @@ async function sendPurchaseEmail({ to, licenseKey, planType, amount }) {
   const amountFormatted = `$${(amount / 100).toFixed(2)}`;
   const maxDevices = (planType === 'family' || planType === 'llv_family') ? '5' : '1';
   
+  // Determine product type for download links
+  const isLLV = planType === 'llv_personal' || planType === 'llv_family';
+  const DOWNLOAD_VERSION = 'V1.2.5';
+  
+  let downloadLinks = {
+    windows: 'https://github.com/kwilhelm1967/Vault/releases/download/V1.2.0/Local.Password.Vault.Setup.1.2.0.exe',
+    mac: 'https://github.com/kwilhelm1967/Vault/releases/latest/download/Local%20Password%20Vault-1.2.0-mac.dmg',
+    linux: 'https://github.com/kwilhelm1967/Vault/releases/latest/download/Local%20Password%20Vault-1.2.0.AppImage',
+  };
+  
+  if (isLLV) {
+    // LLV uses LocalLegacyVault repository
+    downloadLinks = {
+      windows: `https://github.com/kwilhelm1967/LocalLegacyVault/releases/download/${DOWNLOAD_VERSION}/Local.Legacy.Vault.Setup.1.2.5-x64.exe`,
+      mac: `https://github.com/kwilhelm1967/LocalLegacyVault/releases/download/${DOWNLOAD_VERSION}/Local.Legacy.Vault-1.2.5-mac.dmg`,
+      linux: `https://github.com/kwilhelm1967/LocalLegacyVault/releases/download/${DOWNLOAD_VERSION}/Local.Legacy.Vault-1.2.5.AppImage`,
+    };
+  }
+  
   const html = loadTemplate('purchase-confirmation-email', {
     LICENSE_KEY: licenseKey,
     PLAN_NAME: planName,
     AMOUNT: amountFormatted,
     MAX_DEVICES: maxDevices,
+    DOWNLOAD_WINDOWS: downloadLinks.windows,
+    DOWNLOAD_MAC: downloadLinks.mac,
+    DOWNLOAD_LINUX: downloadLinks.linux,
     ORDER_DATE: new Date().toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
@@ -223,10 +245,35 @@ async function sendBundleEmail({ to, licenses, totalAmount, orderId = null }) {
     return sum + keys.length;
   }, 0);
   
+  // Determine download links based on product types in bundle
+  // If any license is LLV, prioritize LLV download links
+  const hasLLV = licenses.some(l => l.productName?.includes('Legacy') || l.planType?.includes('llv'));
+  const DOWNLOAD_VERSION = 'V1.2.5';
+  
+  let downloadLinks = {
+    windows: 'https://github.com/kwilhelm1967/Vault/releases/download/V1.2.0/Local.Password.Vault.Setup.1.2.0.exe',
+    mac: 'https://github.com/kwilhelm1967/Vault/releases/latest/download/Local%20Password%20Vault-1.2.0-mac.dmg',
+    linux: 'https://github.com/kwilhelm1967/Vault/releases/latest/download/Local%20Password%20Vault-1.2.0.AppImage',
+  };
+  
+  // For bundles, default to LPV links unless it's all LLV
+  // Users can get specific product downloads from the purchase success page
+  if (hasLLV && licenses.every(l => l.planType?.includes('llv'))) {
+    // All LLV - use LLV links
+    downloadLinks = {
+      windows: `https://github.com/kwilhelm1967/LocalLegacyVault/releases/download/${DOWNLOAD_VERSION}/Local.Legacy.Vault.Setup.1.2.5-x64.exe`,
+      mac: `https://github.com/kwilhelm1967/LocalLegacyVault/releases/download/${DOWNLOAD_VERSION}/Local.Legacy.Vault-1.2.5-mac.dmg`,
+      linux: `https://github.com/kwilhelm1967/LocalLegacyVault/releases/download/${DOWNLOAD_VERSION}/Local.Legacy.Vault-1.2.5.AppImage`,
+    };
+  }
+  
   const html = loadTemplate('bundle-email', {
     LICENSE_COUNT: totalKeyCount.toString(),
     TOTAL_AMOUNT: totalFormatted,
     LICENSE_KEYS_HTML: licensesHtml,
+    DOWNLOAD_WINDOWS: downloadLinks.windows,
+    DOWNLOAD_MAC: downloadLinks.mac,
+    DOWNLOAD_LINUX: downloadLinks.linux,
     ORDER_DATE: date,
     ORDER_ID: orderId || `ORDER-${Date.now()}`,
   });
