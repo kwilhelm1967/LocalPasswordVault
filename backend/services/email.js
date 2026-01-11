@@ -117,7 +117,7 @@ async function sendPurchaseEmail({ to, licenseKey, planType, amount }) {
   
   // Determine product type for download links
   const isLLV = planType === 'llv_personal' || planType === 'llv_family';
-  const DOWNLOAD_VERSION = 'v1.2.5';
+  const DOWNLOAD_VERSION = 'V1.2.5';
   
   let downloadLinks = {
     windows: 'https://github.com/kwilhelm1967/Vault/releases/download/V1.2.0/Local.Password.Vault.Setup.1.2.0.exe',
@@ -262,7 +262,7 @@ async function sendBundleEmail({ to, licenses, totalAmount, orderId = null }) {
   // Determine download links based on product types in bundle
   // If any license is LLV, prioritize LLV download links
   const hasLLV = licenses.some(l => l.productName?.includes('Legacy') || l.planType?.includes('llv'));
-  const DOWNLOAD_VERSION = 'v1.2.5';
+  const DOWNLOAD_VERSION = 'V1.2.5';
   
   let downloadLinks = {
     windows: 'https://github.com/kwilhelm1967/Vault/releases/download/V1.2.0/Local.Password.Vault.Setup.1.2.0.exe',
