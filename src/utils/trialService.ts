@@ -4,6 +4,7 @@ import { devError, devLog } from "./devLog";
 import { ERROR_MESSAGES } from "../constants/errorMessages";
 import { apiClient, ApiError } from "./apiClient";
 import { getLPVDeviceFingerprint } from "./deviceFingerprint";
+import environment from "../config/environment";
 
 export interface TrialInfo {
   isTrialActive: boolean;
@@ -107,13 +108,20 @@ export class TrialService {
 
       // Call trial activation API with product type detection
       // Product type is detected from key prefix in backend, but we pass it explicitly for clarity
+      const endpointPath = "/api/lpv/license/trial/activate";
+      const baseUrl = environment.environment.licenseServerUrl;
+      const fullUrl = `${baseUrl}${endpointPath}`;
+      
+      devLog("[Trial] Activating against", environment.environment.licenseServerUrl, "path", endpointPath);
+      devLog("[Trial] Full URL:", fullUrl);
+      
       const response = await apiClient.post<{
         status: string;
         trial_file?: SignedTrialFile;
         expires_at?: string;
         error?: string;
       }>(
-        "/api/lpv/license/trial/activate",
+        endpointPath,
         {
           trial_key: cleanKey,
           device_id: deviceId,

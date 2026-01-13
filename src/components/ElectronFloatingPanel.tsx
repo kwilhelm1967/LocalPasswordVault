@@ -385,6 +385,19 @@ export const ElectronFloatingPanel: React.FC<ElectronFloatingPanelProps> = ({
       window.electronAPI.closeFloatingPanel();
     }
   };
+
+  const handleBuyLifetimeAccess = () => {
+    const url = "https://localpasswordvault.com/#plans";
+    if (window.electronAPI?.openExternal) {
+      window.electronAPI.openExternal(url);
+    } else {
+      window.open(url, "_blank");
+    }
+    if (window.electronAPI?.closeFloatingPanel) {
+      window.electronAPI.closeFloatingPanel();
+    }
+  };
+
   // If trial is expired, show expired message instead of the floating panel
   if (isTrialExpired) {
     return (
@@ -411,7 +424,7 @@ export const ElectronFloatingPanel: React.FC<ElectronFloatingPanelProps> = ({
 
           <div className="space-y-4">
             <button
-              onClick={handleRedirectToMainVault}
+              onClick={handleBuyLifetimeAccess}
               className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-xl font-semibold transition-all duration-200"
             >
               Buy Lifetime Access

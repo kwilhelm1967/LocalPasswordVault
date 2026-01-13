@@ -80,103 +80,24 @@ async function createCheckoutSession(planType, customerEmail, successUrl, cancel
     throw new Error(`Invalid plan type: ${planType}`);
   }
   
-  // Log product details for verification
   const logger = require('../utils/logger');
-  logger.info('Creating Stripe checkout session', {
-    planType,
-    productName: product.name,
-    productDescription: product.description,
-    productPrice: product.price,
-    priceFormatted: `$${(product.price / 100).toFixed(2)}`,
-    priceId: product.priceId || 'NOT_SET',
-    maxDevices: product.maxDevices,
-    productType: product.productType,
-    operation: 'stripe_checkout_creation',
-  });
   
-  if (!product.priceId) {
-    // Create session with price_data (no Stripe price ID configured)
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
-      mode: 'payment',
-      customer_email: customerEmail,
-      line_items: [
-        {
-          price_data: {
-            currency: 'usd',
-            product_data: {
-              name: product.name,
-              description: product.description,
-            },
-            unit_amount: product.price,
-          },
-          quantity: 1,
-        },
-      ],
-      metadata: {
-        plan_type: planType,
-        max_devices: product.maxDevices.toString(),
-        product_name: product.name,
-        product_price: product.price.toString(),
-      },
-      success_url: successUrl,
-      cancel_url: cancelUrl,
-    });
-    
-    logger.info('Stripe checkout session created (using price_data)', {
-      sessionId: session.id,
-      planType,
-      productName: product.name,
-      operation: 'stripe_checkout_created',
-    });
-    
-    return session;
-  }
-  
-  // Verify Stripe price ID matches expected product (optional validation)
-  try {
-    const stripePrice = await stripe.prices.retrieve(product.priceId);
-    const stripeProduct = await stripe.products.retrieve(stripePrice.product);
-    
-    // Log verification details
-    logger.info('Verified Stripe price ID', {
-      planType,
-      expectedProductName: product.name,
-      expectedPrice: product.price,
-      stripeProductName: stripeProduct.name,
-      stripePriceAmount: stripePrice.unit_amount,
-      stripePriceCurrency: stripePrice.currency,
-      match: stripeProduct.name === product.name && stripePrice.unit_amount === product.price,
-      operation: 'stripe_price_verification',
-    });
-    
-    // Warn if there's a mismatch (but don't fail - might be intentional)
-    if (stripeProduct.name !== product.name || stripePrice.unit_amount !== product.price) {
-      logger.warn('Stripe price/product mismatch detected', {
-        planType,
-        expected: { name: product.name, price: product.price },
-        actual: { name: stripeProduct.name, price: stripePrice.unit_amount },
-        operation: 'stripe_price_mismatch',
-      });
-    }
-  } catch (verifyError) {
-    // Log but don't fail - price ID might be valid but verification failed
-    logger.warn('Could not verify Stripe price ID', {
-      planType,
-      priceId: product.priceId,
-      error: verifyError.message,
-      operation: 'stripe_price_verification_failed',
-    });
-  }
-  
-  // Create session with Stripe price ID
+  // Always use price_data for reliability - works even if price IDs aren't configured
+  // This ensures checkout always works regardless of Stripe product setup
   const session = await stripe.checkout.sessions.create({
     payment_method_types: ['card'],
     mode: 'payment',
     customer_email: customerEmail,
     line_items: [
       {
-        price: product.priceId,
+        price_data: {
+          currency: 'usd',
+          product_data: {
+            name: product.name,
+            description: product.description,
+          },
+          unit_amount: product.price,
+        },
         quantity: 1,
       },
     ],
@@ -185,17 +106,15 @@ async function createCheckoutSession(planType, customerEmail, successUrl, cancel
       max_devices: product.maxDevices.toString(),
       product_name: product.name,
       product_price: product.price.toString(),
-      stripe_price_id: product.priceId,
     },
     success_url: successUrl,
     cancel_url: cancelUrl,
   });
   
-  logger.info('Stripe checkout session created (using price ID)', {
+  logger.info('Stripe checkout session created', {
     sessionId: session.id,
     planType,
     productName: product.name,
-    stripePriceId: product.priceId,
     checkoutUrl: session.url,
     operation: 'stripe_checkout_created',
   });

@@ -569,6 +569,14 @@ const LicenseScreenComponent: React.FC<LicenseScreenProps> = ({
       // Map plan types: "single" -> "personal", "family" -> "family"
       const planType = plan === "single" ? "personal" : "family";
       
+      // Log purchase attempt for verification
+      devLog("[Purchase] Creating checkout session", {
+        frontendPlan: plan,
+        backendPlanType: planType,
+        expectedProduct: plan === "single" ? "Personal Vault - $49" : "Family Vault - $79",
+        apiUrl: `${apiBaseUrl}/api/checkout/session`,
+      });
+      
       // Create checkout session
       const response = await fetch(`${apiBaseUrl}/api/checkout/session`, {
         method: "POST",
@@ -588,8 +596,20 @@ const LicenseScreenComponent: React.FC<LicenseScreenProps> = ({
       const data = await response.json();
       
       if (data.success && data.url) {
-        // Redirect to Stripe checkout
-        window.location.href = data.url;
+        devLog("[Purchase] Checkout session created successfully", {
+          sessionId: data.sessionId,
+          checkoutUrl: data.url,
+          planType,
+          frontendPlan: plan,
+        });
+        
+        // Open Stripe checkout in external browser (Electron)
+        if (window.electronAPI?.openExternal) {
+          window.electronAPI.openExternal(data.url);
+        } else {
+          // Fallback for web version
+          window.open(data.url, "_blank");
+        }
       } else {
         throw new Error(data.error || "Failed to create checkout session");
       }
@@ -639,8 +659,13 @@ const LicenseScreenComponent: React.FC<LicenseScreenProps> = ({
       const data = await response.json();
       
       if (data.success && data.url) {
-        // Redirect to Stripe checkout
-        window.location.href = data.url;
+        // Open Stripe checkout in external browser (Electron)
+        if (window.electronAPI?.openExternal) {
+          window.electronAPI.openExternal(data.url);
+        } else {
+          // Fallback for web version
+          window.open(data.url, "_blank");
+        }
       } else {
         throw new Error(data.error || "Failed to create checkout session");
       }
@@ -1098,23 +1123,7 @@ const LicenseScreenComponent: React.FC<LicenseScreenProps> = ({
                     <button
                       onClick={(e) => {
                         e.preventDefault();
-                        if (window.electronAPI) {
-                          window.electronAPI.openExternal(
-                            "https://localpasswordvault.com/#plans"
-                          );
-                        } else {
-                          window.open(
-                            "https://localpasswordvault.com/#plans",
-                            "_blank"
-                          );
-                        }
-                        if (window.electronAPI?.hideFloatingButton) {
-                          try {
-                            window.electronAPI.hideFloatingButton();
-                          } catch (error) {
-                            devError('Failed to hide floating button:', error);
-                          }
-                        }
+                        handleBuyLifetimeAccess();
                       }}
                       className="text-blue-400 hover:text-blue-300 text-sm transition-colors inline-flex items-center space-x-1"
                     >
