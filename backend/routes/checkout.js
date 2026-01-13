@@ -59,19 +59,33 @@ router.post('/session', async (req, res) => {
     
   } catch (error) {
     const errorMessage = error.message || 'Unknown error';
+    const stripeError = error.type || error.code || '';
+    
     logger.error('Checkout session error', error, {
       planType: req.body?.planType,
       errorMessage: errorMessage,
       errorType: error.constructor.name,
+      stripeError: stripeError,
+      stripeErrorType: error.type,
       operation: 'checkout_session_creation',
     });
     
-    // Return actual error message for debugging (in production, might want to hide details)
+    // Return actual error message - this helps diagnose the issue
+    let userMessage = errorMessage;
+    
+    // Handle Stripe-specific errors
+    if (error.type && error.type.startsWith('Stripe')) {
+      if (error.code === 'api_key_expired' || error.code === 'invalid_api_key') {
+        userMessage = 'Payment system configuration error. Please contact support.';
+      } else if (error.message) {
+        userMessage = `Payment error: ${error.message}`;
+      }
+    }
+    
     res.status(500).json({ 
       success: false, 
-      error: errorMessage.includes('Invalid') || errorMessage.includes('Invalid') 
-        ? errorMessage 
-        : 'Failed to create checkout session. Please try again or contact support.' 
+      error: userMessage,
+      errorCode: stripeError || error.code || 'UNKNOWN'
     });
   }
 });
