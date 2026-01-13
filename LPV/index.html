@@ -2234,7 +2234,7 @@
             <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> All future updates</li>
             <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Local backup/restore</li>
           </ul>
-          <a href="https://buy.stripe.com/YOUR_PERSONAL_VAULT_LINK" class="pricing-cta primary">Get Personal Vault</a>
+          <a href="#" class="pricing-cta primary" onclick="purchasePlan('personal', event)">Get Personal Vault</a>
         </div>
         <div class="pricing-card featured animate delay-3">
           <span class="pricing-badge">Best Value</span>
@@ -2250,7 +2250,7 @@
             <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> 5 separate vaults</li>
             <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> All future updates</li>
           </ul>
-          <a href="https://buy.stripe.com/YOUR_FAMILY_VAULT_LINK" class="pricing-cta primary">Get Family Vault</a>
+          <a href="#" class="pricing-cta primary" onclick="purchasePlan('family', event)">Get Family Vault</a>
         </div>
       </div>
     </div>
@@ -2428,6 +2428,79 @@
           icon.innerHTML = '<line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/>';
         }
       });
+    }
+
+    // API base URL
+    const API_BASE_URL = (() => {
+      const hostname = window.location.hostname;
+      if (hostname === 'localpasswordvault.com' || hostname === 'www.localpasswordvault.com') {
+        return 'https://api.localpasswordvault.com';
+      }
+      return 'https://api.localpasswordvault.com';
+    })();
+
+    async function purchasePlan(planType, event) {
+      event.preventDefault();
+      const button = event.target;
+      const originalText = button.textContent;
+      
+      button.disabled = true;
+      button.textContent = 'Processing...';
+      button.style.opacity = '0.7';
+      button.style.cursor = 'not-allowed';
+
+      const apiUrl = `${API_BASE_URL}/api/checkout/session`;
+      console.log('[Purchase] Starting checkout:', { planType, apiUrl });
+
+      try {
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            planType: planType,
+            email: null, // Stripe will collect email during checkout
+          }),
+        });
+
+        console.log('[Purchase] Response status:', response.status, response.statusText);
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: 'Failed to create checkout session' }));
+          console.error('[Purchase] API Error:', {
+            status: response.status,
+            statusText: response.statusText,
+            errorData: errorData,
+            apiUrl: apiUrl
+          });
+          throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        console.log('[Purchase] Success:', data);
+        
+        if (data.success && data.url) {
+          window.location.href = data.url;
+        } else {
+          throw new Error(data.error || 'Failed to create checkout session');
+        }
+      } catch (error) {
+        console.error('[Purchase] Error:', error);
+        const errorMessage = error.message || 'Unknown error occurred';
+        console.error('[Purchase] Full error details:', {
+          message: errorMessage,
+          name: error.name,
+          stack: error.stack,
+          apiUrl: apiUrl
+        });
+        alert(`Failed to start checkout: ${errorMessage}\n\nPlease check the browser console for details or contact support@localpasswordvault.com`);
+        
+        button.disabled = false;
+        button.textContent = originalText;
+        button.style.opacity = '1';
+        button.style.cursor = 'pointer';
+      }
     }
   </script>
 </body>

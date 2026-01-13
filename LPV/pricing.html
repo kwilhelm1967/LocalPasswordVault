@@ -626,7 +626,7 @@
           <li>Local backup/restore</li>
           <li>All future updates</li>
         </ul>
-        <a href="#" class="cta">Get Personal Vault</a>
+        <a href="#" class="cta" onclick="purchasePlan('personal', event)">Get Personal Vault</a>
       </div>
 
       <div class="pricing-card best-value">
@@ -642,7 +642,7 @@
           <li>All future updates</li>
           <li>Save $166 vs. 5 licenses</li>
         </ul>
-        <a href="#" class="cta">Get Family Vault</a>
+        <a href="#" class="cta" onclick="purchasePlan('family', event)">Get Family Vault</a>
       </div>
     </div>
 
@@ -835,6 +835,77 @@
       }
       return 'https://api.localpasswordvault.com';
     })();
+
+    async function purchasePlan(planType, event) {
+      event.preventDefault();
+      const button = event.target;
+      const originalText = button.textContent;
+      
+      button.disabled = true;
+      button.textContent = 'Processing...';
+      button.style.opacity = '0.7';
+      button.style.cursor = 'not-allowed';
+
+      try {
+        const apiUrl = `${API_BASE_URL}/api/checkout/session`;
+        console.log('[Purchase] Starting checkout:', { planType, apiUrl, API_BASE_URL });
+
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            planType: planType,
+            email: null, // Stripe will collect email during checkout
+          }),
+        });
+
+        console.log('[Purchase] Response received:', { status: response.status, statusText: response.statusText, ok: response.ok });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: 'Failed to create checkout session' }));
+          console.error('[Purchase] API Error Response:', {
+            status: response.status,
+            statusText: response.statusText,
+            errorData: errorData,
+            apiUrl: apiUrl
+          });
+          throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        
+        if (data.success && data.url) {
+          window.location.href = data.url;
+        } else {
+          throw new Error(data.error || 'Failed to create checkout session');
+        }
+      } catch (error) {
+        console.error('[Purchase] Error caught:', error);
+        const errorMessage = error.message || 'Unknown error occurred';
+        console.error('[Purchase] Full error details:', {
+          message: errorMessage,
+          name: error.name,
+          type: error.constructor.name,
+          stack: error.stack,
+          apiUrl: `${API_BASE_URL}/api/checkout/session`,
+          API_BASE_URL: API_BASE_URL
+        });
+        
+        // Check if it's a network/CORS error
+        if (error.message.includes('fetch') || error.message.includes('CORS') || error.name === 'TypeError') {
+          alert(`Network error: Unable to connect to the server.\n\nThis might be a CORS issue or the server might be down.\n\nError: ${errorMessage}\n\nPlease check the browser console (F12) for details.`);
+        } else {
+          alert(`Failed to start checkout: ${errorMessage}\n\nPlease check the browser console (F12) for details or contact support@localpasswordvault.com`);
+        }
+        
+        button.disabled = false;
+        button.textContent = originalText;
+        button.style.opacity = '1';
+        button.style.cursor = 'pointer';
+      }
+    }
 
     async function purchasePersonalBundle(event) {
       event.preventDefault();

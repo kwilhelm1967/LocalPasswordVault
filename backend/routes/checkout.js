@@ -16,6 +16,18 @@ router.post('/session', async (req, res) => {
       });
     }
     
+    // Check Stripe configuration
+    if (!process.env.STRIPE_SECRET_KEY) {
+      logger.error('Stripe not configured', new Error('STRIPE_SECRET_KEY missing'), {
+        planType,
+        operation: 'checkout_session_creation',
+      });
+      return res.status(500).json({ 
+        success: false, 
+        error: 'Payment processing is not configured. Please contact support.' 
+      });
+    }
+    
     // Determine website URL based on product type
     const isLLV = planType.startsWith('llv_');
     const isAftercare = planType.startsWith('aftercare_') || planType.startsWith('afterpassing_');
@@ -46,13 +58,20 @@ router.post('/session', async (req, res) => {
     });
     
   } catch (error) {
+    const errorMessage = error.message || 'Unknown error';
     logger.error('Checkout session error', error, {
       planType: req.body?.planType,
+      errorMessage: errorMessage,
+      errorType: error.constructor.name,
       operation: 'checkout_session_creation',
     });
+    
+    // Return actual error message for debugging (in production, might want to hide details)
     res.status(500).json({ 
       success: false, 
-      error: 'Failed to create checkout session' 
+      error: errorMessage.includes('Invalid') || errorMessage.includes('Invalid') 
+        ? errorMessage 
+        : 'Failed to create checkout session. Please try again or contact support.' 
     });
   }
 });
