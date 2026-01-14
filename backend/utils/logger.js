@@ -75,13 +75,13 @@ class Logger {
     if (!requestId && context.req) {
       requestId = context.req.requestId;
     }
-    if (!requestId && typeof context === 'object' && context.constructor?.name === 'IncomingMessage') {
+    if (!requestId && typeof context === 'object' && context.constructor && context.constructor.name === 'IncomingMessage') {
       // If context itself is the req object
       requestId = context.requestId;
     }
     
     // Extract user ID from context if available
-    let userId = context.userId || context.user?.id || null;
+    let userId = context.userId || (context.user && context.user.id) || null;
     
     // Use error code from context, error object, or parameter
     const code = errorCode || context.errorCode || (error && error.code) || null;
@@ -323,7 +323,7 @@ class Logger {
 
     errors.forEach(entry => {
       byLevel[entry.level] = (byLevel[entry.level] || 0) + 1;
-      if (entry.context?.operation) {
+      if (entry.context && entry.context.operation) {
         byContext[entry.context.operation] = (byContext[entry.context.operation] || 0) + 1;
       }
     });
@@ -349,25 +349,25 @@ loggerInstance.withRequest = function(req) {
     error: (message, error, context = {}) => {
       return loggerInstance.error(message, error, {
         ...context,
-        requestId: req?.requestId,
+        requestId: req && req.requestId,
       });
     },
     warn: (message, context = {}) => {
       return loggerInstance.warn(message, {
         ...context,
-        requestId: req?.requestId,
+        requestId: req && req.requestId,
       });
     },
     info: (message, context = {}) => {
       return loggerInstance.info(message, {
         ...context,
-        requestId: req?.requestId,
+        requestId: req && req.requestId,
       });
     },
     debug: (message, context = {}) => {
       return loggerInstance.debug(message, {
         ...context,
-        requestId: req?.requestId,
+        requestId: req && req.requestId,
       });
     },
   };

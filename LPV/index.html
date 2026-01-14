@@ -2431,13 +2431,8 @@
     }
 
     // API base URL
-    const API_BASE_URL = (() => {
-      const hostname = window.location.hostname;
-      if (hostname === 'localpasswordvault.com' || hostname === 'www.localpasswordvault.com') {
-        return 'https://api.localpasswordvault.com';
-      }
-      return 'https://api.localpasswordvault.com';
-    })();
+    // Use relative path for same-origin API calls (proxied via Nginx)
+    // No cross-origin calls needed - Nginx handles routing to backend
 
     async function purchasePlan(planType, event) {
       event.preventDefault();
@@ -2449,7 +2444,7 @@
       button.style.opacity = '0.7';
       button.style.cursor = 'not-allowed';
 
-      const apiUrl = `${API_BASE_URL}/api/checkout/session`;
+      const apiUrl = '/api/checkout/session';
       console.log('[Purchase] Starting checkout:', { planType, apiUrl });
 
       try {

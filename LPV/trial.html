@@ -409,7 +409,7 @@
   <script>
     document.querySelectorAll('.animate').forEach(el => el.classList.add('visible'));
 
-    const API_BASE_URL = 'https://api.localpasswordvault.com';
+    // Use relative path for same-origin API calls (proxied via Nginx)
     const trialForm = document.getElementById('trialForm');
     
     if (trialForm) {
@@ -439,7 +439,7 @@
         }
         
         try {
-          const response = await fetch(`${API_BASE_URL}/api/trial/signup`, {
+          const response = await fetch('/api/trial/signup', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, product_type: 'lpv' }),

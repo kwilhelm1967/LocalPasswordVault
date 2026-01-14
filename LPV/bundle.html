@@ -799,15 +799,8 @@
   </section>
 
   <script>
-    // API base URL - detects production or uses default
-    const API_BASE_URL = (() => {
-      const hostname = window.location.hostname;
-      if (hostname === 'localpasswordvault.com' || hostname === 'www.localpasswordvault.com') {
-        return 'https://api.localpasswordvault.com';
-      }
-      // For local development, adjust as needed
-      return 'https://api.localpasswordvault.com';
-    })();
+    // Use relative path for same-origin API calls (proxied via Nginx)
+    // No cross-origin calls needed - Nginx handles routing to backend
 
     function copyBundleCode() {
       const code = document.querySelector('.bundle-code').textContent;
@@ -839,7 +832,7 @@
 
       try {
         // Family Protection Bundle: LPV Family + LLV Family
-        const response = await fetch(`${API_BASE_URL}/api/checkout/bundle`, {
+        const response = await fetch('/api/checkout/bundle', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

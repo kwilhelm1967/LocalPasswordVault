@@ -39,7 +39,31 @@ function requireTestAuth(req, res, next) {
   next();
 }
 
-router.use(requireTestAuth);
+// Apply auth to all routes except stripe-config (needed for debugging)
+router.use((req, res, next) => {
+  if (req.path === '/stripe-config') {
+    return next(); // Skip auth for stripe-config
+  }
+  requireTestAuth(req, res, next);
+});
+
+/**
+ * GET /api/test/stripe-config
+ * Check if Stripe key is loaded (no auth needed for debugging)
+ */
+router.get('/stripe-config', (req, res) => {
+  const hasKey = !!process.env.STRIPE_SECRET_KEY;
+  const keyLength = process.env.STRIPE_SECRET_KEY ? process.env.STRIPE_SECRET_KEY.length : 0;
+  const keyPrefix = process.env.STRIPE_SECRET_KEY ? process.env.STRIPE_SECRET_KEY.substring(0, 7) : 'none';
+  
+  res.json({
+    hasStripeKey: hasKey,
+    keyLength: keyLength,
+    keyPrefix: hasKey ? `${keyPrefix}...` : 'none',
+    nodeEnv: process.env.NODE_ENV,
+    timestamp: new Date().toISOString()
+  });
+});
 
 /**
  * POST /api/test/generate-license
@@ -210,6 +234,24 @@ router.post('/send-email', async (req, res) => {
       error: 'Failed to send test email: ' + error.message 
     });
   }
+});
+
+/**
+ * GET /api/test/stripe-config
+ * Check if Stripe key is loaded (no auth needed for debugging)
+ */
+router.get('/stripe-config', (req, res) => {
+  const hasKey = !!process.env.STRIPE_SECRET_KEY;
+  const keyLength = process.env.STRIPE_SECRET_KEY ? process.env.STRIPE_SECRET_KEY.length : 0;
+  const keyPrefix = process.env.STRIPE_SECRET_KEY ? process.env.STRIPE_SECRET_KEY.substring(0, 7) : 'none';
+  
+  res.json({
+    hasStripeKey: hasKey,
+    keyLength: keyLength,
+    keyPrefix: hasKey ? `${keyPrefix}...` : 'none',
+    nodeEnv: process.env.NODE_ENV,
+    timestamp: new Date().toISOString()
+  });
 });
 
 /**

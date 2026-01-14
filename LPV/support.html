@@ -577,8 +577,7 @@
     }, { threshold: 0.1 });
     document.querySelectorAll('.animate').forEach(el => observer.observe(el));
 
-    // Ticket API base URL
-    const API_BASE_URL = 'https://api.localpasswordvault.com/api/tickets';
+    // Use relative path for same-origin API calls (proxied via Nginx)
 
     // Form submission handler
     const contactForm = document.querySelector('.contact-form');
@@ -608,7 +607,7 @@
       submitBtn.textContent = 'Sending...';
 
       try {
-        const response = await fetch(API_BASE_URL, {
+        const response = await fetch('/api/tickets', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -814,7 +813,7 @@
           submitBtn.textContent = 'Sending...';
 
           try {
-            const response = await fetch(`${API_BASE_URL}/${ticket.ticket_number}/messages`, {
+            const response = await fetch(`/api/tickets/${ticket.ticket_number}/messages`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',

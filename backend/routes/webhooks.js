@@ -384,7 +384,11 @@ async function handleCheckoutCompleted(session) {
       sessionId: session.id,
       isBundle: isBundle || licenses.length > 1,
       operation: 'email_delivery',
+      planTypes: licenses.map(l => l.planType),
+      errorMessage: emailError.message,
+      errorStack: emailError.stack,
     });
+    // Don't throw - license was created successfully, email failure is logged
   }
 }
 

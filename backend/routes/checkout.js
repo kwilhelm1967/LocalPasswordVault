@@ -7,9 +7,29 @@ const router = express.Router();
 router.post('/session', async (req, res) => {
   try {
     const { planType, email } = req.body;
+    
+    // Check if request is from locallegacyvault.com based on Host or Origin header
+    const host = req.headers.host || '';
+    const origin = req.headers.origin || '';
+    const referer = req.headers.referer || '';
+    const isLLVRequest = host.includes('locallegacyvault.com') || 
+                         origin.includes('locallegacyvault.com') || 
+                         referer.includes('locallegacyvault.com');
+    
+    // If request is from LLV site, map planType to LLV equivalents
+    let actualPlanType = planType;
+    if (isLLVRequest) {
+      if (planType === 'personal') {
+        actualPlanType = 'llv_personal';
+      } else if (planType === 'family') {
+        actualPlanType = 'llv_family';
+      }
+      // If already llv_*, keep it as is
+    }
+    
     const validPlanTypes = ['personal', 'family', 'llv_personal', 'llv_family', 'aftercare_addon', 'aftercare_standalone', 'afterpassing_standalone'];
     
-    if (!planType || !validPlanTypes.includes(planType)) {
+    if (!actualPlanType || !validPlanTypes.includes(actualPlanType)) {
       return res.status(400).json({ 
         success: false, 
         error: `Invalid plan type. Must be one of: ${validPlanTypes.join(', ')}` 
@@ -18,24 +38,28 @@ router.post('/session', async (req, res) => {
     
     // Check Stripe configuration
     if (!process.env.STRIPE_SECRET_KEY) {
-      logger.error('Stripe not configured', new Error('STRIPE_SECRET_KEY missing'), {
-        planType,
+      const errorMsg = 'STRIPE_SECRET_KEY environment variable is not set. Payment processing cannot be initialized.';
+      logger.error('Stripe not configured', new Error(errorMsg), {
+        planType: actualPlanType,
         operation: 'checkout_session_creation',
       });
+      const supportEmail = isLLVRequest 
+        ? (process.env.LLV_SUPPORT_EMAIL || process.env.SUPPORT_EMAIL || 'support@locallegacyvault.com')
+        : (process.env.SUPPORT_EMAIL || 'support@localpasswordvault.com');
       return res.status(500).json({ 
         success: false, 
-        error: 'Payment processing is not configured. Please contact support.' 
+        error: `Payment processing is not configured. Please contact ${supportEmail}`,
+        errorCode: 'STRIPE_NOT_CONFIGURED'
       });
     }
     
-    // Determine website URL based on product type
-    const isLLV = planType.startsWith('llv_');
-    const isAftercare = planType.startsWith('aftercare_') || planType.startsWith('afterpassing_');
+    // Determine website URL based on request origin
+    const isAftercare = actualPlanType.startsWith('aftercare_') || actualPlanType.startsWith('afterpassing_');
     let baseUrl;
     
     if (isAftercare) {
       baseUrl = process.env.AFTERPASSING_WEBSITE_URL || process.env.AFTERCARE_WEBSITE_URL || 'https://afterpassingguide.com';
-    } else if (isLLV) {
+    } else if (isLLVRequest || actualPlanType.startsWith('llv_')) {
       baseUrl = process.env.LLV_WEBSITE_URL || 'https://locallegacyvault.com';
     } else {
       baseUrl = process.env.WEBSITE_URL || 'https://localpasswordvault.com';
@@ -45,7 +69,7 @@ router.post('/session', async (req, res) => {
     const cancelUrl = `${baseUrl}/pricing?cancelled=true`;
     
     const session = await createCheckoutSession(
-      planType,
+      actualPlanType,
       email || null,
       successUrl,
       cancelUrl
@@ -68,13 +92,16 @@ router.post('/session', async (req, res) => {
       stripeError: stripeError,
       stripeErrorType: error.type,
       operation: 'checkout_session_creation',
+      stack: error.stack,
     });
     
     // Return actual error message - this helps diagnose the issue
     let userMessage = errorMessage;
     
-    // Handle Stripe-specific errors
-    if (error.type && error.type.startsWith('Stripe')) {
+    // Handle specific error cases
+    if (errorMessage.includes('STRIPE_SECRET_KEY')) {
+      userMessage = 'Payment system is not configured. Please contact support@localpasswordvault.com';
+    } else if (error.type && error.type.startsWith('Stripe')) {
       if (error.code === 'api_key_expired' || error.code === 'invalid_api_key') {
         userMessage = 'Payment system configuration error. Please contact support.';
       } else if (error.message) {
@@ -85,7 +112,8 @@ router.post('/session', async (req, res) => {
     res.status(500).json({ 
       success: false, 
       error: userMessage,
-      errorCode: stripeError || error.code || 'UNKNOWN'
+      errorCode: stripeError || error.code || 'UNKNOWN',
+      details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
     });
   }
 });

@@ -45,6 +45,7 @@ import {
   Key,
   Shield,
   Users,
+  Users2,
   CheckCircle,
   XCircle,
   ExternalLink,
@@ -56,7 +57,7 @@ import {
 } from "lucide-react";
 import { analyticsService } from "../utils/analyticsService";
 import { licenseService, AppLicenseStatus } from "../utils/licenseService";
-import { devError } from "../utils/devLog";
+import { devError, devLog } from "../utils/devLog";
 import { withErrorHandling } from "../utils/errorHandling";
 import { ERROR_MESSAGES } from "../constants/errorMessages";
 import { EulaAgreement } from "./EulaAgreement";
@@ -562,9 +563,9 @@ const LicenseScreenComponent: React.FC<LicenseScreenProps> = ({
     }
 
     try {
-      // Import environment config dynamically to avoid circular dependencies
-      const environment = (await import("../config/environment")).default;
-      const apiBaseUrl = environment.environment.licenseServerUrl;
+      // Use relative path for same-origin API calls (proxied via Nginx)
+      // For Electron apps, this will still work if they're served from the same domain
+      const apiUrl = '/api/checkout/session';
       
       // Map plan types: "single" -> "personal", "family" -> "family"
       const planType = plan === "single" ? "personal" : "family";
@@ -574,11 +575,11 @@ const LicenseScreenComponent: React.FC<LicenseScreenProps> = ({
         frontendPlan: plan,
         backendPlanType: planType,
         expectedProduct: plan === "single" ? "Personal Vault - $49" : "Family Vault - $79",
-        apiUrl: `${apiBaseUrl}/api/checkout/session`,
+        apiUrl: apiUrl,
       });
       
       // Create checkout session
-      const response = await fetch(`${apiBaseUrl}/api/checkout/session`, {
+      const response = await fetch(apiUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -589,11 +590,12 @@ const LicenseScreenComponent: React.FC<LicenseScreenProps> = ({
         }),
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to create checkout session");
-      }
-
       const data = await response.json();
+      
+      if (!response.ok) {
+        const errorMessage = data.error || `HTTP ${response.status}: ${response.statusText}`;
+        throw new Error(errorMessage);
+      }
       
       if (data.success && data.url) {
         devLog("[Purchase] Checkout session created successfully", {
@@ -603,19 +605,27 @@ const LicenseScreenComponent: React.FC<LicenseScreenProps> = ({
           frontendPlan: plan,
         });
         
-        // Open Stripe checkout in external browser (Electron)
+        // Redirect to Stripe checkout
+        // In Electron, open in external browser; in web, redirect current window
         if (window.electronAPI?.openExternal) {
           window.electronAPI.openExternal(data.url);
         } else {
-          // Fallback for web version
-          window.open(data.url, "_blank");
+          // Web version: redirect current window to Stripe checkout
+          window.location.href = data.url;
         }
       } else {
         throw new Error(data.error || "Failed to create checkout session");
       }
     } catch (error) {
       devError("Purchase error:", error);
-      setError("Failed to start checkout. Please try again or contact support@localpasswordvault.com");
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error("[Purchase] Full error details:", {
+        message: errorMessage,
+        name: error instanceof Error ? error.name : "Unknown",
+        stack: error instanceof Error ? error.stack : undefined,
+        plan,
+      });
+      setError(`Failed to start checkout: ${errorMessage}. Please try again or contact support@localpasswordvault.com`);
     }
   };
 
@@ -632,15 +642,15 @@ const LicenseScreenComponent: React.FC<LicenseScreenProps> = ({
     }
 
     try {
-      const environment = (await import("../config/environment")).default;
-      const apiBaseUrl = environment.environment.licenseServerUrl;
-      
       // Bundle purchases are not available in Local Password Vault
       // This function should not be called in LPV repository
       throw new Error("Bundle purchases are not available");
       
+      // Use relative path for same-origin API calls (proxied via Nginx)
+      const apiUrl = '/api/checkout/bundle';
+      
       // Create bundle checkout session
-      const response = await fetch(`${apiBaseUrl}/api/checkout/bundle`, {
+      const response = await fetch(apiUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -1208,6 +1218,19 @@ const LicenseScreenComponent: React.FC<LicenseScreenProps> = ({
                 </p>
               </div>
 
+              {error && (
+                <div 
+                  className="rounded-lg p-4 flex items-start gap-2.5 max-w-4xl mx-auto"
+                  style={{ backgroundColor: 'rgba(217, 119, 6, 0.1)', border: '1px solid rgba(217, 119, 6, 0.4)' }}
+                >
+                  <XCircle className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: '#D97706' }} />
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold mb-1" style={{ color: '#D97706' }}>Purchase Error</p>
+                    <p className="text-sm text-slate-200">{error}</p>
+                  </div>
+                </div>
+              )}
+
               <div className="grid md:grid-cols-2 gap-4 max-w-4xl mx-auto">
                 {/* Personal Vault */}
                 <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-6 hover:border-blue-500/50 transition-all">
@@ -1250,6 +1273,7 @@ const LicenseScreenComponent: React.FC<LicenseScreenProps> = ({
                   </ul>
 
                   <button
+                    type="button"
                     onClick={() => handlePurchase("single")}
                     className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-medium transition-all text-center flex items-center justify-center space-x-2"
                   >
@@ -1301,6 +1325,7 @@ const LicenseScreenComponent: React.FC<LicenseScreenProps> = ({
                   </ul>
 
                   <button
+                    type="button"
                     onClick={() => handlePurchase("family")}
                     className="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 px-4 rounded-lg font-medium transition-all text-center flex items-center justify-center space-x-2"
                   >

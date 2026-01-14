@@ -37,7 +37,7 @@ const PRODUCTS = {
   llv_personal: {
     name: 'Local Legacy Vault - Personal',
     description: 'Lifetime license for 1 device',
-    price: 4900,
+    price: 7900,
     priceId: process.env.STRIPE_PRICE_LLV_PERSONAL,
     maxDevices: 1,
     productType: 'llv',
@@ -91,14 +91,9 @@ async function createCheckoutSession(planType, customerEmail, successUrl, cancel
   const logger = require('../utils/logger');
   const stripeInstance = getStripeInstance();
   
-  // Always use price_data for reliability - works even if price IDs aren't configured
-  // This ensures checkout always works regardless of Stripe product setup
-  const session = await stripeInstance.checkout.sessions.create({
-    payment_method_types: ['card'],
-    mode: 'payment',
-    customer_email: customerEmail,
-    line_items: [
-      {
+  const lineItem = product.priceId
+    ? { price: product.priceId, quantity: 1 }
+    : {
         price_data: {
           currency: 'usd',
           product_data: {
@@ -108,8 +103,12 @@ async function createCheckoutSession(planType, customerEmail, successUrl, cancel
           unit_amount: product.price,
         },
         quantity: 1,
-      },
-    ],
+      };
+  
+  const sessionConfig = {
+    payment_method_types: ['card'],
+    mode: 'payment',
+    line_items: [lineItem],
     metadata: {
       plan_type: planType,
       max_devices: product.maxDevices.toString(),
@@ -118,7 +117,13 @@ async function createCheckoutSession(planType, customerEmail, successUrl, cancel
     },
     success_url: successUrl,
     cancel_url: cancelUrl,
-  });
+  };
+  
+  if (customerEmail && customerEmail.trim() && customerEmail.includes('@')) {
+    sessionConfig.customer_email = customerEmail.trim();
+  }
+  
+  const session = await stripeInstance.checkout.sessions.create(sessionConfig);
   
   logger.info('Stripe checkout session created', {
     sessionId: session.id,
@@ -212,7 +217,6 @@ async function createBundleCheckoutSession(items, customerEmail, successUrl, can
   const sessionConfig = {
     payment_method_types: ['card'],
     mode: 'payment',
-    customer_email: customerEmail,
     line_items: lineItems,
     metadata: {
       is_bundle: 'true',
@@ -221,6 +225,10 @@ async function createBundleCheckoutSession(items, customerEmail, successUrl, can
     success_url: successUrl,
     cancel_url: cancelUrl,
   };
+  
+  if (customerEmail && customerEmail.trim() && customerEmail.includes('@')) {
+    sessionConfig.customer_email = customerEmail.trim();
+  }
   
   if (discountAmount > 0) {
     sessionConfig.line_items.push({
