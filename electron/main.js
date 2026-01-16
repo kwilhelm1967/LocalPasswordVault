@@ -1191,6 +1191,10 @@ ipcMain.handle("platform", () => {
   return process.platform;
 });
 
+ipcMain.handle("app-name", () => {
+  return app.getName();
+});
+
 // Handle floating panel requests
 ipcMain.handle("show-floating-panel", () => {
   const window = createFloatingWindow();

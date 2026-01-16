@@ -49,6 +49,8 @@
     "release:mac": "npm run build:prod && electron-builder --mac --publish=always",
     "lint": "eslint .",
     "preview": "vite preview",
+    "preview:lpv": "vite preview --port 4174 --host",
+    "preview:llv": "vite preview --port 4173 --host",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",

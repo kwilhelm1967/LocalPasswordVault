@@ -128,6 +128,7 @@ export const PurchaseSuccessPage: React.FC = () => {
   const [licenseKeys, setLicenseKeys] = useState<string[]>([]);
   const [productGroups, setProductGroups] = useState<ProductGroup[]>([]);
   const [isBundle, setIsBundle] = useState<boolean>(false);
+  const [isTrial, setIsTrial] = useState<boolean>(false);
   const [customerEmail, setCustomerEmail] = useState<string>("");
   const [planName, setPlanName] = useState<string>("Lifetime License");
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -220,7 +221,16 @@ export const PurchaseSuccessPage: React.FC = () => {
           console.warn('[PurchaseSuccessPage] ⚠️ Electron API not available or getAppName not found');
         }
         
-        // Method 2: Check window location/path for LLV indicators
+        // Method 2: Check URL parameters for LLV mode (for localhost testing)
+        if (detectedType === 'lpv' && typeof window !== 'undefined') {
+          const urlParams = new URLSearchParams(window.location.search);
+          if (urlParams.get('app') === 'llv' || urlParams.get('legacy') === 'true') {
+            console.log('[PurchaseSuccessPage] ✅ DETECTED LLV from URL parameter');
+            detectedType = 'llv';
+          }
+        }
+        
+        // Method 3: Check window location/path for LLV indicators
         if (detectedType === 'lpv' && typeof window !== 'undefined') {
           const hostname = window.location.hostname?.toLowerCase() || '';
           const pathname = window.location.pathname?.toLowerCase() || '';
@@ -264,6 +274,18 @@ export const PurchaseSuccessPage: React.FC = () => {
       document.body.classList.remove('purchase-success-page');
     };
   }, []);
+
+  // Detect if any license key is a trial
+  useEffect(() => {
+    const hasTrialKey = licenseKeys.some(key => {
+      const upperKey = key.toUpperCase();
+      return upperKey.startsWith('TRIA') || upperKey.startsWith('LLVT');
+    });
+    setIsTrial(hasTrialKey);
+    if (hasTrialKey) {
+      setPlanName('7-Day Free Trial');
+    }
+  }, [licenseKeys]);
 
   // Fetch session data or extract keys from URL - wait for app type detection
   useEffect(() => {
@@ -892,16 +914,161 @@ export const PurchaseSuccessPage: React.FC = () => {
                 fontFamily: "'Space Grotesk', sans-serif"
               }}
             >
-              {isBundle ? "You're All Set!" : "Thank You for Your Purchase!"}
+              {isTrial ? "You're All Set!" : (isBundle ? "You're All Set!" : "Thank You for Your Purchase!")}
             </h1>
             <p 
               className="text-[0.95rem] mb-5"
               style={{ color: colors.textSecondary }}
             >
-              {isBundle 
-                ? `Your ${planName} is ready. Download your applications below.`
-                : `Your ${planName} is ready. Download the application below.`}
+              {isTrial 
+                ? "Your 7-day trial is ready. Here's everything you need to get started."
+                : (isBundle 
+                  ? `Your ${planName} is ready. Download your applications below.`
+                  : `Your ${planName} is ready. Download the application below.`)}
             </p>
+
+          {/* Trial Success UI */}
+          {!isLoading && !error && isTrial && licenseKeys.length > 0 && (
+            <div className="text-left space-y-6">
+              {/* Trial Key Section */}
+              <div className="space-y-3">
+                <p className="text-sm font-semibold uppercase tracking-wider" style={{ color: colors.textMuted }}>
+                  Your Trial License Key
+                </p>
+                <div className="flex items-center gap-3">
+                  <code
+                    className="text-lg md:text-xl font-mono tracking-wider select-all px-4 py-3 rounded-lg flex-1"
+                    style={{ 
+                      color: '#06b6d4',
+                      fontFamily: "'Space Grotesk', monospace",
+                      fontWeight: 700,
+                      background: 'rgba(6, 182, 212, 0.1)',
+                      border: `1px solid ${colors.cyanDark}`,
+                    }}
+                  >
+                    {licenseKeys[0]}
+                  </code>
+                  <button
+                    onClick={() => handleCopyKey(licenseKeys[0], 0)}
+                    className="px-4 py-3 rounded-lg flex items-center gap-2 transition-all hover:scale-105 font-semibold text-sm"
+                    style={{
+                      background: copiedIndex === 0 ? colors.green : colors.gradientCyan,
+                      color: colors.bgDarker,
+                      boxShadow: copiedIndex === 0 ? `0 4px 12px rgba(16, 185, 129, 0.3)` : `0 8px 24px ${colors.cyanGlow}`,
+                    }}
+                  >
+                    {copiedIndex === 0 ? (
+                      <>
+                        <Check className="w-4 h-4" />
+                        <span>Copied!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-4 h-4" />
+                        <span>Copy</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+                <p className="text-xs flex items-center gap-1.5" style={{ color: colors.green }}>
+                  <CheckCircle className="w-4 h-4" />
+                  An email has been sent with your trial key.
+                </p>
+              </div>
+
+              {/* Download Section */}
+              <div className="space-y-3">
+                <h2 className="text-lg font-semibold" style={{ color: colors.textPrimary, fontFamily: "'Space Grotesk', sans-serif" }}>
+                  Step 1: Download the App
+                </h2>
+                <div className="grid grid-cols-3 gap-3">
+                  {getSortedPlatforms(defaultWebsiteUrl, appType).map((platform) => (
+                    <button
+                      key={platform.id}
+                      onClick={() => handleDownload(platform)}
+                      className={`flex flex-col items-center gap-2 p-4 rounded-xl transition-all ${
+                        detectedOS === platform.id ? 'ring-2' : ''
+                      }`}
+                      style={{
+                        backgroundColor: detectedOS === platform.id ? colors.bgDarker : colors.bgCard,
+                        border: `1px solid ${detectedOS === platform.id ? colors.cyanDark : colors.borderSubtle}`,
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.borderColor = colors.cyanDark;
+                        e.currentTarget.style.transform = 'translateY(-3px)';
+                        e.currentTarget.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.3)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.borderColor = detectedOS === platform.id ? colors.cyanDark : colors.borderSubtle;
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = 'none';
+                      }}
+                    >
+                      <div style={{ color: colors.cyan, width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        {platform.icon}
+                      </div>
+                      <span className="font-semibold text-sm" style={{ color: colors.textPrimary }}>
+                        {platform.name}
+                      </span>
+                      <span className="text-xs" style={{ color: colors.textMuted }}>
+                        {platform.fileType}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Quick Setup Guide */}
+              <div className="space-y-3">
+                <h3 className="text-sm font-semibold uppercase tracking-wider" style={{ color: colors.textMuted }}>
+                  Quick Setup Guide
+                </h3>
+                <div className="space-y-3">
+                  {[
+                    { num: 1, title: "Download and Install", desc: "Choose your operating system above and install the app." },
+                    { num: 2, title: "Enter Your Trial Key", desc: "When prompted, paste the license key shown above." },
+                    { num: 3, title: "Create Your Master Password", desc: "Choose a strong, memorable password. This is the only key to your vault." },
+                    { num: 4, title: "Start Adding Passwords", desc: "You're ready! Begin storing your passwords securely." },
+                  ].map((step) => (
+                    <div key={step.num} className="flex gap-3">
+                      <div
+                        className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 font-bold text-sm"
+                        style={{
+                          background: colors.gradientCyan,
+                          color: colors.bgDarker,
+                        }}
+                      >
+                        {step.num}
+                      </div>
+                      <div className="flex-1">
+                        <strong className="block text-sm mb-1" style={{ color: colors.textPrimary }}>
+                          {step.title}
+                        </strong>
+                        <p className="text-xs" style={{ color: colors.textSecondary }}>
+                          {step.desc}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Upgrade CTA */}
+              <div className="pt-2">
+                <p className="text-sm text-center" style={{ color: colors.textSecondary }}>
+                  Loving the trial?{" "}
+                  <a
+                    href={`${defaultWebsiteUrl}/pricing`}
+                    className="font-semibold hover:underline"
+                    style={{ color: colors.cyan }}
+                  >
+                    Upgrade anytime
+                  </a>
+                  {" "}for lifetime access.
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Loading State */}
           {isLoading && (

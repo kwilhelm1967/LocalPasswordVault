@@ -21,6 +21,7 @@ import { devError, devWarn } from "./devLog";
 import { apiClient, ApiError } from "./apiClient";
 import { validateLicenseKey } from "./validation";
 import { measureOperation } from "./performanceMonitor";
+import { ERROR_MESSAGES } from "../constants/errorMessages";
 
 export type LicenseType = "personal" | "family" | "trial";
 
@@ -497,7 +498,7 @@ export class LicenseService {
 
       return { 
         success: false, 
-        error: result.error || ERROR_MESSAGES.LICENSE.ACTIVATION_FAILED_RETRY
+        error: result.error || ERROR_MESSAGES.LICENSE.ACTIVATION_FAILED
       };
 
     } catch (error) {
@@ -559,13 +560,13 @@ export class LicenseService {
         // Other errors - show the actual error message
         return {
           success: false,
-          error: apiError.message || ERROR_MESSAGES.GENERIC.RETRY_SUGGESTION,
+          error: apiError.message || ERROR_MESSAGES.LICENSE.ACTIVATION_FAILED,
         };
       }
 
       return { 
         success: false, 
-        error: ERROR_MESSAGES.LICENSE.ACTIVATION_FAILED_RETRY
+        error: ERROR_MESSAGES.LICENSE.ACTIVATION_FAILED
       };
     }
   }
@@ -683,7 +684,7 @@ export class LicenseService {
         if (apiError.code === "NETWORK_ERROR" || apiError.code === "REQUEST_TIMEOUT") {
           return {
             success: false,
-            error: ERROR_MESSAGES.NETWORK.UNABLE_TO_CONNECT_TRANSFER,
+            error: ERROR_MESSAGES.NETWORK.UNABLE_TO_CONNECT_ACTIVATION_ONLY,
           };
         }
         return {

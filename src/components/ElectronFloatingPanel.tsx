@@ -485,7 +485,9 @@ export const ElectronFloatingPanel: React.FC<ElectronFloatingPanelProps> = ({
         </div>
       </div>
 
-      {/* Compact Category Pills */}
+      {/* Compact Category Pills - All categories from FIXED_CATEGORIES displayed in horizontal scrollable row */}
+      {/* Source of truth: src/utils/storage.ts FIXED_CATEGORIES (8 total: all, banking, shopping, entertainment, email, work, business, other) */}
+      {/* No filtering, no "More" bucket - all categories are always visible */}
       <div className="p-2 border-b border-slate-700/50 bg-slate-800/20 no-drag relative z-10">
         <div
           className="flex space-x-1.5 overflow-x-auto pb-1 scrollbar-none"

@@ -8,7 +8,6 @@
  * - Device management for family plans
  * - License status dashboard
  * - Recovery options (forgot license key)
- * - EULA agreement flow
  * - Download instructions and purchase flow
  * - Trial expiration handling
  * 
@@ -33,7 +32,6 @@
  * - LicenseStatusDashboard
  * - DownloadInstructions
  * - DownloadPage
- * - EulaAgreement
  * 
  * State management handles transitions between these screens based on
  * user actions and license status.
@@ -60,7 +58,6 @@ import { licenseService, AppLicenseStatus } from "../utils/licenseService";
 import { devError, devLog } from "../utils/devLog";
 import { withErrorHandling } from "../utils/errorHandling";
 import { ERROR_MESSAGES } from "../constants/errorMessages";
-import { EulaAgreement } from "./EulaAgreement";
 import { DownloadInstructions } from "./DownloadInstructions";
 import { DownloadPage } from "./DownloadPage";
 import { TrialExpirationBanner } from "./TrialExpirationBanner";
@@ -86,6 +83,114 @@ const LicenseScreenComponent: React.FC<LicenseScreenProps> = ({
   onHidePricingPlans,
   appStatus, // Destructure appStatus
 }) => {
+  // Detect app type for LLV mode (for localhost testing)
+  // Initialize immediately based on URL to avoid flash of wrong content
+  const getInitialAppType = (): boolean => {
+    const hostname = window.location.hostname?.toLowerCase() || '';
+    const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168.') || hostname.startsWith('10.') || hostname.startsWith('172.');
+    
+    const urlParams = new URLSearchParams(window.location.search);
+    const appParam = urlParams.get('app');
+    const legacyParam = urlParams.get('legacy');
+    
+    // If explicitly set to LPV, use LPV
+    if (appParam === 'lpv' || appParam === 'password') {
+      return false;
+    }
+    
+    // If explicitly set to LLV, use LLV
+    if (appParam === 'llv' || legacyParam === 'true' || legacyParam === '1') {
+      return true;
+    }
+    
+    // DEFAULT: This is LocalPasswordVault repo, so default to LPV (false)
+    // Only use LLV if explicitly set or detected from Electron app name
+    // DO NOT default to LLV on localhost for this app
+    
+    // Check URL for legacy indicators
+    const pathname = window.location.pathname?.toLowerCase() || '';
+    if (pathname.includes('legacy')) {
+      return true;
+    }
+    
+    return false; // Default to LPV for LocalPasswordVault
+  };
+  
+  const [isLLV, setIsLLV] = useState(getInitialAppType);
+  
+  useEffect(() => {
+    const detectAppType = async () => {
+      // Check if we're on localhost - DEFAULT TO LLV FOR LOCALHOST
+      const hostname = window.location.hostname?.toLowerCase() || '';
+      const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168.') || hostname.startsWith('10.') || hostname.startsWith('172.');
+      
+      // Check URL parameter for LPV mode (override localhost default)
+      const urlParams = new URLSearchParams(window.location.search);
+      const appParam = urlParams.get('app');
+      const legacyParam = urlParams.get('legacy');
+      
+      // If explicitly set to LPV, use LPV
+      if (appParam === 'lpv' || appParam === 'password') {
+        console.log('[LicenseScreen] ✅ DETECTED LPV from URL parameter');
+        setIsLLV(false);
+        document.title = 'Local Password Vault';
+        return;
+      }
+      
+      // If explicitly set to LLV, use LLV
+      if (appParam === 'llv' || legacyParam === 'true' || legacyParam === '1') {
+        console.log('[LicenseScreen] ✅ DETECTED LLV from URL parameter');
+        setIsLLV(true);
+        document.title = 'Local Legacy Vault';
+        return;
+      }
+      
+      // DEFAULT: This is LocalPasswordVault repo, so default to LPV
+      // Only use LLV if explicitly set or detected from Electron app name
+      // DO NOT default to LLV on localhost for this app
+      if (isLocalhost && !appParam && !legacyParam) {
+        console.log('[LicenseScreen] ✅ DETECTED localhost - DEFAULTING TO LPV (LocalPasswordVault)');
+        setIsLLV(false);
+        document.title = 'Local Password Vault';
+        return;
+      }
+      
+      // Check Electron app name
+      if (typeof window !== 'undefined' && window.electronAPI?.getAppName) {
+        try {
+          const appName = await window.electronAPI.getAppName();
+          console.log('[LicenseScreen] Electron app name:', appName);
+          if (appName?.toLowerCase().includes('legacy')) {
+            console.log('[LicenseScreen] ✅ DETECTED LLV from Electron app name');
+            setIsLLV(true);
+            document.title = 'Local Legacy Vault';
+            return;
+          }
+        } catch (error) {
+          console.log('[LicenseScreen] Electron API not available');
+        }
+      }
+      
+      // Check URL for legacy indicators
+      const pathname = window.location.pathname?.toLowerCase() || '';
+      if (pathname.includes('legacy')) {
+        console.log('[LicenseScreen] ✅ DETECTED LLV from URL path');
+        setIsLLV(true);
+        document.title = 'Local Legacy Vault';
+      } else {
+        console.log('[LicenseScreen] ⚠️ No LLV indicators found, defaulting to LPV');
+        setIsLLV(false);
+        document.title = 'Local Password Vault';
+      }
+    };
+    detectAppType();
+  }, []);
+  
+  // Update document title when isLLV changes
+  useEffect(() => {
+    document.title = isLLV ? 'Local Legacy Vault' : 'Local Password Vault';
+  }, [isLLV]);
+  
   const [licenseKey, setLicenseKey] = useState("");
   const [trialKey, setTrialKey] = useState("");
   const [isActivating, setIsActivating] = useState(false);
@@ -135,7 +240,6 @@ const LicenseScreenComponent: React.FC<LicenseScreenProps> = ({
   const [selectedPlan, setSelectedPlan] = useState<"single" | "family">(
     "single"
   );
-  const [showEula, setShowEula] = useState(false);
   const [showDownloadInstructions, setShowDownloadInstructions] =
     useState(false);
   const [pendingLicenseKey, setPendingLicenseKey] = useState("");
@@ -188,7 +292,14 @@ const LicenseScreenComponent: React.FC<LicenseScreenProps> = ({
     }
   }, []);
 
-  const localStorageTrialInfo = getTrialInfoFromLocalStorage();
+  const localStorageTrialInfo = getTrialInfoFromLocalStorage() || {
+    hasTrialBeenUsed: false,
+    isExpired: false,
+    isTrialActive: false,
+    daysRemaining: 0,
+    startDate: null,
+    endDate: null,
+  };
 
   const handleApplyLicenseKey = () => {
     setShowKeyActivationScreen(true);
@@ -282,13 +393,15 @@ const LicenseScreenComponent: React.FC<LicenseScreenProps> = ({
   useEffect(() => {
     if (!appStatus || showKeyActivationScreen || showExpiredTrialScreen || showRecoveryOptions) return;
     
-    const hasNoLicense = !appStatus.isLicensed && !appStatus.trialInfo.hasTrial;
+    // Safely check trial info
+    const hasTrial = appStatus.trialInfo?.hasTrial || false;
+    const hasNoLicense = !appStatus.isLicensed && !hasTrial;
     const hasNoExpiredTrial = !localStorageTrialInfo.isExpired;
     
     if (hasNoLicense && hasNoExpiredTrial) {
       setShowKeyActivationScreen(true);
     }
-  }, [appStatus?.isLicensed, appStatus?.trialInfo.hasTrial, localStorageTrialInfo.isExpired, showExpiredTrialScreen, showKeyActivationScreen, showRecoveryOptions]);
+  }, [appStatus?.isLicensed, appStatus?.trialInfo?.hasTrial, localStorageTrialInfo.isExpired, showExpiredTrialScreen, showKeyActivationScreen, showRecoveryOptions]);
 
   useEffect(() => {
     if (showExpiredTrialScreen && window.electronAPI?.hideFloatingButton) {
@@ -346,14 +459,12 @@ const LicenseScreenComponent: React.FC<LicenseScreenProps> = ({
   }, [showDeviceManagement]);
 
   const handleActivateLicense = async () => {
-
-    setShowEula(true);
-  };
-
-  const handleEulaAccept = async () => {
+    if (!licenseKey.trim()) return;
+    
     setIsActivating(true);
     setError(null);
     setActivationProgress({ stage: 'checking' });
+    setPendingLicenseKey(licenseKey.trim().toUpperCase());
 
     // Add timeout safeguard to ensure loading state is always cleared
     const timeoutId = setTimeout(() => {
@@ -381,7 +492,14 @@ const LicenseScreenComponent: React.FC<LicenseScreenProps> = ({
       }
 
       setActivationProgress({ stage: 'connecting' });
-      const cleanKey = licenseKey.trim().toUpperCase();
+      const keyToActivate = licenseKey.trim().toUpperCase();
+      if (!keyToActivate) {
+        setError('No license key provided. Please enter a key and try again.');
+        setIsActivating(false);
+        setActivationProgress({ stage: null });
+        return;
+      }
+      const cleanKey = keyToActivate.trim().toUpperCase();
       const result = await licenseService.activateLicense(cleanKey, {
         onProgress: (stage) => {
           setActivationProgress({ stage: stage as any });
@@ -409,9 +527,9 @@ const LicenseScreenComponent: React.FC<LicenseScreenProps> = ({
         if (updatedStatus) {
           onLicenseValid();
         }
-        setShowEula(false);
         setError(null);
         setLicenseKey("");
+        setPendingLicenseKey("");
 
         // Show floating button again when license is successfully activated
         if (window.electronAPI?.showFloatingButton) {
@@ -423,7 +541,6 @@ const LicenseScreenComponent: React.FC<LicenseScreenProps> = ({
         }
       } else if (result.requiresTransfer) {
         // Device mismatch - show transfer dialog
-        setShowEula(false);
         setPendingTransferKey(cleanKey);
         setShowTransferDialog(true);
         analyticsService.trackLicenseEvent(
@@ -538,16 +655,6 @@ const LicenseScreenComponent: React.FC<LicenseScreenProps> = ({
     setError(null);
   };
 
-  const handleEulaDecline = () => {
-    setShowEula(false);
-    setPendingLicenseKey("");
-    analyticsService.trackUserAction("eula_declined", {
-      licenseType: "unknown",
-    });
-
-    // Show a message to the user
-        setError(ERROR_MESSAGES.LICENSE.ACTIVATION_CANCELLED);
-  };
 
   const handlePurchase = async (plan: "single" | "family") => {
     setSelectedPlan(plan);
@@ -825,15 +932,6 @@ const LicenseScreenComponent: React.FC<LicenseScreenProps> = ({
           onBuyLifetimeAccess={handleBuyLifetimeAccess}
           onAlreadyPurchased={handleAlreadyPurchased}
         />
-        {/* EULA Modal */}
-        {showEula && (
-          <EulaAgreement
-            onAccept={handleEulaAccept}
-            error={error}
-            isLoading={isActivating}
-            onDecline={handleEulaDecline}
-          />
-        )}
       </>
     );
   }
@@ -847,16 +945,8 @@ const LicenseScreenComponent: React.FC<LicenseScreenProps> = ({
           isActivating={isActivating}
           error={error}
           onNeedHelp={handleNeedHelp}
+          isLLV={isLLV}
         />
-        {/* EULA Modal */}
-        {showEula && (
-          <EulaAgreement
-            onAccept={handleEulaAccept}
-            error={error}
-            isLoading={isActivating}
-            onDecline={handleEulaDecline}
-          />
-        )}
       </>
     );
   }
@@ -867,15 +957,6 @@ const LicenseScreenComponent: React.FC<LicenseScreenProps> = ({
 
   return (
     <div className="min-h-screen overflow-y-auto">
-      {/* EULA Modal */}
-      {showEula && (
-        <EulaAgreement
-          onAccept={handleEulaAccept}
-          error={error}
-          isLoading={isActivating}
-          onDecline={handleEulaDecline}
-        />
-      )}
 
       {showDownloadInstructions && (
         <DownloadInstructions
@@ -927,24 +1008,24 @@ const LicenseScreenComponent: React.FC<LicenseScreenProps> = ({
               />
             </div>
             <h1 className="text-3xl font-bold text-white mb-2">
-              Local Password Vault
+              {isLLV ? "Local Legacy Vault" : "Local Password Vault"}
             </h1>
-            <p className="text-slate-400">Local Offline Password Management</p>
+            <p className="text-slate-400">{isLLV ? "Legacy Document & Information Management" : "Local Offline Password Management"}</p>
             <p className="text-xs text-slate-500 mt-2">
               by{" "}
               <button
                 onClick={(e) => {
                   e.preventDefault();
-                  const url = "https://localpasswordvault.com";
+                  const url = isLLV ? "https://locallegacyvault.com" : "https://localpasswordvault.com";
                   if (window.electronAPI) {
                     window.electronAPI.openExternal(url);
                   } else {
-                    window.open("https://localpasswordvault.com", "_blank");
+                    window.open(url, "_blank");
                   }
                 }}
                 className="text-xs text-slate-400 hover:underline cursor-pointer"
               >
-                LocalPasswordVault.com
+                {isLLV ? "LocalLegacyVault.com" : "LocalPasswordVault.com"}
               </button>
             </p>
             
@@ -984,9 +1065,16 @@ const LicenseScreenComponent: React.FC<LicenseScreenProps> = ({
           </div>
 
           {/* Trial Expiration Banner - Show based on localStorage trial data */}
-          {localStorageTrialInfo.hasTrialBeenUsed && (
+          {localStorageTrialInfo?.hasTrialBeenUsed && (
             <TrialExpirationBanner
-              trialInfo={localStorageTrialInfo}
+              trialInfo={{
+                hasTrialBeenUsed: localStorageTrialInfo.hasTrialBeenUsed || false,
+                isExpired: localStorageTrialInfo.isExpired || false,
+                isTrialActive: localStorageTrialInfo.isTrialActive || false,
+                daysRemaining: localStorageTrialInfo.daysRemaining || 0,
+                startDate: localStorageTrialInfo.startDate || null,
+                endDate: localStorageTrialInfo.endDate || null,
+              }}
               onApplyLicenseKey={handleApplyLicenseKey}
               showLicenseInput={showLicenseInput}
             />
@@ -1233,9 +1321,13 @@ const LicenseScreenComponent: React.FC<LicenseScreenProps> = ({
 
               <div className="grid md:grid-cols-2 gap-4 max-w-4xl mx-auto">
                 {/* Personal Vault */}
-                <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-6 hover:border-blue-500/50 transition-all">
+                <div className={`bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-6 transition-all ${
+                  isLLV ? "hover:border-amber-500/50" : "hover:border-blue-500/50"
+                }`}>
                   <div className="text-center mb-6">
-                    <Shield className="w-12 h-12 text-blue-400 mx-auto mb-4" />
+                    <Shield className={`w-12 h-12 mx-auto mb-4 ${
+                      isLLV ? "text-amber-400" : "text-blue-400"
+                    }`} />
                     <h3 className="text-xl font-semibold text-white mb-2">
                       Personal Vault
                     </h3>
@@ -1381,12 +1473,5 @@ const LicenseScreenComponent: React.FC<LicenseScreenProps> = ({
   );
 };
 
-// Memoize component to prevent unnecessary re-renders
-export const LicenseScreen = React.memo(LicenseScreenComponent, (prevProps, nextProps) => {
-  // Only re-render if appStatus changes or showPricingPlans changes
-  return (
-    prevProps.appStatus?.isLicensed === nextProps.appStatus?.isLicensed &&
-    prevProps.appStatus?.trialStatus === nextProps.appStatus?.trialStatus &&
-    prevProps.showPricingPlans === nextProps.showPricingPlans
-  );
-});
+// Export component directly (memoization can cause issues with state)
+export const LicenseScreen = LicenseScreenComponent;

@@ -303,7 +303,7 @@ function App() {
   }
 
   const { isElectron, isVaultUnlocked, saveSharedEntries, loadSharedEntries, broadcastEntriesChanged } = useElectron();
-  const { appStatus, updateAppStatus, checkStatusImmediately } = useAppStatus();
+  const { appStatus, updateAppStatus, checkStatusImmediately, isLoading } = useAppStatus();
 
   const [isLocked, setIsLocked] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");

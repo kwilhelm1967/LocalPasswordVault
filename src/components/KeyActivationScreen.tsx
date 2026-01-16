@@ -15,6 +15,7 @@ interface KeyActivationScreenProps {
   isActivating: boolean;
   error: string | null;
   onNeedHelp?: () => void;
+  isLLV?: boolean;
 }
 
 export const KeyActivationScreen: React.FC<KeyActivationScreenProps> = ({
@@ -23,6 +24,7 @@ export const KeyActivationScreen: React.FC<KeyActivationScreenProps> = ({
   isActivating,
   error,
   onNeedHelp,
+  isLLV = false,
 }) => {
   const [licenseKey, setLicenseKey] = useState("");
 
@@ -65,10 +67,12 @@ export const KeyActivationScreen: React.FC<KeyActivationScreenProps> = ({
               <Key className="w-8 h-8 text-white" strokeWidth={1.5} />
             </div>
             <h2 className="text-2xl font-bold tracking-tight mb-2" style={{ color: colors.warmIvory }}>
-              Enter Your Lifetime Key
+              {isLLV ? "Enter Your Legacy Vault License Key" : "Enter Your Lifetime Key"}
             </h2>
             <p className="text-slate-400 text-sm">
-              Your license key was provided in your purchase confirmation email
+              {isLLV 
+                ? "Your license key was provided in your purchase confirmation email for Local Legacy Vault"
+                : "Your license key was provided in your purchase confirmation email"}
             </p>
           </div>
 
@@ -118,7 +122,7 @@ export const KeyActivationScreen: React.FC<KeyActivationScreenProps> = ({
                   <span>Activating...</span>
                 </>
               ) : (
-                <span>Activate Lifetime Access</span>
+                <span>{isLLV ? "Activate Legacy Vault License" : "Activate Lifetime Access"}</span>
               )}
             </button>
 
@@ -149,7 +153,7 @@ export const KeyActivationScreen: React.FC<KeyActivationScreenProps> = ({
             <div className="flex items-start gap-3 text-slate-500 text-xs">
               <HelpCircle className="w-4 h-4 flex-shrink-0 mt-0.5" strokeWidth={1.5} />
               <p>
-                Can't find your key? Check your email from Local Password Vault or contact support at support@localpasswordvault.com
+                Can't find your key? Check your email from {isLLV ? "Local Legacy Vault" : "Local Password Vault"} or contact support at {isLLV ? "support@locallegacyvault.com" : "support@localpasswordvault.com"}
               </p>
             </div>
           </div>
