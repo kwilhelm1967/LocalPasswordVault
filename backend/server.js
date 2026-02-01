@@ -45,6 +45,7 @@ if (Sentry && Sentry.Handlers && Sentry.Handlers.requestHandler) {
 app.use(helmet());
 
 const allowedOrigins = [
+  'https://api.localpasswordvault.com',
   'https://localpasswordvault.com',
   'https://www.localpasswordvault.com',
   'https://locallegacyvault.com',
@@ -70,7 +71,7 @@ const corsOptions = {
       callback(new Error('Not allowed by CORS'));
     }
   },
-  methods: ['GET', 'POST'],
+  methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: false,
 };
