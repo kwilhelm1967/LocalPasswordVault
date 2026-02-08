@@ -64,7 +64,7 @@ Website: https://LocalPasswordVault.com
 
 ================================================================================
 
-© 2025 Local Password Vault | https://LocalPasswordVault.com
+© 2026 Local Password Vault | https://LocalPasswordVault.com
 
 ================================================================================
 

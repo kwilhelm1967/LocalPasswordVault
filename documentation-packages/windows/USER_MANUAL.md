@@ -1,6 +1,6 @@
 # Local Password Vault - User Manual
 
-**Version 1.2.0** | © 2025 Local Password Vault
+**Version 1.2.0** | © 2026 Local Password Vault
 
 ---
 
@@ -192,6 +192,22 @@ Generate authenticator codes:
 3. Enter your TOTP secret
 4. View current code
 5. Codes refresh every 30 seconds
+
+### Mobile Access (View on Phone/Tablet)
+
+View your passwords on your phone or tablet using a QR code:
+
+1. **Unlock** your vault on your computer
+2. Go to **Settings** → **Mobile Access**
+3. Click **Create Token**
+4. Choose **duration** (1 hour to 7 days)
+5. Choose **View Only** (recommended) or Full Access
+6. **Scan the QR code** with your phone camera
+7. **View passwords** on your mobile device (read-only)
+8. Token **auto-expires** for security
+9. **Revoke** anytime from Settings if needed
+
+**Note:** Mobile access is view-only by default. You cannot add or edit entries on your phone.
 
 ---
 
@@ -421,6 +437,6 @@ A: Yes. Go to Settings → Export to create a backup.
 
 ---
 
-**© 2025 Local Password Vault. All rights reserved.**
+**© 2026 Local Password Vault. All rights reserved.**
 
 *Your passwords. Your device. Your control.*

@@ -286,29 +286,6 @@ const useEntryManagement = (
 };
 
 function App() {
-  // Detect app type: Legacy Vault (port 5174) vs Password Vault (port 5173)
-  const getAppType = (): boolean => {
-    if (typeof window !== 'undefined') {
-      const port = window.location.port || '';
-      if (port === '5174') {
-        return true; // Legacy Vault
-      }
-      if (port === '5173') {
-        return false; // Password Vault
-      }
-    }
-    // Fallback: Check Vite environment variables
-    const viteAppType = import.meta.env.VITE_APP_TYPE;
-    const viteMode = import.meta.env.MODE;
-    if (viteAppType === 'llv' || viteMode === 'llv') {
-      return true; // Legacy Vault
-    }
-    // Default: Password Vault
-    return false;
-  };
-  
-  const isLLV = getAppType();
-
   const urlParams = new URLSearchParams(window.location.search);
   const pathname = window.location.pathname;
   const hasSessionId = urlParams.get('session_id');

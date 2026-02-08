@@ -506,7 +506,7 @@ router.post('/trial/activate', async (req, res) => {
       });
     }
     
-    // Detect product type from trial key prefix (LLVT = LLV, LPVT = LPV)
+    // LPV only
     // Also check trial.product_type if available in database, otherwise detect from key
     let detectedProductType = 'lpv';
     if (trial.product_type) {
@@ -514,7 +514,7 @@ router.post('/trial/activate', async (req, res) => {
     } else {
       // Detect from key prefix
       const keyPrefix = normalizedKey.toUpperCase().slice(0, 4);
-      detectedProductType = keyPrefix === 'LLVT' ? 'llv' : 'lpv';
+      detectedProductType = 'lpv';
     }
     
     // Override with explicit product_type from request if provided

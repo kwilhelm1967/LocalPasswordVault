@@ -42,8 +42,6 @@ STRIPE_SECRET_KEY=[your-stripe-secret-key]
 STRIPE_WEBHOOK_SECRET=[your-webhook-secret]
 STRIPE_PRICE_PERSONAL=[price_id_for_personal]
 STRIPE_PRICE_FAMILY=[price_id_for_family]
-STRIPE_PRICE_LLV_PERSONAL=[price_id_for_llv_personal]
-STRIPE_PRICE_LLV_FAMILY=[price_id_for_llv_family]
 
 # Brevo (Transactional API - Recommended)
 # Get API key from: Brevo → Settings → SMTP & API → API Keys
@@ -109,21 +107,10 @@ backend/
 | Plan | Price | Devices |
 |------|-------|---------|
 | Free Trial | $0 | 1 (7 days) |
-| Personal Vault (LPV) | $49 | 1 (lifetime) |
-| Family Vault (LPV) | $79 | 5 (lifetime) |
-| Local Legacy Vault - Personal (LLV) | $49 | 1 (lifetime) |
-| Local Legacy Vault - Family (LLV) | $129 | 5 (lifetime) |
+| Personal Vault | $49 | 1 (lifetime) |
+| Family Vault | $79 | 5 (lifetime) |
 
-### Bundle Options (All bundles receive 13.94% discount)
-
-| Bundle | Products Included | Regular Price | Bundle Price | Savings |
-|--------|------------------|---------------|--------------|---------|
-| **Personal Bundle** | LPV Personal + LLV Personal | $98 | **$84** | $14 |
-| **Family Protection Bundle** | LPV Family + LLV Family | $208 | **$179** | $29 |
-| **Mixed Bundle** | LPV Personal + LLV Family | $178 | **$153** | $25 |
-| **Mixed Bundle** | LPV Family + LLV Personal | $128 | **$110** | $18 |
-
-*All bundles automatically receive a 13.94% discount when purchasing multiple products together.*
+LPV-only. Bundles (e.g. personal + family) receive discount via `/api/checkout/bundle`.
 
 ## Support
 

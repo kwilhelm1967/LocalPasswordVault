@@ -184,7 +184,7 @@ router.post('/licenses/resend-email', async (req, res) => {
         const licenses = allLicenses.map(l => ({
           keys: [l.license_key],
           planType: l.plan_type,
-          productName: `${l.product_type === 'lpv' ? 'Local Password Vault' : 'Local Legacy Vault'} ${l.plan_type === 'personal' ? 'Personal' : 'Family'}`,
+          productName: `Local Password Vault ${l.plan_type === 'personal' ? 'Personal' : 'Family'}`,
           amount: l.amount_paid,
           maxDevices: l.max_devices,
         }));

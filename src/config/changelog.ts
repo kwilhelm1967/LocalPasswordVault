@@ -19,7 +19,7 @@ export const APP_VERSION = '1.2.0';
 export const changelog: ChangelogEntry[] = [
   {
     version: '1.2.0',
-    date: 'December 2025',
+    date: 'December 2026',
     highlights: [
       'Password Age Alerts',
       'Enhanced Accessibility',
@@ -44,7 +44,7 @@ export const changelog: ChangelogEntry[] = [
   },
   {
     version: '1.1.0',
-    date: 'November 2025',
+    date: 'November 2026',
     highlights: [
       '2FA/TOTP Support',
       'Custom Fields',
@@ -65,7 +65,7 @@ export const changelog: ChangelogEntry[] = [
   },
   {
     version: '1.0.0',
-    date: 'October 2025',
+    date: 'October 2026',
     highlights: [
       'Initial Release',
       'AES-256 Encryption',

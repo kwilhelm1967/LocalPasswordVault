@@ -424,7 +424,7 @@ const createWindow = () => {
 };
 
 // Open Admin Portal (overlay in main window). Shortcut: Ctrl+Shift+A / Cmd+Shift+A
-// Same pattern as Local Legacy Vault — sends IPC to renderer to show React AdminPortal overlay.
+// Sends IPC to renderer to show React AdminPortal overlay.
 const openAdminPortal = () => {
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.webContents.send("open-admin-portal");
@@ -1170,8 +1170,6 @@ app.whenReady().then(() => {
       'server.localpasswordvault.com',
       'localpasswordvault.com',
       'www.localpasswordvault.com',
-      'locallegacyvault.com',
-      'www.locallegacyvault.com',
     ];
     
     const isTrustedDomain = trustedDomains.some(domain => 
@@ -1226,10 +1224,7 @@ app.whenReady().then(() => {
         'server.localpasswordvault.com',
         'localpasswordvault.com',
         'www.localpasswordvault.com',
-        'locallegacyvault.com',
-        'www.locallegacyvault.com',
       ];
-      
       const isTrusted = url.startsWith('file://') || 
                        url.startsWith('http://localhost:') ||
                        trustedDomains.some(domain => url.includes(domain));
@@ -1253,13 +1248,10 @@ app.whenReady().then(() => {
       const trustedDomains = [
         'api.localpasswordvault.com',
         'server.localpasswordvault.com',
-        'localpasswordvault.com',
-        'www.localpasswordvault.com',
-        'locallegacyvault.com',
-        'www.locallegacyvault.com',
-      ];
-      
-      return url.startsWith('file://') || 
+      'localpasswordvault.com',
+      'www.localpasswordvault.com',
+    ];
+      return url.startsWith('file://') ||
              url.startsWith('http://localhost:') ||
              trustedDomains.some(domain => url.includes(domain));
     }
@@ -1276,10 +1268,7 @@ app.whenReady().then(() => {
       'server.localpasswordvault.com',
       'localpasswordvault.com',
       'www.localpasswordvault.com',
-      'locallegacyvault.com',
-      'www.locallegacyvault.com',
     ];
-    
     // Only allow downloads from trusted sources
     const isTrusted = url.startsWith('file://') || 
                      url.startsWith('http://localhost:') ||
@@ -1314,16 +1303,12 @@ app.whenReady().then(() => {
   session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
     const responseHeaders = { ...details.responseHeaders };
     
-    // Trusted license server domains
     const trustedDomains = [
       'api.localpasswordvault.com',
       'server.localpasswordvault.com',
       'localpasswordvault.com',
       'www.localpasswordvault.com',
-      'locallegacyvault.com',
-      'www.locallegacyvault.com',
     ];
-    
     const isTrustedDomain = trustedDomains.some(domain => details.url.includes(domain));
     const isLocalhost = details.url.startsWith('http://localhost:');
     const isLocalFile = details.url.startsWith('file://');
@@ -1336,7 +1321,7 @@ app.whenReady().then(() => {
         "style-src 'self' 'unsafe-inline'; " +  // CSS needs inline for React styling
         "font-src 'self' data:; " +
         "img-src 'self' data: blob:; " +
-        "connect-src 'self' https://api.localpasswordvault.com https://server.localpasswordvault.com https://localpasswordvault.com https://www.localpasswordvault.com https://locallegacyvault.com https://www.locallegacyvault.com; " +  // Whitelist specific license server domains
+        "connect-src 'self' https://api.localpasswordvault.com https://server.localpasswordvault.com https://localpasswordvault.com https://www.localpasswordvault.com; "
         "frame-ancestors 'none'; " +
         "form-action 'self'; " +
         "base-uri 'self';"

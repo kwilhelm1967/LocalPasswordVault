@@ -87,10 +87,6 @@
       {
         "target": "nsis",
         "arch": ["x64"]
-      },
-      {
-        "target": "portable",
-        "arch": ["x64"]
       }
     ],
     "icon": "assets/icons/icon.ico",
@@ -113,10 +109,6 @@
     "differentialPackage": true,
     "license": "docs/TERMS_OF_SERVICE.md",
     "warningsAsErrors": false
-  },
-  
-  "portable": {
-    "artifactName": "${productName}-${version}-Portable-${arch}.exe"
   },
   
   "linux": {

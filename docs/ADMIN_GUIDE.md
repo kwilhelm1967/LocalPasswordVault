@@ -1,6 +1,6 @@
-# Administrator Guide: Local Password Vault & Local Legacy Vault
+# Administrator Guide: Local Password Vault (LPV)
 
-Complete guide for managing users, licenses, and administrative tasks for both LPV (Local Password Vault) and LLV (Local Legacy Vault).
+Guide for managing users, licenses, and administrative tasks for Local Password Vault.
 
 ---
 
@@ -22,19 +22,11 @@ Complete guide for managing users, licenses, and administrative tasks for both L
 ### Local Password Vault (LPV)
 - **Personal Plan**: $49 - 1 device, lifetime license
 - **Family Plan**: $79 - 5 devices (5 separate keys), lifetime license
-- Modern password management solution
-
-### Local Legacy Vault (LLV)
-- **Personal Plan**: $49 - 1 device, lifetime license
-- **Family Plan**: $129 - 5 devices (5 separate keys), lifetime license
-- Legacy-compatible password management solution
 
 ### License Key Formats
-- **Personal LPV**: `PERS-XXXX-XXXX-XXXX` (e.g., `PERS-A3B5-C7D9-E2F4`)
-- **Family LPV**: `FMLY-XXXX-XXXX-XXXX` (e.g., `FMLY-X9Y2-Z4W8-K6M3`)
-- **Personal LLV**: `LLVP-XXXX-XXXX-XXXX` (e.g., `LLVP-R5T8-N3P7-Q9S2`)
-- **Family LLV**: `LLVF-XXXX-XXXX-XXXX` (e.g., `LLVF-H4J7-K2L9-M6N8`)
-- **Trial Keys**: `TRIA-XXXX-XXXX-XXXX` (7-day free trial, LPV only)
+- **Personal**: `PERS-XXXX-XXXX-XXXX` (e.g., `PERS-A3B5-C7D9-E2F4`)
+- **Family**: `FMLY-XXXX-XXXX-XXXX` (e.g., `FMLY-X9Y2-Z4W8-K6M3`)
+- **Trial**: `LPVT-XXXX-XXXX-XXXX` or `TRIA-XXXX-XXXX-XXXX` (7-day free trial)
 
 ---
 
@@ -129,18 +121,13 @@ License keys are automatically generated when customers complete checkout throug
 License keys follow specific formats:
 - LPV Personal: `PERS-XXXX-XXXX-XXXX`
 - LPV Family: `FMLY-XXXX-XXXX-XXXX`
-- LLV Personal: `LLVP-XXXX-XXXX-XXXX`
-- LLV Family: `LLVF-XXXX-XXXX-XXXX`
-
 **You can generate keys using Node.js:**
 ```bash
 cd backend
 node -e "
-const { generatePersonalKey, generateFamilyKey, generateLLVPersonalKey, generateLLVFamilyKey } = require('./services/licenseGenerator');
-console.log('LPV Personal:', generatePersonalKey());
-console.log('LPV Family:', generateFamilyKey());
-console.log('LLV Personal:', generateLLVPersonalKey());
-console.log('LLV Family:', generateLLVFamilyKey());
+const { generatePersonalKey, generateFamilyKey } = require('./services/licenseGenerator');
+console.log('Personal:', generatePersonalKey());
+console.log('Family:', generateFamilyKey());
 "
 ```
 
@@ -155,8 +142,8 @@ console.log('LLV Family:', generateLLVFamilyKey());
 | Field | Value | Notes |
 |-------|-------|-------|
 | `license_key` | `PERS-A3B5-C7D9-E2F4` | Your generated key |
-| `plan_type` | `personal` or `family` or `llv_personal` or `llv_family` | Must match key prefix |
-| `product_type` | `lpv` or `llv` | Product identifier |
+| `plan_type` | `personal` or `family` | Must match key prefix |
+| `product_type` | `lpv` | Product identifier |
 | `email` | `friend@example.com` | Recipient email |
 | `customer_id` | (null or customer ID) | Optional, link to customer record |
 | `amount_paid` | `4900` | Amount in cents ($49 = 4900, $79 = 7900, $129 = 12900) |
@@ -323,7 +310,7 @@ ORDER BY created_at;
 |--------|------|-------------|
 | `id` | SERIAL | Primary key |
 | `license_key` | TEXT | Unique license key (e.g., PERS-A3B5-C7D9-E2F4) |
-| `plan_type` | TEXT | `personal`, `family`, `llv_personal`, `llv_family` |
+| `plan_type` | TEXT | `personal`, `family` |
 | `product_type` | TEXT | `lpv` or `llv` |
 | `customer_id` | INTEGER | Reference to customers table |
 | `email` | TEXT | Customer email |
@@ -431,7 +418,7 @@ SELECT
   l.max_devices
 FROM licenses l
 LEFT JOIN device_activations da ON l.id = da.license_id AND da.is_active = true
-WHERE l.plan_type IN ('family', 'llv_family')
+WHERE l.plan_type = 'family'
 GROUP BY l.id, l.license_key, l.email, l.plan_type, l.max_devices;
 ```
 
@@ -455,9 +442,6 @@ FROM trials;
 1. **Determine the product and plan:**
    - LPV Personal ($49) → `plan_type: 'personal'`, `product_type: 'lpv'`
    - LPV Family ($79) → `plan_type: 'family'`, `product_type: 'lpv'` (create 5 keys)
-   - LLV Personal ($49) → `plan_type: 'llv_personal'`, `product_type: 'llv'`
-   - LLV Family ($129) → `plan_type: 'llv_family'`, `product_type: 'llv'` (create 5 keys)
-
 2. **Generate license keys:**
    - Use the Node.js script (see [Creating License Keys](#creating-license-keys))
    - Or manually create keys following the format
@@ -657,7 +641,7 @@ UPDATE support_tickets
 SET status = 'resolved',
     resolved_at = NOW(),
     updated_at = NOW()
-WHERE ticket_number = 'TKT-2025-001234';
+WHERE ticket_number = 'TKT-2026-001234';
 ```
 
 ---
@@ -691,6 +675,6 @@ WHERE ticket_number = 'TKT-2025-001234';
 
 ---
 
-**Last Updated:** 2025-01-XX
+**Last Updated:** 2026-01-XX
 **Version:** 1.0
 

@@ -154,7 +154,7 @@ Vault regarding the Software and supersedes all prior agreements.
 By installing Local Password Vault, you acknowledge that you have read this 
 Agreement, understand it, and agree to be bound by its terms.
 
-© 2025 Local Password Vault | https://LocalPasswordVault.com
+© 2026 Local Password Vault | https://LocalPasswordVault.com
 
 ================================================================================
 

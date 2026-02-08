@@ -30,6 +30,8 @@ dist-ssr
 .env.prod
 .env.development
 .env.production
+.env.llv
+.env.lpv
 
 # Build files
 release/

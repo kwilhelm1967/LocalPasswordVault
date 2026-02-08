@@ -51,22 +51,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
   
   // Detect app type to show correct product name
   useEffect(() => {
-    const detectAppType = async () => {
-      try {
-        if (typeof window !== 'undefined' && window.electronAPI?.getAppName) {
-          const appName = await window.electronAPI.getAppName();
-          if (appName?.toLowerCase().includes('legacy')) {
-            setProductName('Local Legacy Vault');
-          } else {
-            setProductName('Local Password Vault');
-          }
-        }
-      } catch (error) {
-        // Default to Local Password Vault if detection fails
-        setProductName('Local Password Vault');
-      }
-    };
-    detectAppType();
+    setProductName('Local Password Vault');
   }, []);
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);

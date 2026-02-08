@@ -93,31 +93,13 @@ WEBSITE_URL=https://localpasswordvault.com
 | Personal Vault | $49.00 | One-time | `STRIPE_PRICE_PERSONAL` |
 | Family Vault | $79.00 | One-time | `STRIPE_PRICE_FAMILY` |
 
-### Local Legacy Vault (LLV)
-| Product | Price | Type | Price ID Variable |
-|---------|-------|------|-------------------|
-| Personal | $49.00 | One-time | `STRIPE_PRICE_LLV_PERSONAL` |
-| Family | $129.00 | One-time | `STRIPE_PRICE_LLV_FAMILY` |
-
 3. Copy each Price ID and add to `.env`:
 ```env
 STRIPE_PRICE_PERSONAL=price_xxxxx
 STRIPE_PRICE_FAMILY=price_xxxxx
-STRIPE_PRICE_LLV_PERSONAL=price_xxxxx
-STRIPE_PRICE_LLV_FAMILY=price_xxxxx
 ```
 
-**Bundle Support:**
-- The backend automatically applies a **13.94% discount** to all bundle purchases
-- Use `POST /api/checkout/bundle` endpoint with multiple products
-
-**Available Bundle Options:**
-1. **Personal Bundle**: LPV Personal ($49) + LLV Personal ($49) = $98 → **$84** (save $14)
-2. **Family Protection Bundle**: LPV Family ($79) + LLV Family ($129) = $208 → **$179** (save $29)
-3. **Mixed Bundle**: LPV Personal ($49) + LLV Family ($129) = $178 → **$153** (save $25)
-4. **Mixed Bundle**: LPV Family ($79) + LLV Personal ($49) = $128 → **$110** (save $18)
-
-All bundles receive the same percentage discount (13.94%) for consistency.
+**Bundle Support:** Use `POST /api/checkout/bundle` with LPV products only (e.g. personal + family). Discount applies to multi-product LPV bundles.
 
 ---
 
@@ -262,7 +244,7 @@ Response:
 {
   "success": true,
   "message": "Trial key sent to your email",
-  "expiresAt": "2025-12-09T00:00:00.000Z"
+  "expiresAt": "2026-12-09T00:00:00.000Z"
 }
 ```
 
@@ -296,6 +278,7 @@ Response:
 | Webhook failing | Check `STRIPE_WEBHOOK_SECRET` matches Stripe Dashboard |
 | 502 Bad Gateway | Run `pm2 status` to check if server is running |
 | SSL error | Run `certbot renew` |
+| **NET::ERR_CERT_COMMON_NAME_INVALID** | Certificate doesn't match domain. See `docs/SSL_CERTIFICATE_FIX.md` |
 | Database error | Verify Supabase credentials and schema is run in Supabase SQL Editor |
 
 ---

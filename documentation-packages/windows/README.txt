@@ -1,4 +1,4 @@
-﻿Local Password Vault - Documentation Package
+Local Password Vault - Documentation Package
 ============================================
 Version: 1.2.0
 Platform: Windows
@@ -56,4 +56,4 @@ IMPORTANT:
 - All documentation is in Markdown (.md) format
 - You can open .md files with any text editor or Markdown viewer
 
-Â© 2025 Local Password Vault. All rights reserved.
+Â© 2026 Local Password Vault. All rights reserved.

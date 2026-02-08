@@ -13,7 +13,7 @@
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
   
   <style>
     :root {
@@ -121,27 +121,26 @@
     .logo-icon {
       width: 44px;
       height: 44px;
-      background: transparent;
+      background: var(--bg-dark);
       border-radius: 10px;
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: none;
+      box-shadow: 0 4px 12px var(--cyan-glow), inset 0 0 0 1px var(--cyan-dark);
       position: relative;
     }
 
     .logo-icon svg {
-      width: 28px;
-      height: 28px;
+      width: 24px;
+      height: 24px;
       stroke: var(--cyan);
       fill: none;
-      stroke-width: 2.5;
-      filter: drop-shadow(0 0 2px rgba(6, 182, 212, 0.5));
+      stroke-width: 2;
     }
 
     .logo-text {
-      font-family: 'Poppins', sans-serif;
-      font-size: 1.2rem;
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.15rem;
       font-weight: 600;
       color: var(--text-primary);
     }
@@ -175,75 +174,6 @@
     .nav-cta:hover {
       transform: translateY(-2px);
       box-shadow: 0 8px 20px var(--cyan-glow);
-    }
-
-    /* Mobile Menu Toggle Button */
-    .menu-toggle {
-      display: none;
-      background: none;
-      border: none;
-      cursor: pointer;
-      padding: 8px;
-      color: var(--text-primary);
-      z-index: 1001;
-      position: relative;
-    }
-
-    .menu-toggle svg {
-      width: 24px;
-      height: 24px;
-      stroke: currentColor;
-      stroke-width: 2.5;
-    }
-
-    /* Mobile Dropdown Menu */
-    .mobile-menu {
-      display: none;
-      position: fixed;
-      top: 60px;
-      left: 0;
-      right: 0;
-      background: rgba(6, 9, 18, 0.98);
-      backdrop-filter: blur(20px);
-      border-bottom: 1px solid var(--border-subtle);
-      padding: 1rem 0;
-      z-index: 999;
-      max-height: 0;
-      overflow: hidden;
-      transition: max-height 0.3s ease, opacity 0.3s ease;
-      opacity: 0;
-    }
-
-    .mobile-menu.active {
-      display: block;
-      max-height: 500px;
-      opacity: 1;
-    }
-
-    .mobile-menu a {
-      display: block;
-      padding: 1rem 2rem;
-      color: var(--text-secondary);
-      text-decoration: none;
-      font-size: 1rem;
-      font-weight: 500;
-      border-bottom: 1px solid var(--border-subtle);
-      transition: color 0.2s ease, background 0.2s ease;
-    }
-
-    .mobile-menu a:hover,
-    .mobile-menu a.active {
-      color: var(--cyan);
-      background: rgba(6, 182, 212, 0.1);
-    }
-
-    .mobile-menu .nav-cta {
-      background: var(--gradient-cyan) !important;
-      color: var(--bg-darker) !important;
-      margin: 1rem 2rem;
-      border-radius: 8px;
-      text-align: center;
-      border: none;
     }
 
     /* Hero Section */
@@ -347,29 +277,6 @@
       font-size: 14px;
       color: var(--text-muted);
       margin-bottom: 32px;
-    }
-    
-    @media (max-width: 1024px) {
-      .hero-platforms {
-        font-size: 15px;
-        color: var(--text-secondary);
-        font-weight: 500;
-        margin-bottom: 28px;
-      }
-    }
-    
-    @media (max-width: 768px) {
-      .hero-platforms {
-        font-size: 15px;
-        color: var(--cyan);
-        font-weight: 600;
-        margin-bottom: 24px;
-        padding: 12px 20px;
-        background: rgba(6, 182, 212, 0.1);
-        border: 1px solid rgba(6, 182, 212, 0.2);
-        border-radius: 8px;
-        display: inline-block;
-      }
     }
 
     .hero-buttons {
@@ -855,6 +762,8 @@
     }
 
     .why-icon {
+      width: 56px;
+      height: 56px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -862,10 +771,9 @@
     }
 
     .why-icon svg {
-      width: 32px;
-      height: 32px;
+      width: 28px;
+      height: 28px;
       stroke: var(--cyan);
-      stroke-width: 2.5;
     }
 
     .why-card h3 {
@@ -1270,19 +1178,15 @@
     }
 
     .pricing-name {
-      font-size: 1.1rem;
+      font-size: 1.25rem;
       font-weight: 600;
-      margin-bottom: 0.25rem;
-      line-height: 1.3;
-      text-align: center;
+      margin-bottom: 8px;
     }
 
     .pricing-desc {
-      color: var(--text-secondary);
-      font-size: 0.8rem;
-      margin-bottom: 0.75rem;
-      line-height: 1.4;
-      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      margin-bottom: 20px;
     }
 
     .pricing-price {
@@ -1292,11 +1196,10 @@
     }
 
     .pricing-price .currency {
-      font-size: 0.5em;
+      font-size: 1.75rem;
       color: var(--cyan);
-      vertical-align: super;
+      vertical-align: top;
       font-weight: 600;
-      margin-right: 0.5em;
     }
 
     .pricing-price .amount {
@@ -1312,22 +1215,6 @@
       margin-bottom: 24px;
     }
 
-    /* Inline price styling for text mentions */
-    .inline-price {
-      display: inline;
-    }
-
-    .inline-price .currency {
-      font-size: 0.9em;
-      vertical-align: top;
-      font-weight: 600;
-      color: var(--cyan);
-    }
-
-    .inline-price .amount {
-      font-weight: 700;
-    }
-
     .pricing-features {
       list-style: none;
       margin-bottom: 32px;
@@ -1337,15 +1224,10 @@
     .pricing-features li {
       display: flex;
       align-items: flex-start;
-      gap: 0.5rem;
-      margin-bottom: 0.5rem;
+      gap: 10px;
+      padding: 10px 0;
       color: var(--text-secondary);
-      font-size: 0.8rem;
-      line-height: 1.4;
-    }
-    
-    .pricing-features li:last-child {
-      margin-bottom: 0;
+      font-size: 0.9rem;
     }
 
     .pricing-features li svg {
@@ -1353,23 +1235,19 @@
       height: 18px;
       stroke: var(--green);
       flex-shrink: 0;
-      text-align: center;
       margin-top: 2px;
     }
 
     .pricing-cta {
       display: block;
       width: 100%;
-      padding: 10px 16px;
+      padding: 16px;
       text-align: center;
-      border-radius: 8px;
+      border-radius: 10px;
       font-weight: 600;
-      font-size: 0.85rem;
       text-decoration: none;
-      transition: transform 0.2s, box-shadow 0.2s;
-      margin-top: 1rem;
-      line-height: 1.4;
-      border: none;
+      transition: all 0.3s ease;
+      margin-top: auto;
     }
 
     .pricing-cta.primary {
@@ -1416,192 +1294,6 @@
       color: var(--text-secondary);
       font-size: 1.1rem;
       margin-bottom: 32px;
-    }
-
-    /* Strategic Legacy Awareness Section - PROMINENT */
-    .legacy-awareness {
-      padding: 120px 2rem;
-      background: linear-gradient(135deg, rgba(201, 162, 78, 0.08) 0%, rgba(6, 182, 212, 0.05) 100%);
-      border-top: 2px solid rgba(201, 162, 78, 0.3);
-      border-bottom: 2px solid rgba(201, 162, 78, 0.3);
-      position: relative;
-      overflow: hidden;
-    }
-
-    .legacy-awareness::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 4px;
-      background: linear-gradient(90deg, transparent, #c9a24e, transparent);
-    }
-
-    .legacy-awareness-container {
-      max-width: 1300px;
-      margin: 0 auto;
-      display: grid;
-      grid-template-columns: 1fr 1.2fr;
-      gap: 120px;
-      align-items: center;
-    }
-
-    .legacy-visual {
-      position: relative;
-      overflow: visible;
-      border-radius: 20px;
-      padding: 20px;
-      background: rgba(0, 0, 0, 0.2);
-    }
-
-    .legacy-visual img {
-      width: 100%;
-      display: block;
-      border-radius: 16px;
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
-    }
-
-    .legacy-badge {
-      position: absolute;
-      top: 0px;
-      right: 0px;
-      background: linear-gradient(135deg, #c9a24e 0%, #7a5d2a 100%);
-      color: #0f1218;
-      padding: 10px 20px;
-      border-radius: 100px;
-      font-size: 0.7rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.8px;
-      white-space: nowrap;
-      box-shadow: 0 4px 12px rgba(201, 162, 78, 0.4);
-      z-index: 10;
-    }
-
-    .legacy-content {
-      padding-left: 20px;
-    }
-
-    .legacy-eyebrow {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 16px;
-      background: rgba(201, 162, 78, 0.15);
-      border: 1px solid rgba(201, 162, 78, 0.3);
-      border-radius: 100px;
-      font-size: 0.85rem;
-      font-weight: 600;
-      color: #c9a24e;
-      margin-bottom: 56px;
-    }
-
-    .legacy-awareness h2 {
-      font-family: 'Space Grotesk', sans-serif;
-      font-size: clamp(1.75rem, 3vw, 2.5rem);
-      font-weight: 700;
-      margin-bottom: 48px;
-      color: var(--text-primary);
-      line-height: 1.3;
-      letter-spacing: -0.02em;
-    }
-
-    .legacy-awareness p {
-      color: var(--text-secondary);
-      font-size: 1.1rem;
-      line-height: 1.9;
-      margin-bottom: 64px;
-      max-width: 90%;
-    }
-
-    .legacy-features {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 24px 28px;
-      margin-bottom: 72px;
-    }
-
-    .legacy-feature {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 0.95rem;
-      color: var(--text-secondary);
-      padding: 4px 0;
-    }
-
-    .legacy-feature svg {
-      width: 16px;
-      height: 16px;
-      stroke: #c9a24e;
-    }
-
-    .legacy-cta {
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      padding: 18px 36px;
-      background: linear-gradient(135deg, #c9a24e 0%, #7a5d2a 100%);
-      color: #0f1218;
-      text-decoration: none;
-      border-radius: 12px;
-      font-weight: 600;
-      font-size: 1.05rem;
-      transition: all 0.3s ease;
-      box-shadow: 0 8px 24px rgba(201, 162, 78, 0.3);
-      margin-top: 24px;
-    }
-
-    .legacy-cta:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 12px 32px rgba(201, 162, 78, 0.4);
-      gap: 14px;
-    }
-
-    .legacy-tagline {
-      margin-top: 24px;
-      text-align: center;
-      font-size: 1.25rem;
-      font-weight: 500;
-      color: #c9a24e;
-      width: 100%;
-      max-width: 100%;
-      letter-spacing: 0.4px;
-      line-height: 1.6;
-      font-style: italic;
-      text-shadow: 0 2px 10px rgba(201, 162, 78, 0.25);
-      max-width: 100%;
-    }
-
-    @media (max-width: 900px) {
-      .legacy-awareness {
-        padding: 60px 1.5rem;
-      }
-      .legacy-awareness-container {
-        grid-template-columns: 1fr;
-        text-align: center;
-        gap: 50px;
-      }
-      .legacy-content {
-        padding-left: 0;
-      }
-      .legacy-visual { 
-        max-width: 400px; 
-        margin: 0 auto;
-        padding: 15px;
-      }
-      .legacy-features { 
-        justify-content: center;
-        gap: 16px;
-      }
-      .legacy-awareness p {
-        max-width: 100%;
-      }
-      .legacy-tagline {
-        font-size: 1.1rem;
-        margin-top: 24px;
-      }
     }
 
     /* Footer */
@@ -1715,7 +1407,7 @@
       }
       .hero-buttons { 
         justify-content: center;
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
       }
       .stats-layout { grid-template-columns: 1fr; gap: 50px; }
       .stats-content .section-header { text-align: center; }
@@ -1730,55 +1422,17 @@
     }
 
     @media (max-width: 768px) {
-      .nav-links { 
-        display: none !important; 
-      }
-      
-      .menu-toggle {
-        display: block;
-      }
-      
-      .mobile-menu {
-        display: block;
-      }
-      
-      .hero { 
-        padding: 160px 1.5rem 60px; 
-        min-height: auto;
-      }
-      
-      .hero-content { 
-        padding-top: 0; 
-      }
-      
-      .hero h1 {
-        font-size: clamp(2.5rem, 8vw, 3.5rem);
-        line-height: 1.15;
-        margin-bottom: 24px;
-        overflow: visible;
-      }
-      
-      .hero-subtitle {
-        font-size: 1.1rem;
-        line-height: 1.6;
-      }
-      
+      .nav-links { display: none; }
+      .hero { padding: 100px 1.5rem 60px; }
+      .hero-content { padding-top: 0; }
       .hero-buttons {
         flex-wrap: wrap;
         justify-content: center;
-        flex-direction: column;
-        gap: 12px;
-        width: 100%;
       }
-      
       .btn-primary, .btn-secondary {
-        padding: 14px 28px;
-        font-size: 15px;
-        width: 100%;
-        max-width: 300px;
-        justify-content: center;
+        padding: 12px 24px;
+        font-size: 14px;
       }
-      
       .stats-grid { grid-template-columns: 1fr 1fr; }
       .why-grid { grid-template-columns: 1fr; }
       .features-grid { grid-template-columns: 1fr; }
@@ -1808,7 +1462,6 @@
         <a href="security.html">Security</a>
         <a href="pricing.html">Pricing</a>
         <a href="faq.html">FAQs</a>
-        <a href="support.html">Support</a>
         <a href="pricing.html" class="nav-cta">Get Started</a>
       </div>
     </div>
@@ -2231,7 +1884,7 @@
             <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> No credit card required</li>
             <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Keep your data when you upgrade</li>
           </ul>
-          <a href="https://api.localpasswordvault.com/lpv/triallpv.html" class="pricing-cta primary">Start Free Trial</a>
+          <a href="trial.html" class="pricing-cta primary">Start Free Trial</a>
         </div>
         <div class="pricing-card featured animate delay-2">
           <span class="pricing-badge">Most Popular</span>
@@ -2248,7 +1901,7 @@
             <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> All future updates</li>
             <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Local backup/restore</li>
           </ul>
-          <a href="#" class="pricing-cta primary" onclick="purchasePlan('personal', event); return false;">Get Personal Vault</a>
+          <a href="https://buy.stripe.com/YOUR_PERSONAL_VAULT_LINK" class="pricing-cta primary">Get Personal Vault</a>
         </div>
         <div class="pricing-card featured animate delay-3">
           <span class="pricing-badge">Best Value</span>
@@ -2264,7 +1917,7 @@
             <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> 5 separate vaults</li>
             <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> All future updates</li>
           </ul>
-          <a href="#" class="pricing-cta primary" onclick="purchasePlan('family', event); return false;">Get Family Vault</a>
+          <a href="https://buy.stripe.com/YOUR_FAMILY_VAULT_LINK" class="pricing-cta primary">Get Family Vault</a>
         </div>
       </div>
     </div>
@@ -2279,40 +1932,11 @@
     </div>
   </section>
 
-  <!-- Strategic Cross-sell: Legacy Awareness - PROMINENT -->
-  <section class="legacy-awareness">
-    <div class="legacy-awareness-container">
-      <div class="legacy-visual animate">
-        <img src="meeting.jpg?v=2" alt="Protect your family's future" onerror="this.src='meeting.jpg'; this.onerror=null;">
-        <span class="legacy-badge">From the Maker of Local Password Vault</span>
-        <p class="legacy-tagline">Passing what matters across generations</p>
-      </div>
-      <div class="legacy-content animate delay-1">
-        <span class="legacy-eyebrow">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-          For Your Family
-        </span>
-        <h2>What Happens to Your Passwords When You're Gone?</h2>
-        <p>Securing your passwords is step one. Making sure your family can access your accounts, documents, and final wishes when they need them? That's step two.</p>
-        <div class="legacy-features">
-          <span class="legacy-feature"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Document storage</span>
-          <span class="legacy-feature"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Account instructions</span>
-          <span class="legacy-feature"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Final wishes</span>
-          <span class="legacy-feature"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> 100% offline</span>
-        </div>
-        <a href="https://locallegacyvault.com" class="legacy-cta" target="_blank">
-          Explore Legacy Vault
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-        </a>
-      </div>
-    </div>
-  </section>
-
   <!-- Security Resources Teaser -->
   <section class="resources-teaser" style="padding: 50px 2rem; background: var(--bg-dark); border-top: 1px solid var(--border-subtle);">
     <div style="max-width: 900px; margin: 0 auto;">
       <div class="section-header animate" style="margin-bottom: 32px;">
-        <a href="articles.html" class="section-badge" style="text-decoration: none; cursor: pointer;">Learn More</a>
+        <span class="section-badge">Learn More</span>
         <h2>Security Resources</h2>
         <p>Understand the real threats to your passwords and how to protect yourself.</p>
       </div>
@@ -2381,7 +2005,7 @@
         </div>
       </div>
       <div class="footer-bottom">
-        <p class="footer-copyright">© 2026 Local Password Vault. All rights reserved.</p>
+        <p class="footer-copyright">© 2025 Local Password Vault. All rights reserved.</p>
         <div class="footer-legal">
           <span style="color: var(--text-muted); font-size: 0.85rem;">Built with ♥ in Dallas, Texas</span>
         </div>
@@ -2407,110 +2031,6 @@
     document.querySelectorAll('.animate').forEach(el => {
       observer.observe(el);
     });
-  </script>
-  <script>
-    // Mobile menu toggle
-    const menuToggle = document.getElementById('menuToggle');
-    const mobileMenu = document.getElementById('mobileMenu');
-    
-    if (menuToggle && mobileMenu) {
-      menuToggle.addEventListener('click', () => {
-        mobileMenu.classList.toggle('active');
-        // Change icon to X when open
-        const icon = menuToggle.querySelector('svg');
-        if (mobileMenu.classList.contains('active')) {
-          icon.innerHTML = '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>';
-        } else {
-          icon.innerHTML = '<line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/>';
-        }
-      });
-
-      // Close menu when clicking a link
-      mobileMenu.querySelectorAll('a').forEach(link => {
-        link.addEventListener('click', () => {
-          mobileMenu.classList.remove('active');
-          const icon = menuToggle.querySelector('svg');
-          icon.innerHTML = '<line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/>';
-        });
-      });
-
-      // Close menu when clicking outside
-      document.addEventListener('click', (e) => {
-        if (!menuToggle.contains(e.target) && !mobileMenu.contains(e.target)) {
-          mobileMenu.classList.remove('active');
-          const icon = menuToggle.querySelector('svg');
-          icon.innerHTML = '<line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/>';
-        }
-      });
-    }
-
-    // API base URL
-    // Use relative path for same-origin API calls (proxied via Nginx)
-    // No cross-origin calls needed - Nginx handles routing to backend
-
-    async function purchasePlan(planType, event) {
-      event.preventDefault();
-      const button = event.target;
-      const originalText = button.textContent;
-      
-      button.disabled = true;
-      button.textContent = 'Processing...';
-      button.style.opacity = '0.7';
-      button.style.cursor = 'not-allowed';
-
-      const apiUrl = '/api/checkout/session';
-      console.log('[Purchase] Starting checkout:', { planType, apiUrl });
-
-      try {
-        const response = await fetch(apiUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            planType: planType,
-            email: null, // Stripe will collect email during checkout
-          }),
-        });
-
-        console.log('[Purchase] Response status:', response.status, response.statusText);
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({ error: 'Failed to create checkout session' }));
-          console.error('[Purchase] API Error:', {
-            status: response.status,
-            statusText: response.statusText,
-            errorData: errorData,
-            apiUrl: apiUrl
-          });
-          throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
-        }
-
-        const data = await response.json();
-        console.log('[Purchase] Success:', data);
-        
-        if (data.success && data.url) {
-          window.location.href = data.url;
-        } else {
-          throw new Error(data.error || 'Failed to create checkout session');
-        }
-      } catch (error) {
-        console.error('[Purchase] Error:', error);
-        const errorMessage = error.message || 'Unknown error occurred';
-        console.error('[Purchase] Full error details:', {
-          message: errorMessage,
-          name: error.name,
-          stack: error.stack,
-          apiUrl: apiUrl
-        });
-        alert(`Failed to start checkout: ${errorMessage}\n\nPlease check the browser console for details or contact support@localpasswordvault.com`);
-        
-        button.disabled = false;
-        button.textContent = originalText;
-        button.style.opacity = '1';
-        button.style.cursor = 'pointer';
-      }
-    }
   </script>
 </body>
 </html>

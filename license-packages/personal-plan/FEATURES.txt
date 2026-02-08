@@ -167,7 +167,7 @@ perfectly offline - the indicator is just informational.
 
 ================================================================================
 
-© 2025 Local Password Vault | https://LocalPasswordVault.com
+© 2026 Local Password Vault | https://LocalPasswordVault.com
 
 ================================================================================
 

@@ -15,7 +15,7 @@ interface KeyActivationScreenProps {
   isActivating: boolean;
   error: string | null;
   onNeedHelp?: () => void;
-  isLLV?: boolean;
+  onPurchaseClick?: () => void;
 }
 
 export const KeyActivationScreen: React.FC<KeyActivationScreenProps> = ({
@@ -24,7 +24,7 @@ export const KeyActivationScreen: React.FC<KeyActivationScreenProps> = ({
   isActivating,
   error,
   onNeedHelp,
-  isLLV = false,
+  onPurchaseClick,
 }) => {
   const [licenseKey, setLicenseKey] = useState("");
 
@@ -125,7 +125,7 @@ export const KeyActivationScreen: React.FC<KeyActivationScreenProps> = ({
             </button>
 
             <button
-              onClick={onBack}
+              onClick={onPurchaseClick ?? onBack}
               className="w-full text-slate-400 hover:text-white transition-colors flex items-center justify-center gap-2 py-2 text-sm"
             >
               <ArrowLeft className="w-4 h-4" strokeWidth={1.5} />

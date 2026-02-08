@@ -1,6 +1,6 @@
 # Local Password Vault - User Manual
 
-**Version 1.2.0** | © 2025 Local Password Vault
+**Version 1.2.0** | © 2026 Local Password Vault
 
 ---
 
@@ -421,6 +421,6 @@ A: Yes. Go to Settings → Export to create a backup.
 
 ---
 
-**© 2025 Local Password Vault. All rights reserved.**
+**© 2026 Local Password Vault. All rights reserved.**
 
 *Your passwords. Your device. Your control.*

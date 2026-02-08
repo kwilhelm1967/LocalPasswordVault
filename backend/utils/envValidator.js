@@ -66,17 +66,6 @@ const REQUIRED_VARS = {
     validate: (value) => value.startsWith('price_'),
     message: 'Must start with price_',
   },
-  STRIPE_PRICE_LLV_PERSONAL: {
-    required: true,
-    validate: (value) => value.startsWith('price_'),
-    message: 'Must start with price_',
-  },
-  STRIPE_PRICE_LLV_FAMILY: {
-    required: true,
-    validate: (value) => value.startsWith('price_'),
-    message: 'Must start with price_',
-  },
-
   // Email
   BREVO_API_KEY: {
     required: true,

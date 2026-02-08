@@ -103,7 +103,7 @@ chmod +x scripts/setup-code-signing.sh
 ```
 [PASS] Signature Status - Valid
 [INFO] Signer - CN=Your Company Name
-[INFO] Expires - 2025-12-31
+[INFO] Expires - 2026-12-31
 [INFO] SHA-256 - abc123... (for website)
 ```
 

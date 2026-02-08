@@ -406,7 +406,7 @@ export const DownloadPage: React.FC = () => {
             </a>
           </p>
           <p className="text-xs text-slate-600">
-            © 2025 Local Password Vault. All rights reserved.
+            © 2026 Local Password Vault. All rights reserved.
           </p>
         </div>
       </footer>

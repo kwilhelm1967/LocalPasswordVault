@@ -34,33 +34,14 @@ const PRODUCTS = {
     maxDevices: 5,
     productType: 'lpv',
   },
-  llv_personal: {
-    name: 'Local Legacy Vault - Personal',
-    description: 'Lifetime license for 1 device',
-    price: 7900,
-    priceId: process.env.STRIPE_PRICE_LLV_PERSONAL,
-    maxDevices: 1,
-    productType: 'llv',
-  },
-  llv_family: {
-    name: 'Local Legacy Vault - Family',
-    description: 'Lifetime license for up to 5 devices',
-    price: 12900,
-    priceId: process.env.STRIPE_PRICE_LLV_FAMILY,
-    maxDevices: 5,
-    productType: 'llv',
-  },
-  // AfterPassing Guide Add-On (requires LLV)
   afterpassing_addon: {
     name: 'AfterPassing Guide Add-On',
-    description: 'Guidance and templates add-on for Local Legacy Vault users',
+    description: 'Guidance and templates add-on',
     price: 1900,
     priceId: process.env.STRIPE_PRICE_AFTERPASSING_ADDON,
     maxDevices: 1,
     productType: 'afterpassing',
-    requiresLLV: true,
   },
-  // AfterPassing Guide Standalone (independent product)
   afterpassing_standalone: {
     name: 'AfterPassing Guide',
     description: 'Standalone guidance and templates for end-of-life planning',
@@ -68,7 +49,6 @@ const PRODUCTS = {
     priceId: process.env.STRIPE_PRICE_AFTERPASSING_STANDALONE,
     maxDevices: 1,
     productType: 'afterpassing',
-    requiresLLV: false,
   },
 };
 

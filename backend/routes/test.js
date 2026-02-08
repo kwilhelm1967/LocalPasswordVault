@@ -1,11 +1,6 @@
 const express = require('express');
 const db = require('../database/db');
-const { 
-  generatePersonalKey, 
-  generateFamilyKey, 
-  generateLLVPersonalKey, 
-  generateLLVFamilyKey 
-} = require('../services/licenseGenerator');
+const { generatePersonalKey, generateFamilyKey } = require('../services/licenseGenerator');
 const { sendPurchaseEmail, sendBundleEmail, sendTrialEmail } = require('../services/email');
 const logger = require('../utils/logger');
 const router = express.Router();
@@ -76,18 +71,10 @@ router.post('/generate-license', async (req, res) => {
     let licenseKey;
     let keyGenerator;
     
-    if (productType === 'llv') {
-      if (planType === 'family') {
-        keyGenerator = generateLLVFamilyKey;
-      } else {
-        keyGenerator = generateLLVPersonalKey;
-      }
+    if (planType === 'family') {
+      keyGenerator = generateFamilyKey;
     } else {
-      if (planType === 'family') {
-        keyGenerator = generateFamilyKey;
-      } else {
-        keyGenerator = generatePersonalKey;
-      }
+      keyGenerator = generatePersonalKey;
     }
     
     licenseKey = keyGenerator();
@@ -180,14 +167,13 @@ router.post('/send-email', async (req, res) => {
           maxDevices: 1,
         },
         {
-          keys: [generateLLVPersonalKey()],
+          keys: [generatePersonalKey()],
           planType: 'personal',
-          productName: 'Local Legacy Vault Personal',
+          productName: 'Local Password Vault Personal',
           amount: 4900,
           maxDevices: 1,
         },
       ];
-      
       await sendBundleEmail({
         to: email,
         licenses,

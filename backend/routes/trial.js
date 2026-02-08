@@ -11,24 +11,8 @@ router.post('/signup', async (req, res) => {
   try {
     const { email, product_type } = req.body;
     
-    // Detect product type from origin/referer header if not provided
-    let detectedProductType = product_type || 'lpv';
-    
-    // Check referer/origin headers to determine product type
-    const referer = req.headers.referer || req.headers.origin || '';
-    const hostname = referer ? new URL(referer).hostname : '';
-    
-    // Detect LLV from hostname
-    if (hostname.includes('locallegacyvault.com')) {
-      detectedProductType = 'llv';
-    } else if (hostname.includes('localpasswordvault.com') || !hostname) {
-      detectedProductType = 'lpv';
-    }
-    
-    // Override with explicit product_type if provided
-    if (product_type === 'llv' || product_type === 'lpv') {
-      detectedProductType = product_type;
-    }
+    // LPV only: always issue LPV trial keys (LPVT)
+    const detectedProductType = 'lpv';
     
     if (!email) {
       return res.status(400).json({ 
@@ -48,14 +32,10 @@ router.post('/signup', async (req, res) => {
         error: 'Invalid email format' 
       });
     }
-    // Check for existing trial for this email AND product type
-    // Allow separate trials for LPV and LLV products (same email can have both)
     const allTrials = await db.trials.findAllByEmail(normalizedEmail);
-    
-    // Find trial matching the requested product type
     const existingTrial = allTrials?.find(trial => {
-      const trialProductType = trial.product_type || (trial.trial_key?.startsWith('LLVT') ? 'llv' : (trial.trial_key?.startsWith('LPVT') ? 'lpv' : 'lpv'));
-      return trialProductType === detectedProductType;
+      const trialProductType = trial.product_type || (trial.trial_key?.startsWith('LPVT') ? 'lpv' : 'lpv');
+      return trialProductType === 'lpv';
     });
     
     // If existing trial for this product type exists and is still valid, resend

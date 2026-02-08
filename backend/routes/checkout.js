@@ -8,26 +8,9 @@ router.post('/session', async (req, res) => {
   try {
     const { planType, email } = req.body;
     
-    // Check if request is from locallegacyvault.com based on Host or Origin header
-    const host = req.headers.host || '';
-    const origin = req.headers.origin || '';
-    const referer = req.headers.referer || '';
-    const isLLVRequest = host.includes('locallegacyvault.com') || 
-                         origin.includes('locallegacyvault.com') || 
-                         referer.includes('locallegacyvault.com');
-    
-    // If request is from LLV site, map planType to LLV equivalents
-    let actualPlanType = planType;
-    if (isLLVRequest) {
-      if (planType === 'personal') {
-        actualPlanType = 'llv_personal';
-      } else if (planType === 'family') {
-        actualPlanType = 'llv_family';
-      }
-      // If already llv_*, keep it as is
-    }
-    
-    const validPlanTypes = ['personal', 'family', 'llv_personal', 'llv_family', 'aftercare_addon', 'aftercare_standalone', 'afterpassing_standalone'];
+    // LPV only: plan types that exist in Stripe PRODUCTS (personal, family, afterpassing)
+    const validPlanTypes = ['personal', 'family', 'afterpassing_addon', 'afterpassing_standalone'];
+    const actualPlanType = planType;
     
     if (!actualPlanType || !validPlanTypes.includes(actualPlanType)) {
       return res.status(400).json({ 
@@ -36,34 +19,23 @@ router.post('/session', async (req, res) => {
       });
     }
     
-    // Check Stripe configuration
     if (!process.env.STRIPE_SECRET_KEY) {
       const errorMsg = 'STRIPE_SECRET_KEY environment variable is not set. Payment processing cannot be initialized.';
       logger.error('Stripe not configured', new Error(errorMsg), {
         planType: actualPlanType,
         operation: 'checkout_session_creation',
       });
-      const supportEmail = isLLVRequest 
-        ? (process.env.LLV_SUPPORT_EMAIL || process.env.SUPPORT_EMAIL || 'support@locallegacyvault.com')
-        : (process.env.SUPPORT_EMAIL || 'support@localpasswordvault.com');
       return res.status(500).json({ 
         success: false, 
-        error: `Payment processing is not configured. Please contact ${supportEmail}`,
+        error: `Payment processing is not configured. Please contact ${process.env.SUPPORT_EMAIL || 'support@localpasswordvault.com'}`,
         errorCode: 'STRIPE_NOT_CONFIGURED'
       });
     }
     
-    // Determine website URL based on request origin
-    const isAftercare = actualPlanType.startsWith('aftercare_') || actualPlanType.startsWith('afterpassing_');
-    let baseUrl;
-    
-    if (isAftercare) {
-      baseUrl = process.env.AFTERPASSING_WEBSITE_URL || process.env.AFTERCARE_WEBSITE_URL || 'https://afterpassingguide.com';
-    } else if (isLLVRequest || actualPlanType.startsWith('llv_')) {
-      baseUrl = process.env.LLV_WEBSITE_URL || 'https://locallegacyvault.com';
-    } else {
-      baseUrl = process.env.WEBSITE_URL || 'https://localpasswordvault.com';
-    }
+    const isAfterpassing = actualPlanType.startsWith('afterpassing_');
+    const baseUrl = isAfterpassing
+      ? (process.env.AFTERPASSING_WEBSITE_URL || 'https://afterpassingguide.com')
+      : (process.env.WEBSITE_URL || 'https://localpasswordvault.com');
     
     const successUrl = `${baseUrl}/purchase/success?session_id={CHECKOUT_SESSION_ID}`;
     const cancelUrl = `${baseUrl}/pricing?cancelled=true`;
@@ -219,7 +191,6 @@ router.post('/bundle', async (req, res) => {
       productTypes.add(product.productType || 'lpv');
     }
     
-    // Business rule: Bundle must contain at least 2 different products
     if (items.length < 2) {
       return res.status(400).json({ 
         success: false, 
@@ -227,47 +198,19 @@ router.post('/bundle', async (req, res) => {
       });
     }
     
-    // Business rule: Bundle must contain products from both LPV and LLV
-    if (!productTypes.has('lpv') || !productTypes.has('llv')) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Bundle must contain products from both Local Password Vault and Local Legacy Vault.' 
-      });
-    }
-    
-    // Business rule: Validate specific bundle combinations
-    const hasLPVPersonal = seenProductKeys.has('personal');
-    const hasLPVFamily = seenProductKeys.has('family');
-    const hasLLVPersonal = seenProductKeys.has('llv_personal');
-    const hasLLVFamily = seenProductKeys.has('llv_family');
-    
-    // Valid combinations:
-    // 1. LPV Personal + LLV Personal (Personal Bundle)
-    // 2. LPV Family + LLV Family (Family Protection Bundle)
-    // 3. LPV Personal + LLV Family (Mixed Bundle)
-    // 4. LPV Family + LLV Personal (Mixed Bundle)
-    const isValidCombination = 
-      (hasLPVPersonal && hasLLVPersonal) ||
-      (hasLPVFamily && hasLLVFamily) ||
-      (hasLPVPersonal && hasLLVFamily) ||
-      (hasLPVFamily && hasLLVPersonal);
-    
-    if (!isValidCombination) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Invalid bundle combination. Valid bundles: Personal Bundle (LPV Personal + LLV Personal), Family Protection Bundle (LPV Family + LLV Family), or Mixed Bundles (LPV Personal + LLV Family, or LPV Family + LLV Personal).' 
-      });
-    }
-    
-    // Determine website URL based on products in bundle
-    // If bundle contains LLV products, use LLV website; otherwise use LPV website
-    const hasLLV = items.some(item => {
+    // LPV only: reject bundles that include LLV products
+    const hasLLVProduct = items.some(item => {
       const product = PRODUCTS[item.productKey];
       return product && product.productType === 'llv';
     });
-    const baseUrl = hasLLV
-      ? (process.env.LLV_WEBSITE_URL || 'https://locallegacyvault.com')
-      : (process.env.WEBSITE_URL || 'https://localpasswordvault.com');
+    if (hasLLVProduct) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'This checkout only supports Local Password Vault products. LLV products are not available here.' 
+      });
+    }
+    
+    const baseUrl = process.env.WEBSITE_URL || 'https://localpasswordvault.com';
     const successUrl = `${baseUrl}/purchase/success?session_id={CHECKOUT_SESSION_ID}`;
     const cancelUrl = `${baseUrl}/pricing?cancelled=true`;
     

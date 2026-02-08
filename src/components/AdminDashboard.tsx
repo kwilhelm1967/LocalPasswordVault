@@ -115,6 +115,17 @@ function HomeDashboard({
     { label: "Check license key inventory", tab: "licenses" },
   ];
 
+  const keyActions: { label: string; tab: TabId; desc: string }[] = [
+    { label: "Create trial key", tab: "trials", desc: "Generate 14-day trial" },
+    { label: "Create license key", tab: "trials", desc: "Comp / lifetime key" },
+    { label: "Reset binding", tab: "trials", desc: "Allow activate on new device" },
+    { label: "Extend trial", tab: "trials", desc: "Reactivate expired trial" },
+    { label: "Re-issue / replace key", tab: "licenses", desc: "New key, mark old replaced" },
+    { label: "Grant rebind exception", tab: "licenses", desc: "Time-boxed move to new device" },
+    { label: "Reset device binding", tab: "licenses", desc: "Full reset for new device" },
+    { label: "Revoke license", tab: "licenses", desc: "Deactivate permanently" },
+  ];
+
   return (
     <>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20, flexWrap: "wrap", gap: 16 }}>
@@ -257,6 +268,33 @@ function HomeDashboard({
           </table>
         </div>
       )}
+
+      <div style={{ background: theme.backgroundCard, borderRadius: 12, padding: 20, border: "1px solid rgba(255,255,255,0.06)", boxShadow: "0 2px 8px rgba(0,0,0,0.15)", marginBottom: 24 }}>
+        <h4 style={{ color: theme.accentGold, margin: "0 0 12px 0", fontSize: 14, fontWeight: 600 }}>Key management</h4>
+        <p style={{ color: theme.textMuted, fontSize: 12, marginBottom: 12 }}>Create keys · Activate · Move · Deactivate</p>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+          {keyActions.map((a, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => onNavigateTab?.(a.tab)}
+              style={{
+                padding: "8px 14px",
+                background: "rgba(255,255,255,0.06)",
+                color: theme.textSecondary,
+                border: `1px solid ${theme.borderSubtle}`,
+                borderRadius: 8,
+                cursor: "pointer",
+                fontSize: 12,
+                fontWeight: 500,
+              }}
+              title={a.desc}
+            >
+              {a.label}
+            </button>
+          ))}
+        </div>
+      </div>
 
       <div style={{ background: theme.backgroundCard, borderRadius: 12, padding: 20, border: "1px solid rgba(255,255,255,0.06)", boxShadow: "0 2px 8px rgba(0,0,0,0.15)" }}>
         <h4 style={{ color: theme.accentGold, margin: "0 0 16px 0", fontSize: 14, fontWeight: 600 }}>Founder daily checklist</h4>
@@ -4026,11 +4064,25 @@ export function AdminDashboard({ onClose }: { onClose: () => void }) {
         {tab === "scripts" && (
           <>
             <div style={cardStyle}>
+              <h3 style={{ ...sectionTitle, marginBottom: 12 }}>Key management (hot actions)</h3>
+              <p style={{ color: theme.textSecondary, fontSize: 13, marginBottom: 16 }}>Quick access to create, activate, move, or deactivate keys.</p>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 8 }}>
+                <button type="button" onClick={() => setTab("trials")} style={{ padding: "10px 16px", background: theme.buttonPrimaryBg, color: theme.buttonPrimaryText, border: "none", borderRadius: theme.radiusButton, fontWeight: 600, cursor: "pointer", fontSize: 13 }}>Create trial key</button>
+                <button type="button" onClick={() => setTab("trials")} style={{ padding: "10px 16px", background: theme.buttonPrimaryBg, color: theme.buttonPrimaryText, border: "none", borderRadius: theme.radiusButton, fontWeight: 600, cursor: "pointer", fontSize: 13 }}>Create license key</button>
+                <button type="button" onClick={() => setTab("trials")} style={{ padding: "10px 16px", background: "rgba(255,255,255,0.08)", color: theme.textPrimary, border: `1px solid ${theme.borderSubtle}`, borderRadius: theme.radiusButton, fontWeight: 600, cursor: "pointer", fontSize: 13 }}>Reset binding / Extend trial</button>
+                <button type="button" onClick={() => setTab("licenses")} style={{ padding: "10px 16px", background: "rgba(255,255,255,0.08)", color: theme.textPrimary, border: `1px solid ${theme.borderSubtle}`, borderRadius: theme.radiusButton, fontWeight: 600, cursor: "pointer", fontSize: 13 }}>Re-issue / Replace key</button>
+                <button type="button" onClick={() => setTab("licenses")} style={{ padding: "10px 16px", background: "rgba(255,255,255,0.08)", color: theme.textPrimary, border: `1px solid ${theme.borderSubtle}`, borderRadius: theme.radiusButton, fontWeight: 600, cursor: "pointer", fontSize: 13 }}>Grant rebind exception</button>
+                <button type="button" onClick={() => setTab("licenses")} style={{ padding: "10px 16px", background: "rgba(255,255,255,0.08)", color: theme.textPrimary, border: `1px solid ${theme.borderSubtle}`, borderRadius: theme.radiusButton, fontWeight: 600, cursor: "pointer", fontSize: 13 }}>Reset device binding</button>
+                <button type="button" onClick={() => setTab("licenses")} style={{ padding: "10px 16px", background: theme.statusError, color: "#fff", border: "none", borderRadius: theme.radiusButton, fontWeight: 600, cursor: "pointer", fontSize: 13 }}>Revoke license</button>
+              </div>
+              <p style={{ color: theme.textMuted, fontSize: 12 }}>Trials tab: Create keys, Reset binding, Extend trial. Licenses tab: Re-issue, Rebind exception, Reset binding, Revoke.</p>
+            </div>
+            <div style={cardStyle}>
               <h3 style={{ ...sectionTitle, marginBottom: 12 }}>Quick commands</h3>
               <p style={{ color: theme.textSecondary, fontSize: 13, marginBottom: 16 }}>Copy and run in your terminal (PowerShell or CMD). Run from project root unless noted.</p>
               {[
                 { label: "Go to home (from anywhere)", cmd: "cd C:\\Users\\kelly", note: "CMD from another drive: cd /d C:\\Users\\kelly" },
-                { label: "Go to project from home", cmd: "cd OneDrive\\Desktop\\Vault-Main\\LocalLegacyVault", note: "Full: cd C:\\Users\\kelly\\OneDrive\\Desktop\\Vault-Main\\LocalLegacyVault" },
+                { label: "Go to LPV project from home", cmd: "cd OneDrive\\Desktop\\Vault-Main\\LocalPasswordVault", note: "Full: cd C:\\Users\\kelly\\OneDrive\\Desktop\\Vault-Main\\LocalPasswordVault" },
                 { label: "Build", cmd: "npm run build", note: "" },
                 { label: "Vite dev (app + Electron)", cmd: "npm run dev", note: "" },
                 { label: "Vite only", cmd: "npm run dev:vite", note: "" },

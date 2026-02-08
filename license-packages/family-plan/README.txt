@@ -81,7 +81,7 @@ When contacting support, include your license key and describe the issue.
 
 ================================================================================
 
-© 2025 Local Password Vault | https://LocalPasswordVault.com
+© 2026 Local Password Vault | https://LocalPasswordVault.com
 
 ================================================================================
 

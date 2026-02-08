@@ -9,7 +9,7 @@ const logger = require('../utils/logger');
 
 /**
  * Generate a unique ticket number
- * Format: TKT-YYYY-NNNNNN (e.g., TKT-2025-001234)
+ * Format: TKT-YYYY-NNNNNN (e.g., TKT-2026-001234)
  */
 function generateTicketNumber() {
   const year = new Date().getFullYear();

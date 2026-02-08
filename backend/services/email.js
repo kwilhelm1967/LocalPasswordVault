@@ -65,21 +65,14 @@ function loadTemplate(templateName, variables = {}) {
   return html;
 }
 
-async function sendEmailViaBrevo({ to, subject, html, text, senderName = null, isLLV = false }) {
+async function sendEmailViaBrevo({ to, subject, html, text, senderName = null, attachment = null }) {
   if (!apiInstance) {
     const errorMsg = 'Brevo API client not initialized. Check BREVO_API_KEY environment variable.';
     console.error('[EMAIL] ❌', errorMsg);
     throw new Error(errorMsg);
   }
 
-  // Determine FROM email based on product type
-  let fromEmail;
-  if (isLLV) {
-    fromEmail = process.env.LLV_FROM_EMAIL || process.env.FROM_EMAIL || 'noreply@locallegacyvault.com';
-  } else {
-    fromEmail = process.env.FROM_EMAIL || 'noreply@localpasswordvault.com';
-  }
-
+  const fromEmail = process.env.FROM_EMAIL || 'noreply@localpasswordvault.com';
   const sendSmtpEmail = new brevo.SendSmtpEmail();
   sendSmtpEmail.sender = {
     name: senderName || 'Local Password Vault',
@@ -89,6 +82,12 @@ async function sendEmailViaBrevo({ to, subject, html, text, senderName = null, i
   sendSmtpEmail.subject = subject;
   sendSmtpEmail.htmlContent = html;
   sendSmtpEmail.textContent = text;
+  if (attachment && Array.isArray(attachment) && attachment.length > 0) {
+    sendSmtpEmail.attachment = attachment.map(({ name, content }) => ({
+      name: name || 'attachment',
+      content: content,
+    }));
+  }
 
   try {
     // Brevo v3: API key is set in authentications, just call the method
@@ -111,36 +110,22 @@ async function sendEmailViaBrevo({ to, subject, html, text, senderName = null, i
     throw new Error(`Email send failed: ${errorMessage} (Code: ${errorCode})`);
   }
 }
-async function sendPurchaseEmail({ to, licenseKey, planType, amount }) {
+async function sendPurchaseEmail({ to, licenseKey, planType, amount, licenseFileAttachment = null }) {
   const planNames = {
     personal: 'Personal Vault',
     family: 'Family Vault',
-    llv_personal: 'Local Legacy Vault - Personal',
-    llv_family: 'Local Legacy Vault - Family',
+    afterpassing_addon: 'AfterPassing Guide Add-On',
+    afterpassing_standalone: 'AfterPassing Guide',
   };
-  
   const planName = planNames[planType] || 'License';
   const amountFormatted = `$${(amount / 100).toFixed(2)}`;
-  const maxDevices = (planType === 'family' || planType === 'llv_family') ? '5' : '1';
+  const maxDevices = planType === 'family' ? '5' : '1';
   
-  // Determine product type for download links
-  const isLLV = planType === 'llv_personal' || planType === 'llv_family';
-  const DOWNLOAD_VERSION = 'V1.2.5';
-  
-  let downloadLinks = {
+  const downloadLinks = {
     windows: 'https://github.com/kwilhelm1967/Vault/releases/download/V1.2.0/Local.Password.Vault.Setup.1.2.0.exe',
     mac: 'https://github.com/kwilhelm1967/Vault/releases/latest/download/Local%20Password%20Vault-1.2.0-mac.dmg',
     linux: 'https://github.com/kwilhelm1967/Vault/releases/latest/download/Local%20Password%20Vault-1.2.0.AppImage',
   };
-  
-  if (isLLV) {
-    // LLV uses LocalLegacyVault repository
-    downloadLinks = {
-      windows: `https://github.com/kwilhelm1967/LocalLegacyVault/releases/download/${DOWNLOAD_VERSION}/Local.Legacy.Vault.Setup.1.2.5-x64.exe`,
-      mac: `https://github.com/kwilhelm1967/LocalLegacyVault/releases/download/${DOWNLOAD_VERSION}/Local.Legacy.Vault-1.2.5-mac.dmg`,
-      linux: `https://github.com/kwilhelm1967/LocalLegacyVault/releases/download/${DOWNLOAD_VERSION}/Local.Legacy.Vault-1.2.5.AppImage`,
-    };
-  }
   
   const html = loadTemplate('purchase-confirmation-email', {
     LICENSE_KEY: licenseKey,
@@ -156,18 +141,16 @@ async function sendPurchaseEmail({ to, licenseKey, planType, amount }) {
       day: 'numeric',
     }),
     ORDER_ID: `ORDER-${Date.now()}`,
+    ATTACHMENT_NOTE: licenseFileAttachment ? 'A signed license file is attached to this email. You can open it in the app or use the license key above.' : '',
   });
 
-  // Determine support email and branding based on product type
-  const supportEmail = isLLV 
-    ? (process.env.LLV_SUPPORT_EMAIL || process.env.SUPPORT_EMAIL || 'support@locallegacyvault.com')
-    : (process.env.SUPPORT_EMAIL || 'support@localpasswordvault.com');
-  const productBrand = isLLV ? 'Local Legacy Vault' : 'Local Password Vault';
-  const downloadUrl = isLLV 
-    ? 'https://locallegacyvault.com/download'
-    : 'https://localpasswordvault.com/download';
+  const supportEmail = process.env.SUPPORT_EMAIL || 'support@localpasswordvault.com';
+  const downloadUrl = 'https://localpasswordvault.com/download';
+  const productBrand = 'Local Password Vault';
+  
+  const text = `Thank you for purchasing ${productBrand} ${planName}!\n\nYour License Key: ${licenseKey}\n\nThis license allows you to activate on ${maxDevices} device(s).\n\nTo get started:\n1. Download the app from ${downloadUrl}\n2. Install and launch the application\n3. Enter your license key when prompted${licenseFileAttachment ? '\n\nYour license file is attached to this email. You can also open it in the app.' : ''}\n\nYour license is valid for lifetime use.\n\nIf you have any questions, contact us at ${supportEmail}\n\nThank you for choosing ${productBrand}!`;
 
-  const text = `Thank you for purchasing ${productBrand} ${planName}!\n\nYour License Key: ${licenseKey}\n\nThis license allows you to activate on ${maxDevices} device(s).\n\nTo get started:\n1. Download the app from ${downloadUrl}\n2. Install and launch the application\n3. Enter your license key when prompted\n\nYour license is valid for lifetime use.\n\nIf you have any questions, contact us at ${supportEmail}\n\nThank you for choosing ${productBrand}!`;
+  const attachment = licenseFileAttachment ? [{ name: licenseFileAttachment.name || 'Local-Password-Vault-License.txt', content: licenseFileAttachment.content }] : null;
 
   try {
     const response = await sendEmailViaBrevo({
@@ -176,15 +159,13 @@ async function sendPurchaseEmail({ to, licenseKey, planType, amount }) {
       html,
       text,
       senderName: productBrand,
-      isLLV: isLLV,
+      attachment,
     });
     logger.email('sent', to, {
       operation: 'email_purchase',
       planType: planType,
       planName: planName,
       amount: amount,
-      isLLV: isLLV,
-      productBrand: productBrand,
     });
     performanceMonitor.trackEmail(true);
     return response;
@@ -194,8 +175,6 @@ async function sendPurchaseEmail({ to, licenseKey, planType, amount }) {
       operation: 'email_purchase',
       planType: planType,
       planName: planName,
-      isLLV: isLLV,
-      productBrand: productBrand,
       errorMessage: error.message,
       errorStack: error.stack,
     });
@@ -244,7 +223,7 @@ async function sendTrialEmail({ to, trialKey, expiresAt }) {
     throw error;
   }
 }
-async function sendBundleEmail({ to, licenses, totalAmount, orderId = null }) {
+async function sendBundleEmail({ to, licenses, totalAmount, orderId = null, licenseFileAttachments = null }) {
   const totalFormatted = `$${(totalAmount / 100).toFixed(2)}`;
   const date = new Date().toLocaleDateString('en-US', {
     year: 'numeric',
@@ -285,27 +264,11 @@ async function sendBundleEmail({ to, licenses, totalAmount, orderId = null }) {
     return sum + keys.length;
   }, 0);
   
-  // Determine download links based on product types in bundle
-  // If any license is LLV, prioritize LLV download links
-  const hasLLV = licenses.some(l => l.productName?.includes('Legacy') || l.planType?.includes('llv'));
-  const DOWNLOAD_VERSION = 'V1.2.5';
-  
-  let downloadLinks = {
+  const downloadLinks = {
     windows: 'https://github.com/kwilhelm1967/Vault/releases/download/V1.2.0/Local.Password.Vault.Setup.1.2.0.exe',
     mac: 'https://github.com/kwilhelm1967/Vault/releases/latest/download/Local%20Password%20Vault-1.2.0-mac.dmg',
     linux: 'https://github.com/kwilhelm1967/Vault/releases/latest/download/Local%20Password%20Vault-1.2.0.AppImage',
   };
-  
-  // For bundles, default to LPV links unless it's all LLV
-  // Users can get specific product downloads from the purchase success page
-  if (hasLLV && licenses.every(l => l.planType?.includes('llv'))) {
-    // All LLV - use LLV links
-    downloadLinks = {
-      windows: `https://github.com/kwilhelm1967/LocalLegacyVault/releases/download/${DOWNLOAD_VERSION}/Local.Legacy.Vault.Setup.1.2.5-x64.exe`,
-      mac: `https://github.com/kwilhelm1967/LocalLegacyVault/releases/download/${DOWNLOAD_VERSION}/Local.Legacy.Vault-1.2.5-mac.dmg`,
-      linux: `https://github.com/kwilhelm1967/LocalLegacyVault/releases/download/${DOWNLOAD_VERSION}/Local.Legacy.Vault-1.2.5.AppImage`,
-    };
-  }
   
   const html = loadTemplate('bundle-email', {
     LICENSE_COUNT: totalKeyCount.toString(),
@@ -318,16 +281,12 @@ async function sendBundleEmail({ to, licenses, totalAmount, orderId = null }) {
     ORDER_ID: orderId || `ORDER-${Date.now()}`,
   });
   
-  // Determine support email and branding based on products
-  const hasLLVOnly = licenses.every(l => l.planType?.includes('llv') || l.productName?.includes('Legacy'));
-  const supportEmail = hasLLVOnly
-    ? (process.env.LLV_SUPPORT_EMAIL || process.env.SUPPORT_EMAIL || 'support@locallegacyvault.com')
-    : (process.env.SUPPORT_EMAIL || 'support@localpasswordvault.com');
-  const productBrand = hasLLVOnly ? 'Local Legacy Vault' : 'Local Password Vault';
-  const bundleName = hasLLVOnly ? 'Legacy Vault Bundle' : 'Family Protection Bundle';
+  const supportEmail = process.env.SUPPORT_EMAIL || 'support@localpasswordvault.com';
+  const productBrand = 'Local Password Vault';
+  const bundleName = 'Local Password Vault';
   
   const text = `
-Thank you for purchasing the ${bundleName}!
+Thank you for your multi-license purchase of ${bundleName}!
 
 You've received ${totalKeyCount} license key(s):
 
@@ -351,6 +310,10 @@ If you have any questions, contact us at ${supportEmail}
 Thank you for choosing ${productBrand}!
   `.trim();
   
+  const attachment = licenseFileAttachments && Array.isArray(licenseFileAttachments) && licenseFileAttachments.length > 0
+    ? licenseFileAttachments.map((a, i) => ({ name: a.name || `Local-Password-Vault-License-${i + 1}.txt`, content: a.content }))
+    : null;
+
   try {
     const response = await sendEmailViaBrevo({
       to,
@@ -358,7 +321,7 @@ Thank you for choosing ${productBrand}!
       html,
       text,
       senderName: productBrand,
-      isLLV: hasLLVOnly,
+      attachment,
     });
     
     logger.email('sent', to, {

@@ -4,12 +4,11 @@ const { stripe, verifyWebhookSignature, getCheckoutSession, PRODUCTS, getProduct
 const { 
   generatePersonalKey, 
   generateFamilyKey, 
-  generateLLVPersonalKey, 
-  generateLLVFamilyKey,
   generateAfterPassingAddonKey,
   generateAfterPassingStandaloneKey
 } = require('../services/licenseGenerator');
 const { sendPurchaseEmail, sendBundleEmail } = require('../services/email');
+const { signLicenseFile } = require('../services/licenseSigner');
 const logger = require('../utils/logger');
 const performanceMonitor = require('../utils/performanceMonitor');
 
@@ -268,14 +267,10 @@ async function handleCheckoutCompleted(session) {
       planType = 'family';
       numKeys = 5;
       keyGenerator = generateFamilyKey;
-    } else if (product.key === 'llv_personal') {
-      planType = 'llv_personal';
-      numKeys = 1;
-      keyGenerator = generateLLVPersonalKey;
-    } else if (product.key === 'llv_family') {
-      planType = 'llv_family';
-      numKeys = 5;
-      keyGenerator = generateLLVFamilyKey;
+    } else if (product.key === 'llv_personal' || product.key === 'llv_family') {
+      // LPV backend: do not issue LLV keys; skip this line item
+      logger.warn('Skipping LLV product in LPV webhook', { productKey: product.key, sessionId: session.id });
+      continue;
     } else if (product.key === 'afterpassing_addon') {
       planType = 'afterpassing_addon';
       numKeys = 1;
@@ -296,13 +291,14 @@ async function handleCheckoutCompleted(session) {
     
     const lineItemAmount = lineItem.amount_total || (product.price * lineItem.quantity);
     const productKeys = [];
-    
+    const maxDevicesPerKey = 1;
+
     // Generate keys (1 for personal, 5 for family)
     // Family plan: 5 separate keys, each for 1 device (no sharing)
     // Personal plan: 1 key for 1 device
     for (let i = 0; i < numKeys; i++) {
       const licenseKey = keyGenerator();
-      
+
       await db.licenses.create({
         license_key: licenseKey,
         plan_type: planType,
@@ -312,9 +308,9 @@ async function handleCheckoutCompleted(session) {
         stripe_payment_id: fullSession.payment_intent?.id || null,
         stripe_checkout_session_id: session.id,
         amount_paid: lineItemAmount / numKeys,
-        max_devices: 1, // Each key is for 1 device only (family plan = 5 keys, each for 1 device)
+        max_devices: maxDevicesPerKey,
       });
-      
+
       productKeys.push(licenseKey);
       logger.info('License created', {
         licenseKey,
@@ -323,7 +319,7 @@ async function handleCheckoutCompleted(session) {
         operation: 'license_creation',
       });
     }
-    
+
     licenses.push({
       keys: productKeys,
       planType: planType,
@@ -352,14 +348,44 @@ async function handleCheckoutCompleted(session) {
     });
   }
   
-  // Send appropriate email (bundle vs single purchase)
+  // Build signed license file(s) for email attachment (LPV only - like LLV format)
+  function buildLicenseFileAttachment(licenseKey, planType, maxDevices = 1) {
+    try {
+      const signed = signLicenseFile({
+        license_key: licenseKey,
+        device_id: null,
+        plan_type: planType,
+        max_devices: maxDevices,
+        activated_at: new Date().toISOString(),
+        product_type: 'lpv',
+        transfer_count: 0,
+        last_transfer_at: null,
+      });
+      const jsonStr = JSON.stringify(signed);
+      const content = Buffer.from(jsonStr, 'utf8').toString('base64');
+      return { name: 'Local-Password-Vault-License.txt', content };
+    } catch (err) {
+      logger.error('Failed to build license file for email', err, { licenseKey: licenseKey?.substring(0, 12), operation: 'license_file_attachment' });
+      return null;
+    }
+  }
+
+  // Send appropriate email (bundle vs single purchase) with license key + optional attachment
   try {
     if (isBundle || licenses.length > 1) {
+      const licenseFileAttachments = [];
+      for (const lic of licenses) {
+        for (const key of lic.keys || []) {
+          const att = buildLicenseFileAttachment(key, lic.planType, 1);
+          if (att) licenseFileAttachments.push(att);
+        }
+      }
       await sendBundleEmail({
         to: customerEmail,
         licenses: licenses,
         totalAmount: fullSession.amount_total,
         orderId: session.id,
+        licenseFileAttachments: licenseFileAttachments.length > 0 ? licenseFileAttachments : null,
       });
       logger.email('bundle_purchase_sent', customerEmail, {
         sessionId: session.id,
@@ -367,11 +393,14 @@ async function handleCheckoutCompleted(session) {
         operation: 'email_delivery',
       });
     } else {
+      const firstKey = licenses[0].keys[0];
+      const licenseFileAttachment = buildLicenseFileAttachment(firstKey, licenses[0].planType, licenses[0].planType === 'family' ? 5 : 1);
       await sendPurchaseEmail({
         to: customerEmail,
-        licenseKey: licenses[0].keys[0],
+        licenseKey: firstKey,
         planType: licenses[0].planType,
         amount: licenses[0].amount,
+        licenseFileAttachment: licenseFileAttachment || undefined,
       });
       logger.email('purchase_sent', customerEmail, {
         sessionId: session.id,

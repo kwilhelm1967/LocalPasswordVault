@@ -41,7 +41,7 @@ async function generateGoldFavicons() {
     // Generate favicon.ico (multi-resolution ICO)
     const icoBuffer = await toIco([png16, png32]);
     
-    // Write favicon files to root directory (for LLV-trial-FOR-HOST-ARMADA-UPLOAD-AS-trial.html)
+    // Write favicon files to root directory
     // These will be used by Legacy Vault HTML files
     fs.writeFileSync(path.join(rootDir, 'favicon-llv-16x16.png'), png16);
     console.log('✓ Generated favicon-llv-16x16.png');

@@ -48,8 +48,6 @@ const allowedOrigins = [
   'https://api.localpasswordvault.com',
   'https://localpasswordvault.com',
   'https://www.localpasswordvault.com',
-  'https://locallegacyvault.com',
-  'https://www.locallegacyvault.com',
 ];
 
 if (process.env.NODE_ENV === 'development') {

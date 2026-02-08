@@ -1,0 +1,26 @@
+# LocalPasswordVault (LPV) backend deploy only - does NOT affect LocalLegacyVault (LLV)
+# Repo: kwilhelm1967/Vault
+# Add GitHub secrets: LPV_DEPLOY_SSH_KEY (private key), LPV_DEPLOY_HOST (e.g. 172.236.111.48)
+# Repo → Settings → Secrets and variables → Actions
+
+name: Deploy LPV Backend
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy-lpv:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy LPV backend to server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.LPV_DEPLOY_HOST }}
+          username: root
+          key: ${{ secrets.LPV_DEPLOY_SSH_KEY }}
+          script: |
+            cd /var/www/lpv-api/Vault
+            git pull origin main
+            pm2 restart lpv-api
+            pm2 status

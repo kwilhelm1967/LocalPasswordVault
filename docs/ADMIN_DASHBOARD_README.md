@@ -83,7 +83,7 @@ The admin dashboard provides a **visual interface** to:
 - Total licenses sold
 - Activation rate
 - Total revenue
-- LPV vs LLV breakdown
+- License breakdown
 - Trial statistics
 
 **Updates automatically** when you click "Refresh All"
@@ -394,5 +394,5 @@ openssl rand -hex 32
 
 ---
 
-**Last Updated:** 2025
+**Last Updated:** 2026
 **Version:** 1.0.0
