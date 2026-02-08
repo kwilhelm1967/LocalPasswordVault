@@ -38,13 +38,14 @@ export interface SignedLicenseFile {
 }
 
 /**
- * ECDSA P-256 public key for license signature verification.
+ * ECDSA P-256 public key for LPV license signature verification.
  * Safe to embed in client — only the server has the private key.
  * 
- * Generate a key pair on the backend:
- *   node -e "require('./services/lpvLicenseSigner').generateKeyPair()"
+ * To regenerate: node backend/scripts/generate-lpv-keys.js
+ * Then update VITE_LICENSE_PUBLIC_KEY in .env and rebuild.
  */
-const LICENSE_PUBLIC_KEY = import.meta.env.VITE_LICENSE_PUBLIC_KEY || '';
+const DEFAULT_LPV_PUBLIC_KEY = '04ac1cea2e73f496cf55330264e1b804713c57b7adbc953b4b1d9563f71bc580658510e3e221f3f0c1db1d1499b1f786fef85e5764d88b5551f47c1b0743913e3e';
+const LICENSE_PUBLIC_KEY = import.meta.env.VITE_LICENSE_PUBLIC_KEY || DEFAULT_LPV_PUBLIC_KEY;
 
 // HMAC-SHA256 signatures are exactly 64 hex chars (SHA-256 = 32 bytes)
 const HMAC_SIGNATURE_LENGTH = 64;

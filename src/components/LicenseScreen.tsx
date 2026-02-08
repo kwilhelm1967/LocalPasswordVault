@@ -401,7 +401,7 @@ const LicenseScreenComponent: React.FC<LicenseScreenProps> = ({
       setActivationProgress({ stage: 'connecting' });
       const keyToActivate = licenseKey.trim().toUpperCase();
       if (!keyToActivate) {
-        setError('No license key provided. Please enter a key and try again.');
+                        setError('No license code provided. Please enter a code or import your license file.');
         setIsActivating(false);
         setActivationProgress({ stage: null });
         return;
@@ -1037,7 +1037,7 @@ const LicenseScreenComponent: React.FC<LicenseScreenProps> = ({
               {/* Left: Activate Paid License */}
               <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-6 flex flex-col">
                 <div className="flex bg-transparent items-center space-x-3 mb-6">
-                  <Key className="w-6 h-6 text-blue-400" />
+                  <Shield className="w-6 h-6 text-blue-400" />
                   <h2 className="text-xl font-semibold text-white">
                     Activate License
                   </h2>
@@ -1046,7 +1046,7 @@ const LicenseScreenComponent: React.FC<LicenseScreenProps> = ({
                 <div className="space-y-4 bg-transparent flex-1 flex flex-col">
                   <div>
                     <label className="block text-sm font-medium text-slate-300 mb-2">
-                      License Key
+                      License Code
                     </label>
                     <input
                       type="text"
@@ -1130,9 +1130,9 @@ const LicenseScreenComponent: React.FC<LicenseScreenProps> = ({
                           <div className="mt-2 p-2 rounded text-xs" style={{ backgroundColor: 'rgba(0, 0, 0, 0.2)' }}>
                             <p className="text-slate-300">Check:</p>
                             <ul className="list-disc list-inside text-slate-400 mt-1 space-y-0.5">
-                              <li>License key format: XXXX-XXXX-XXXX-XXXX</li>
+                              <li>License code format: XXXX-XXXX-XXXX-XXXX</li>
                               <li>No spaces or special characters</li>
-                              <li>Copy the key exactly as provided</li>
+                              <li>Or import your .license file instead</li>
                             </ul>
                           </div>
                         )}
@@ -1143,7 +1143,7 @@ const LicenseScreenComponent: React.FC<LicenseScreenProps> = ({
                   <button
                     onClick={handleActivateLicense}
                     disabled={isActivating || !licenseKey.trim()}
-                    aria-label={isActivating ? "Activating license..." : "Activate license key"}
+                    aria-label={isActivating ? "Activating license..." : "Activate license"}
                     className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 disabled:from-slate-600 disabled:to-slate-600 text-white py-3 px-4 rounded-lg font-medium transition-all disabled:cursor-not-allowed flex items-center justify-center space-x-2 mt-auto"
                   >
                     {isActivating ? (
@@ -1163,7 +1163,7 @@ const LicenseScreenComponent: React.FC<LicenseScreenProps> = ({
                     ) : (
                         <>
                           <CheckCircle className="w-4 h-4" />
-                          <span>Activate License</span>
+                          <span>Activate</span>
                         </>
                       )}
                     </button>
@@ -1245,14 +1245,14 @@ const LicenseScreenComponent: React.FC<LicenseScreenProps> = ({
                       }}
                       className="text-blue-400 hover:text-blue-300 text-sm transition-colors inline-flex items-center space-x-1"
                     >
-                      <span>Don't have a key? Buy now</span>
+                      <span>Don't have a license? Buy now</span>
                       <ExternalLink className="w-3 h-3" />
                     </button>
                   </div>
                 </div>
               </div>
 
-              {/* Right: Trial Key Input */}
+              {/* Right: Free Trial */}
               <div className="bg-gradient-to-br from-emerald-900/30 to-teal-900/30 backdrop-blur-sm border border-emerald-500/30 rounded-xl p-6 flex flex-col">
                   <div className="flex items-center space-x-3 mb-6">
                     <Rocket className="w-6 h-6 text-emerald-400" />
@@ -1264,7 +1264,7 @@ const LicenseScreenComponent: React.FC<LicenseScreenProps> = ({
                 <div className="space-y-4 flex-1 flex flex-col">
                   <div>
                     <label className="block text-sm font-medium text-slate-300 mb-2">
-                      Trial Key
+                      Trial License Code
                     </label>
                     <input
                       type="text"
@@ -1309,8 +1309,77 @@ const LicenseScreenComponent: React.FC<LicenseScreenProps> = ({
                     )}
                   </button>
 
+                  {/* Divider */}
+                  <div className="flex items-center gap-3 my-1">
+                    <div className="flex-1 h-px bg-emerald-500/20" />
+                    <span className="text-xs text-slate-500 uppercase tracking-wider">or</span>
+                    <div className="flex-1 h-px bg-emerald-500/20" />
+                  </div>
+
+                  {/* File Import for Trial */}
+                  <div
+                    className="relative border-2 border-dashed border-emerald-500/30 hover:border-emerald-400/50 rounded-lg p-4 text-center transition-all cursor-pointer group"
+                    onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); e.currentTarget.classList.add('border-emerald-400', 'bg-emerald-500/5'); }}
+                    onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); e.currentTarget.classList.remove('border-emerald-400', 'bg-emerald-500/5'); }}
+                    onDrop={async (e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      e.currentTarget.classList.remove('border-emerald-400', 'bg-emerald-500/5');
+                      const file = e.dataTransfer.files[0];
+                      if (file) {
+                        try {
+                          setIsActivatingTrial(true);
+                          setTrialKeyError(null);
+                          const text = await file.text();
+                          const result = await licenseService.importLicenseFile(text);
+                          if (result.success) {
+                            onLicenseValid();
+                          } else {
+                            setTrialKeyError(result.error || "Failed to import license file.");
+                          }
+                        } catch {
+                          setTrialKeyError("Failed to read license file.");
+                        } finally {
+                          setIsActivatingTrial(false);
+                        }
+                      }
+                    }}
+                    onClick={() => {
+                      const input = document.createElement('input');
+                      input.type = 'file';
+                      input.accept = '.license,.txt,.json';
+                      input.onchange = async (e) => {
+                        const file = (e.target as HTMLInputElement).files?.[0];
+                        if (file) {
+                          try {
+                            setIsActivatingTrial(true);
+                            setTrialKeyError(null);
+                            const text = await file.text();
+                            const result = await licenseService.importLicenseFile(text);
+                            if (result.success) {
+                              onLicenseValid();
+                            } else {
+                              setTrialKeyError(result.error || "Failed to import license file.");
+                            }
+                          } catch {
+                            setTrialKeyError("Failed to read license file.");
+                          } finally {
+                            setIsActivatingTrial(false);
+                          }
+                        }
+                      };
+                      input.click();
+                    }}
+                  >
+                    <Shield className="w-5 h-5 text-emerald-500/50 group-hover:text-emerald-400 mx-auto mb-1.5 transition-colors" />
+                    <p className="text-sm text-slate-400 group-hover:text-slate-300 transition-colors">
+                      <span className="font-medium text-emerald-400">Import license file</span> from email
+                    </p>
+                    <p className="text-xs text-slate-600 mt-1">Drop .license file here or click to browse</p>
+                  </div>
+
                   <p className="text-xs text-slate-400 text-center">
-                    All features unlocked • Key expires in 7 days
+                    All features unlocked • Trial expires in 7 days
                   </p>
 
                   <div className="mt-3 pt-3 border-t border-emerald-500/20">
@@ -1325,7 +1394,7 @@ const LicenseScreenComponent: React.FC<LicenseScreenProps> = ({
                       className="w-full flex items-center justify-center gap-2 text-emerald-400 hover:text-emerald-300 text-sm transition-colors"
                     >
                       <Mail className="w-4 h-4" />
-                      <span>Don&apos;t have a trial key? Get one free</span>
+                      <span>Don&apos;t have a license? Get a free trial</span>
                       {showTrialSignupForm ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                     </button>
                     {showTrialSignupForm && (
@@ -1347,7 +1416,7 @@ const LicenseScreenComponent: React.FC<LicenseScreenProps> = ({
                           disabled={trialSignupLoading}
                           className="w-full py-2 bg-emerald-600/80 hover:bg-emerald-600 disabled:opacity-60 text-white text-sm font-medium rounded-lg transition-colors"
                         >
-                          {trialSignupLoading ? "Sending..." : "Send Trial Key"}
+                          {trialSignupLoading ? "Sending..." : "Send Trial License"}
                         </button>
                         {trialSignupError && (
                           <p className="text-xs text-amber-400">{trialSignupError}</p>
