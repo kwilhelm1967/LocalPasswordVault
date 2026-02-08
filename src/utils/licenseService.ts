@@ -268,14 +268,25 @@ export class LicenseService {
       };
     }
 
-    // For trial licenses, check expiration (local only, no network)
-    // No device validation needed for trials - they're device-bound by design
+    // For trial licenses, validate via the signed trial file (includes device binding)
+    // This ensures trials cannot be copied between machines by editing localStorage
     if (type === 'trial') {
+      const trialInfo = await trialService.getTrialInfo();
+      // Trial must be active AND device-bound (getTrialInfo checks device_id match)
+      if (trialInfo.isTrialActive && !trialInfo.isExpired) {
+        return {
+          isValid: true,
+          type,
+          key,
+          activatedDate: activatedDateStr ? new Date(activatedDateStr) : null,
+        };
+      }
+      // Trial is expired, invalid, or device mismatch
       return {
-        isValid: true,
-        type,
-        key,
-        activatedDate: activatedDateStr ? new Date(activatedDateStr) : null,
+        isValid: false,
+        type: null,
+        key: null,
+        activatedDate: null,
       };
     }
 

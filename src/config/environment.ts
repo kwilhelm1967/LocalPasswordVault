@@ -12,7 +12,7 @@ interface Environment {
   stripePublishableKey: string;
   licenseServerUrl: string;
   analyticsEnabled: boolean;
-  licenseSigningSecret?: string;
+  licensePublicKey?: string;
 }
 
 interface EnvironmentConfig {
@@ -107,7 +107,7 @@ function sanitizeConfig(): Environment {
       ? licenseServerUrl
       : "https://api.localpasswordvault.com",
     analyticsEnabled: getEnvVar("VITE_ANALYTICS_ENABLED", "false") === "true",
-    licenseSigningSecret: getEnvVar("VITE_LICENSE_SIGNING_SECRET", ""),
+    licensePublicKey: getEnvVar("VITE_LICENSE_PUBLIC_KEY", ""),
   };
 }
 

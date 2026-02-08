@@ -38,12 +38,6 @@ export { typeGuards } from './typeGuards';
 // ==================== License Management ====================
 export { licenseService } from './licenseService';
 export { licenseValidator } from './licenseValidator';
-export { 
-  SINGLE_USER_LICENSES, 
-  FAMILY_LICENSES, 
-  isValidLicenseKey,
-  getLicenseType 
-} from './licenseKeys';
 
 // ==================== Trial Management ====================
 export { trialService } from './trialService';

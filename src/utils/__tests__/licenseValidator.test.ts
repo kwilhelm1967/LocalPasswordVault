@@ -1,23 +1,10 @@
 /**
  * License Validator Tests
  * 
- * Tests for license file signature verification and validation.
+ * Tests for ECDSA P-256 license file signature verification.
  */
 
 import { verifyLicenseSignature, verifyLicenseSignatureSync } from '../licenseValidator';
-
-// Mock crypto.subtle for HMAC operations
-const mockCrypto = {
-  subtle: {
-    importKey: jest.fn(),
-    sign: jest.fn(),
-  },
-};
-
-Object.defineProperty(global, 'crypto', {
-  value: mockCrypto,
-  writable: true,
-});
 
 describe('License Validator', () => {
   beforeEach(() => {
@@ -53,13 +40,13 @@ describe('License Validator', () => {
 
     it('should reject files without signature in production', async () => {
       const originalEnv = import.meta.env.DEV;
-      const originalSecret = import.meta.env.VITE_LICENSE_SIGNING_SECRET;
+      const originalKey = import.meta.env.VITE_LICENSE_PUBLIC_KEY;
       
       Object.defineProperty(import.meta, 'env', {
         value: { 
           ...import.meta.env, 
           DEV: false,
-          VITE_LICENSE_SIGNING_SECRET: 'test-secret',
+          VITE_LICENSE_PUBLIC_KEY: 'some-public-key',
         },
         writable: true,
       });
@@ -81,62 +68,45 @@ describe('License Validator', () => {
         value: { 
           ...import.meta.env, 
           DEV: originalEnv,
-          VITE_LICENSE_SIGNING_SECRET: originalSecret,
+          VITE_LICENSE_PUBLIC_KEY: originalKey,
         },
         writable: true,
       });
     });
 
-    it('should verify valid signature', async () => {
+    it('should reject files without public key in production', async () => {
       const originalEnv = import.meta.env.DEV;
-      const originalSecret = import.meta.env.VITE_LICENSE_SIGNING_SECRET;
+      const originalKey = import.meta.env.VITE_LICENSE_PUBLIC_KEY;
       
       Object.defineProperty(import.meta, 'env', {
         value: { 
           ...import.meta.env, 
           DEV: false,
-          VITE_LICENSE_SIGNING_SECRET: 'test-secret',
+          VITE_LICENSE_PUBLIC_KEY: '',
         },
         writable: true,
       });
 
-      const licenseData = {
+      const licenseFile = {
         license_key: 'PERS-XXXX-XXXX-XXXX',
         device_id: 'device-id-123',
         plan_type: 'personal',
         max_devices: 1,
         activated_at: new Date().toISOString(),
-      };
-
-      const expectedSignature = 'abc123def456';
-      const licenseFile = {
-        ...licenseData,
-        signature: expectedSignature,
+        signature: 'valid-looking-signature-hex',
         signed_at: new Date().toISOString(),
       };
 
-      // Mock crypto operations
-      const mockKey = { type: 'secret' };
-      const mockSignature = new Uint8Array([0xab, 0xc1, 0x23, 0xde, 0xf4, 0x56]);
-      
-      mockCrypto.subtle.importKey.mockResolvedValue(mockKey);
-      mockCrypto.subtle.sign.mockResolvedValue(mockSignature);
-
-      // Mock TextEncoder
-      global.TextEncoder = jest.fn().mockImplementation(() => ({
-        encode: jest.fn((str: string) => new Uint8Array(str.length)),
-      })) as any;
-
       const result = await verifyLicenseSignature(licenseFile as Parameters<typeof verifyLicenseSignature>[0]);
       
-      expect(mockCrypto.subtle.importKey).toHaveBeenCalled();
-      expect(mockCrypto.subtle.sign).toHaveBeenCalled();
+      // Without a public key in production, should reject
+      expect(result).toBe(false);
 
       Object.defineProperty(import.meta, 'env', {
         value: { 
           ...import.meta.env, 
           DEV: originalEnv,
-          VITE_LICENSE_SIGNING_SECRET: originalSecret,
+          VITE_LICENSE_PUBLIC_KEY: originalKey,
         },
         writable: true,
       });
@@ -144,13 +114,14 @@ describe('License Validator', () => {
 
     it('should handle crypto errors gracefully', async () => {
       const originalEnv = import.meta.env.DEV;
-      const originalSecret = import.meta.env.VITE_LICENSE_SIGNING_SECRET;
+      const originalKey = import.meta.env.VITE_LICENSE_PUBLIC_KEY;
       
       Object.defineProperty(import.meta, 'env', {
         value: { 
           ...import.meta.env, 
           DEV: false,
-          VITE_LICENSE_SIGNING_SECRET: 'test-secret',
+          // Invalid public key that will cause crypto.subtle.importKey to fail
+          VITE_LICENSE_PUBLIC_KEY: 'deadbeef',
         },
         writable: true,
       });
@@ -161,42 +132,34 @@ describe('License Validator', () => {
         plan_type: 'personal',
         max_devices: 1,
         activated_at: new Date().toISOString(),
-        signature: 'valid-signature',
+        signature: 'abcdef1234567890',
         signed_at: new Date().toISOString(),
       };
 
-      mockCrypto.subtle.importKey.mockRejectedValue(
-        new Error('Crypto operation failed')
-      );
-
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
-
       const result = await verifyLicenseSignature(licenseFile as Parameters<typeof verifyLicenseSignature>[0]);
       
+      // Should return false on crypto errors, not throw
       expect(result).toBe(false);
-      expect(consoleSpy).toHaveBeenCalled();
-
-      consoleSpy.mockRestore();
 
       Object.defineProperty(import.meta, 'env', {
         value: { 
           ...import.meta.env, 
           DEV: originalEnv,
-          VITE_LICENSE_SIGNING_SECRET: originalSecret,
+          VITE_LICENSE_PUBLIC_KEY: originalKey,
         },
         writable: true,
       });
     });
 
-    it('should reject files without secret in production', async () => {
+    it('should allow unsigned files in dev when no public key', async () => {
       const originalEnv = import.meta.env.DEV;
-      const originalSecret = import.meta.env.VITE_LICENSE_SIGNING_SECRET;
+      const originalKey = import.meta.env.VITE_LICENSE_PUBLIC_KEY;
       
       Object.defineProperty(import.meta, 'env', {
         value: { 
           ...import.meta.env, 
-          DEV: false,
-          VITE_LICENSE_SIGNING_SECRET: '',
+          DEV: true,
+          VITE_LICENSE_PUBLIC_KEY: '',
         },
         writable: true,
       });
@@ -207,19 +170,19 @@ describe('License Validator', () => {
         plan_type: 'personal',
         max_devices: 1,
         activated_at: new Date().toISOString(),
-        signature: 'valid-signature',
+        signature: 'some-sig',
         signed_at: new Date().toISOString(),
       };
 
       const result = await verifyLicenseSignature(licenseFile as Parameters<typeof verifyLicenseSignature>[0]);
       
-      expect(result).toBe(false);
+      expect(result).toBe(true);
 
       Object.defineProperty(import.meta, 'env', {
         value: { 
           ...import.meta.env, 
           DEV: originalEnv,
-          VITE_LICENSE_SIGNING_SECRET: originalSecret,
+          VITE_LICENSE_PUBLIC_KEY: originalKey,
         },
         writable: true,
       });
@@ -255,13 +218,11 @@ describe('License Validator', () => {
 
     it('should reject files without signature in production', () => {
       const originalEnv = import.meta.env.DEV;
-      const originalSecret = import.meta.env.VITE_LICENSE_SIGNING_SECRET;
       
       Object.defineProperty(import.meta, 'env', {
         value: { 
           ...import.meta.env, 
           DEV: false,
-          VITE_LICENSE_SIGNING_SECRET: 'test-secret',
         },
         writable: true,
       });
@@ -283,21 +244,18 @@ describe('License Validator', () => {
         value: { 
           ...import.meta.env, 
           DEV: originalEnv,
-          VITE_LICENSE_SIGNING_SECRET: originalSecret,
         },
         writable: true,
       });
     });
 
-    it('should accept files with signature structure', () => {
+    it('should accept files with valid hex signature structure', () => {
       const originalEnv = import.meta.env.DEV;
-      const originalSecret = import.meta.env.VITE_LICENSE_SIGNING_SECRET;
       
       Object.defineProperty(import.meta, 'env', {
         value: { 
           ...import.meta.env, 
           DEV: false,
-          VITE_LICENSE_SIGNING_SECRET: 'test-secret',
         },
         writable: true,
       });
@@ -308,11 +266,11 @@ describe('License Validator', () => {
         plan_type: 'personal',
         max_devices: 1,
         activated_at: new Date().toISOString(),
-        signature: 'valid-signature',
+        // Valid hex string of appropriate ECDSA length (~128 chars)
+        signature: 'a'.repeat(128),
         signed_at: new Date().toISOString(),
       };
 
-      // Sync version does basic structure check
       const result = verifyLicenseSignatureSync(licenseFile as Parameters<typeof verifyLicenseSignatureSync>[0]);
       
       expect(result).toBe(true);
@@ -321,15 +279,43 @@ describe('License Validator', () => {
         value: { 
           ...import.meta.env, 
           DEV: originalEnv,
-          VITE_LICENSE_SIGNING_SECRET: originalSecret,
+        },
+        writable: true,
+      });
+    });
+
+    it('should reject files with non-hex signature', () => {
+      const originalEnv = import.meta.env.DEV;
+      
+      Object.defineProperty(import.meta, 'env', {
+        value: { 
+          ...import.meta.env, 
+          DEV: false,
+        },
+        writable: true,
+      });
+
+      const licenseFile = {
+        license_key: 'PERS-XXXX-XXXX-XXXX',
+        device_id: 'device-id-123',
+        plan_type: 'personal',
+        max_devices: 1,
+        activated_at: new Date().toISOString(),
+        signature: 'not-valid-hex!@#$',
+        signed_at: new Date().toISOString(),
+      };
+
+      const result = verifyLicenseSignatureSync(licenseFile as Parameters<typeof verifyLicenseSignatureSync>[0]);
+      
+      expect(result).toBe(false);
+
+      Object.defineProperty(import.meta, 'env', {
+        value: { 
+          ...import.meta.env, 
+          DEV: originalEnv,
         },
         writable: true,
       });
     });
   });
 });
-
-
-
-
-

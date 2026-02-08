@@ -235,8 +235,11 @@ jobs:
               grep -vE "pk_live_" | \
               grep -vE "stripePublishableKey" | \
               grep -vE "LICENSE_SIGNING_SECRET" | \
+              grep -vE "LICENSE_SIGNING_PRIVATE_KEY" | \
               grep -vE "licenseSigningSecret" | \
+              grep -vE "licensePublicKey" | \
               grep -vE "VITE_LICENSE_SIGNING_SECRET" | \
+              grep -vE "VITE_LICENSE_PUBLIC_KEY" | \
               grep -vE "test-secret" || true)
             
             if [ -n "$SECRET_MATCHES" ]; then
