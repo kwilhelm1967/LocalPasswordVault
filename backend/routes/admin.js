@@ -1,6 +1,6 @@
 const express = require('express');
 const db = require('../database/db');
-const { stripe, getCheckoutSession } = require('../services/stripe');
+const { getCheckoutSession } = require('../services/stripe');
 const { sendPurchaseEmail, sendBundleEmail } = require('../services/email');
 const logger = require('../utils/logger');
 const router = express.Router();
@@ -8,7 +8,8 @@ const router = express.Router();
 // Simple API key authentication middleware
 // In production, use a more secure method (e.g., JWT, OAuth)
 function requireAdminAuth(req, res, next) {
-  const apiKey = req.headers['x-admin-api-key'] || req.query.apiKey;
+  // SECURITY: Only accept API key from header, not query params (avoids key leaking in URLs/logs)
+  const apiKey = req.headers['x-admin-api-key'];
   const expectedKey = process.env.ADMIN_API_KEY;
   
   if (!expectedKey) {
