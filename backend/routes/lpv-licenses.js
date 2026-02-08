@@ -316,7 +316,7 @@ router.post('/activate', async (req, res) => {
     
   } catch (error) {
     logger.error('LPV License activation error', error, {
-      licenseKey: req.body?.license_key,
+      licenseKey: req.body?.license_key ? `${req.body.license_key.substring(0, 8)}...` : undefined,
       operation: 'license_activation',
     });
     res.status(500).json({ 
@@ -452,7 +452,7 @@ router.post('/transfer', async (req, res) => {
     
   } catch (error) {
     logger.error('LPV License transfer error', error, {
-      licenseKey: req.body?.license_key,
+      licenseKey: req.body?.license_key ? `${req.body.license_key.substring(0, 8)}...` : undefined,
       operation: 'license_transfer',
     });
     res.status(500).json({ 

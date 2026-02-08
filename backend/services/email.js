@@ -414,10 +414,10 @@ async function sendAlertEmail({ subject, message }) {
     <body>
       <div class="alert">
         <h2>⚠️ System Alert</h2>
-        <p><strong>${subject}</strong></p>
+        <p><strong>${escapeHtml(subject)}</strong></p>
       </div>
       <div class="details">
-        <pre>${message}</pre>
+        <pre>${escapeHtml(message)}</pre>
       </div>
       <p style="color: #6b7280; font-size: 12px; margin-top: 20px;">
         This is an automated alert from Local Password Vault backend.
@@ -480,8 +480,8 @@ async function sendTicketCreatedEmail({ to, ticketNumber, subject }) {
         
         <div class="ticket-info">
           <p><strong>Ticket Number:</strong></p>
-          <p class="ticket-number">${ticketNumber}</p>
-          <p><strong>Subject:</strong> ${subject}</p>
+          <p class="ticket-number">${escapeHtml(ticketNumber)}</p>
+          <p><strong>Subject:</strong> ${escapeHtml(subject)}</p>
         </div>
         
         <p>We've received your support request and will respond as soon as possible. You can track your ticket status and add additional information by visiting our support page.</p>
@@ -540,6 +540,19 @@ This is an automated email from Local Password Vault.
 /**
  * Send ticket response notification email
  */
+/**
+ * Sanitize HTML to prevent XSS in email templates
+ */
+function escapeHtml(text) {
+  if (!text || typeof text !== 'string') return '';
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 async function sendTicketResponseEmail({ to, ticketNumber, customerEmail, customerName, message }) {
   const html = `
     <!DOCTYPE html>
@@ -561,13 +574,13 @@ async function sendTicketResponseEmail({ to, ticketNumber, customerEmail, custom
       </div>
       <div class="content">
         <div class="ticket-info">
-          <p><strong>Ticket:</strong> ${ticketNumber}</p>
-          <p><strong>Customer:</strong> ${customerName || customerEmail}</p>
-          <p><strong>Email:</strong> ${customerEmail}</p>
+          <p><strong>Ticket:</strong> ${escapeHtml(ticketNumber)}</p>
+          <p><strong>Customer:</strong> ${escapeHtml(customerName || customerEmail)}</p>
+          <p><strong>Email:</strong> ${escapeHtml(customerEmail)}</p>
         </div>
         
         <p><strong>New Message:</strong></p>
-        <div class="message">${message}</div>
+        <div class="message">${escapeHtml(message)}</div>
         
         <p>Please respond to this ticket through the support dashboard.</p>
       </div>
@@ -631,4 +644,5 @@ module.exports = {
   verifyConnection,
   loadTemplate,
   isEmailServiceReady,
+  escapeHtml,
 };

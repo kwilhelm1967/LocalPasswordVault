@@ -1,6 +1,6 @@
 const express = require('express');
 const db = require('../database/db');
-const { stripe, verifyWebhookSignature, getCheckoutSession, PRODUCTS, getProductByPriceId } = require('../services/stripe');
+const { getStripeInstance, verifyWebhookSignature, getCheckoutSession, PRODUCTS, getProductByPriceId } = require('../services/stripe');
 const { 
   generatePersonalKey, 
   generateFamilyKey, 
@@ -196,6 +196,7 @@ async function handleCheckoutCompleted(session) {
   }
   
   const fullSession = await getCheckoutSession(session.id);
+  const stripe = getStripeInstance();
   const lineItems = await stripe.checkout.sessions.listLineItems(session.id, {
     expand: ['data.price.product'],
   });

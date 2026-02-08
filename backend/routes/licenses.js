@@ -2,6 +2,7 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const db = require('../database/db');
 const { normalizeKey, isValidFormat } = require('../services/licenseGenerator');
+const logger = require('../utils/logger');
 
 /**
  * LEGACY LICENSE VALIDATION ENDPOINT
@@ -132,7 +133,6 @@ router.post('/validate', async (req, res) => {
     // LEGACY ENDPOINT: This endpoint still uses JWT for backward compatibility
     // Main LPV activation endpoints use signed license files (HMAC-SHA256)
     // This endpoint is deprecated and should not be used for new implementations
-    const logger = require('../utils/logger');
     if (!process.env.JWT_SECRET) {
       logger.error('JWT_SECRET not configured (required for legacy endpoint)', null, {
         operation: 'license_validation',

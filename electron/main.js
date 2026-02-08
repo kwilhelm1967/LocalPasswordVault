@@ -76,6 +76,7 @@ let floatingButtonPosition = null;
 let floatingPanelInterval = null;
 let floatingButtonInterval = null;
 let isTogglingFloatingWindow = false;
+let trialValidationInterval = null;
 const userDataPath = app.getPath("userData");
 
 // SECURE: Initialize secure file storage
@@ -517,11 +518,13 @@ const createFloatingWindow = () => {
 
     // Position at the saved position or top-right corner as a fallback
     if (
-      savedPosition &&
-      typeof savedPosition.x === "number" &&
-      typeof savedPosition.y === "number"
+      floatingPanelPosition &&
+      typeof floatingPanelPosition.x === "number" &&
+      typeof floatingPanelPosition.y === "number"
     ) {
-      floatingWindow.setPosition(savedPosition.x, savedPosition.y);
+      const validX = Math.max(0, Math.min(width - 200, floatingPanelPosition.x));
+      const validY = Math.max(0, Math.min(height - 200, floatingPanelPosition.y));
+      floatingWindow.setPosition(validX, validY);
     } else {
       positioner.move("topRight");
     }
@@ -820,11 +823,11 @@ const createFloatingButton = () => {
       // Ensure position is within screen bounds
       const validX = Math.max(
         0,
-        Math.min(width - buttonSize, savedButtonPosition.x)
+        Math.min(width - windowSize, savedButtonPosition.x)
       );
       const validY = Math.max(
         0,
-        Math.min(height - buttonSize, savedButtonPosition.y)
+        Math.min(height - windowSize, savedButtonPosition.y)
       );
       windowOptions.x = validX;
       windowOptions.y = validY;
@@ -1388,7 +1391,7 @@ app.whenReady().then(() => {
   // It should only be created when vault is unlocked
 
   // TRIAL SECURITY: Start periodic trial validation
-  let trialValidationInterval = setInterval(() => {
+  trialValidationInterval = setInterval(() => {
     validateAndEnforceTrialStatus();
   }, 30000); // Check every 30 seconds
 

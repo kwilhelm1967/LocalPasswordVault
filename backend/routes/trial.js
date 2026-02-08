@@ -38,12 +38,13 @@ router.post('/signup', async (req, res) => {
       return trialProductType === 'lpv';
     });
     
-    // If existing trial for this product type exists and is still valid, resend
+    // If existing trial for this product type exists, handle accordingly
     if (existingTrial) {
       const expiresAt = new Date(existingTrial.expires_at);
       const now = new Date();
       
       if (now < expiresAt) {
+        // Trial still active - resend key
         try {
           await sendTrialEmail({
             to: normalizedEmail,
@@ -70,7 +71,13 @@ router.post('/signup', async (req, res) => {
           trialKey: existingTrial.trial_key,
         });
       }
-      // If expired, will create new trial below
+      
+      // Trial expired - do not allow another trial signup
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Your trial has expired. Please upgrade to a paid license to continue.',
+        trialExpired: true,
+      });
     }
     
     // Prevent trial if customer already has a license

@@ -155,7 +155,9 @@ app.get('/health', async (req, res) => {
   } catch (error) {
     health.checks.database = 'error';
     health.status = 'degraded';
-    health.databaseError = error.message;
+    if (process.env.NODE_ENV === 'development') {
+      health.databaseError = error.message;
+    }
   }
   
   // Check Stripe connectivity
@@ -166,16 +168,24 @@ app.get('/health', async (req, res) => {
   } catch (error) {
     health.checks.stripe = 'error';
     health.status = 'degraded';
-    health.stripeError = error.message;
+    if (process.env.NODE_ENV === 'development') {
+      health.stripeError = error.message;
+    }
   }
   
   const statusCode = health.status === 'ok' ? 200 : 503;
   res.status(statusCode).json(health);
 });
 
-// Performance metrics endpoint (NO customer data)
+// Performance metrics endpoint (NO customer data) - requires admin auth
 app.get('/metrics', (req, res) => {
-  // Optional: Add basic auth or IP whitelist for production
+  const apiKey = req.headers['x-admin-api-key'];
+  const expectedKey = process.env.ADMIN_API_KEY;
+  
+  if (!expectedKey || apiKey !== expectedKey) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  
   const summary = performanceMonitor.getSummary();
   res.json({
     timestamp: new Date().toISOString(),
@@ -191,7 +201,7 @@ app.use('/api/lpv/license', lpvLicensesRouter);
 app.use('/api/trial', strictRateLimit, trialRouter);
 app.use('/api/webhooks', webhooksRouter);
 app.use('/api/checkout', strictRateLimit, checkoutRouter);
-app.use('/api/tickets', ticketsRouter);
+app.use('/api/tickets', strictRateLimit, ticketsRouter);
 app.use('/api/admin', adminRouter);
 app.use('/api/test', testRouter);
 
