@@ -2,22 +2,37 @@
  * Performance Budgets Configuration
  * 
  * Defines performance budgets for rendering, operations, and memory usage.
+ * Budget check functions return { exceeds, warning, budget, warningThreshold }
+ * to enable tiered alerting in the performance monitor.
  */
 
 export interface PerformanceBudgets {
   render: {
-    mount: number; // ms
-    update: number; // ms
+    mount: number; // ms - budget for initial component mount
+    update: number; // ms - budget for component updates (target: 60fps)
   };
   operation: {
-    fast: number; // ms
-    normal: number; // ms
-    slow: number; // ms
+    fast: number; // ms - budget for fast sync operations
+    normal: number; // ms - budget for normal operations
+    slow: number; // ms - budget for slow/async operations
   };
   memory: {
-    warning: number; // MB
-    critical: number; // MB
+    warning: number; // MB - warning threshold
+    critical: number; // MB - critical threshold
+    maxMemoryGrowthMB: number; // MB/min - max acceptable memory growth rate
   };
+}
+
+/** Result returned by all budget check functions */
+export interface BudgetCheckResult {
+  /** True if the metric exceeds the hard budget limit */
+  exceeds: boolean;
+  /** True if the metric exceeds the warning threshold (80% of budget) but not the limit */
+  warning: boolean;
+  /** The hard budget limit */
+  budget: number;
+  /** The warning threshold (80% of budget) */
+  warningThreshold: number;
 }
 
 const BUDGETS: PerformanceBudgets = {
@@ -33,53 +48,53 @@ const BUDGETS: PerformanceBudgets = {
   memory: {
     warning: 100, // 100MB
     critical: 500, // 500MB
+    maxMemoryGrowthMB: 5, // 5MB/min max growth before leak warning
   },
 };
 
 export const getPerformanceBudgets = (): PerformanceBudgets => BUDGETS;
 
-export const checkRenderBudget = (renderTime: number, isMount: boolean): { withinBudget: boolean; budget: number } => {
+/**
+ * Check render time against budget.
+ * Uses mount budget for initial renders, update budget for re-renders.
+ * Warning threshold is 80% of the budget.
+ */
+export const checkRenderBudget = (renderTime: number, isMount: boolean): BudgetCheckResult => {
   const budget = isMount ? BUDGETS.render.mount : BUDGETS.render.update;
+  const warningThreshold = budget * 0.8;
   return {
-    withinBudget: renderTime <= budget,
+    exceeds: renderTime > budget,
+    warning: renderTime > warningThreshold && renderTime <= budget,
     budget,
+    warningThreshold,
   };
 };
 
-export const checkOperationBudget = (operationTime: number): { withinBudget: boolean; budget: number; category: 'fast' | 'normal' | 'slow' } => {
-  let category: 'fast' | 'normal' | 'slow' = 'fast';
-  let budget = BUDGETS.operation.fast;
-  
-  if (operationTime > BUDGETS.operation.slow) {
-    category = 'slow';
-    budget = BUDGETS.operation.slow;
-  } else if (operationTime > BUDGETS.operation.normal) {
-    category = 'normal';
-    budget = BUDGETS.operation.normal;
-  }
-  
+/**
+ * Check operation time against budget.
+ * Uses the slow (async) budget when isAsync is true, otherwise uses the normal budget.
+ * Warning threshold is 80% of the budget.
+ */
+export const checkOperationBudget = (operationTime: number, isAsync: boolean = false): BudgetCheckResult => {
+  const budget = isAsync ? BUDGETS.operation.slow : BUDGETS.operation.normal;
+  const warningThreshold = budget * 0.8;
   return {
-    withinBudget: operationTime <= budget,
+    exceeds: operationTime > budget,
+    warning: operationTime > warningThreshold && operationTime <= budget,
     budget,
-    category,
+    warningThreshold,
   };
 };
 
-export const checkMemoryBudget = (memoryMB: number): { withinBudget: boolean; budget: number; level: 'ok' | 'warning' | 'critical' } => {
-  let level: 'ok' | 'warning' | 'critical' = 'ok';
-  let budget = BUDGETS.memory.warning;
-  
-  if (memoryMB > BUDGETS.memory.critical) {
-    level = 'critical';
-    budget = BUDGETS.memory.critical;
-  } else if (memoryMB > BUDGETS.memory.warning) {
-    level = 'warning';
-    budget = BUDGETS.memory.warning;
-  }
-  
+/**
+ * Check memory usage against budget.
+ * Warning at the warning threshold, exceeds at the critical threshold.
+ */
+export const checkMemoryBudget = (memoryMB: number): BudgetCheckResult => {
   return {
-    withinBudget: memoryMB <= budget,
-    budget,
-    level,
+    exceeds: memoryMB > BUDGETS.memory.critical,
+    warning: memoryMB > BUDGETS.memory.warning && memoryMB <= BUDGETS.memory.critical,
+    budget: BUDGETS.memory.critical,
+    warningThreshold: BUDGETS.memory.warning,
   };
 };

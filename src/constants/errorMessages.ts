@@ -14,6 +14,8 @@ export const ERROR_MESSAGES = {
     ACTIVATION_FAILED: "License activation failed. Please check your license key and try again.",
     ACTIVATION_CANCELLED: "License activation was cancelled.",
     INVALID_LICENSE_KEY: "Invalid license key format. Please check and try again.",
+    INVALID_FORMAT: "Invalid license key format. Expected format: XXXX-XXXX-XXXX-XXXX.",
+    INVALID_KEY: "Invalid license key. Please verify your key and try again.",
     LICENSE_EXPIRED: "Your license has expired. Please renew to continue using the app.",
     LICENSE_REVOKED: "This license has been revoked. Please contact support.",
     DEVICE_MISMATCH: "This license is already activated on another device.",
