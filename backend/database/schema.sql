@@ -27,13 +27,13 @@ CREATE TABLE IF NOT EXISTS licenses (
     id SERIAL PRIMARY KEY,
     license_key TEXT NOT NULL UNIQUE,
     
-    -- License type: 'personal', 'family', 'llv_personal', 'llv_family'
-    -- Supports both Local Password Vault (LPV) and Local Legacy Vault (LLV)
-    plan_type TEXT NOT NULL CHECK (plan_type IN ('personal', 'family', 'llv_personal', 'llv_family')),
+    -- License type: 'personal', 'family', 'llv_personal', 'llv_family', 'afterpassing_addon', 'afterpassing_standalone'
+    -- Supports Local Password Vault (LPV), Local Legacy Vault (LLV), and AfterPassing Guide
+    plan_type TEXT NOT NULL CHECK (plan_type IN ('personal', 'family', 'llv_personal', 'llv_family', 'afterpassing_addon', 'afterpassing_standalone', 'trial')),
     
-    -- Product type: 'lpv' (Local Password Vault) or 'llv' (Local Legacy Vault)
-    -- Both products use the same Supabase database, distinguished by this field
-    product_type TEXT DEFAULT 'lpv' CHECK (product_type IN ('lpv', 'llv')),
+    -- Product type: 'lpv' (Local Password Vault), 'llv' (Local Legacy Vault), or 'afterpassing'
+    -- All products use the same Supabase database, distinguished by this field
+    product_type TEXT DEFAULT 'lpv' CHECK (product_type IN ('lpv', 'llv', 'afterpassing')),
     
     -- Customer association
     customer_id INTEGER REFERENCES customers(id),
@@ -75,6 +75,9 @@ CREATE TABLE IF NOT EXISTS trials (
     id SERIAL PRIMARY KEY,
     email TEXT NOT NULL UNIQUE,
     trial_key TEXT NOT NULL UNIQUE,
+    
+    -- Product type: 'lpv' (Local Password Vault) or 'llv' (Local Legacy Vault)
+    product_type TEXT DEFAULT 'lpv',
     
     -- Hardware binding (prevents trial abuse)
     hardware_hash TEXT,

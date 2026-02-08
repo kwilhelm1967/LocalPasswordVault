@@ -6,7 +6,11 @@
 # Backups (contain sensitive data)
 backups/
 *.backup
+
+# SQL backups (but allow schema and migration files)
 *.sql
+!database/*.sql
+!database/migrations/*.sql
 
 # Logs
 logs/
