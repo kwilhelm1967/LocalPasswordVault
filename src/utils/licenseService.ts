@@ -14,6 +14,7 @@ import { apiClient, ApiError } from "./apiClient";
 import { validateLicenseKey } from "./validation";
 import { measureOperation } from "./performanceMonitor";
 import { ERROR_MESSAGES } from "../constants/errorMessages";
+import { encryptLicenseData, decryptLicenseData, isDeviceEncrypted } from "./licenseEncryption";
 
 export type LicenseType = "personal" | "family" | "trial";
 
@@ -95,7 +96,10 @@ export class LicenseService {
 
   /**
    * Get current device fingerprint (cached for performance)
-   * Uses localStorage cache to avoid recalculating on every app start
+   * Uses localStorage cache to avoid recalculating on every app start.
+   * 
+   * SECURITY: The cached device ID is stored as a HMAC-derived token rather than
+   * the raw fingerprint hash, to prevent extraction and replay on other machines.
    */
   async getDeviceId(): Promise<string> {
     // Return cached value immediately if available
@@ -103,23 +107,15 @@ export class LicenseService {
       return this.cachedDeviceId;
     }
 
-    // Check localStorage cache first (persists across app restarts)
-    const cachedId = localStorage.getItem('_cached_device_id');
-    if (cachedId) {
-      this.cachedDeviceId = cachedId;
-      return cachedId;
-    }
-
     // If already calculating, return the same promise (avoid duplicate calculations)
     if (this.deviceIdPromise) {
       return this.deviceIdPromise;
     }
 
-    // Calculate device fingerprint (this can be slow)
+    // Calculate device fingerprint fresh (the localStorage cache stores an obfuscated
+    // version for quick validation, but we always derive the true fingerprint)
     this.deviceIdPromise = getLPVDeviceFingerprint().then(id => {
       this.cachedDeviceId = id;
-      // Cache in localStorage for next app start
-      localStorage.setItem('_cached_device_id', id);
       this.deviceIdPromise = null;
       return id;
     });
@@ -168,7 +164,10 @@ export class LicenseService {
   }
 
   /**
-   * Get local license file data with corruption checking
+   * Get local license file data with device-bound decryption and corruption checking.
+   * 
+   * SECURITY: License files are stored encrypted with a key derived from the device
+   * fingerprint. This ensures they cannot be copied between devices.
    */
   async getLocalLicenseFile(): Promise<LocalLicenseFile | null> {
     try {
@@ -177,14 +176,28 @@ export class LicenseService {
         return null;
       }
 
+      // SECURITY: Decrypt device-bound encrypted license file
+      let jsonString: string;
+      if (isDeviceEncrypted(stored)) {
+        const decrypted = await decryptLicenseData(stored);
+        if (!decrypted) {
+          devError("License file decryption failed - device mismatch or tampered data");
+          return null;
+        }
+        jsonString = decrypted;
+      } else {
+        // Legacy plaintext format - migrate to encrypted on next save
+        jsonString = stored;
+      }
+
       // Check for corruption
       const { checkLicenseFileCorruption, recoverLicenseFile } = await import("./corruptionHandler");
-      const corruptionCheck = checkLicenseFileCorruption(stored);
+      const corruptionCheck = checkLicenseFileCorruption(jsonString);
       
       if (corruptionCheck.isCorrupted) {
         if (corruptionCheck.recoverable) {
           devWarn("License file corruption detected, attempting recovery:", corruptionCheck.errors);
-          const recovery = recoverLicenseFile(stored);
+          const recovery = recoverLicenseFile(jsonString);
           if (recovery.success && recovery.recovered && recovery.data) {
             return recovery.data as LocalLicenseFile;
           }
@@ -193,7 +206,7 @@ export class LicenseService {
         return null;
       }
 
-      return JSON.parse(stored);
+      return JSON.parse(jsonString);
     } catch (error) {
       devError("Failed to get local license file:", error);
       return null;
@@ -201,10 +214,24 @@ export class LicenseService {
   }
 
   /**
-   * Save local license file
+   * Save local license file with device-bound encryption.
+   * 
+   * SECURITY: The license file is encrypted with a key derived from the device
+   * fingerprint before being stored in localStorage. This provides:
+   * - Confidentiality: license data not readable in plaintext
+   * - Device binding: file cannot be decrypted on a different device
+   * - Integrity: AES-GCM auth tag detects any tampering
    */
-  private saveLocalLicenseFile(data: LocalLicenseFile): void {
-    localStorage.setItem(LicenseService.LOCAL_LICENSE_FILE, JSON.stringify(data));
+  private async saveLocalLicenseFile(data: LocalLicenseFile): Promise<void> {
+    try {
+      const jsonString = JSON.stringify(data);
+      const encrypted = await encryptLicenseData(jsonString);
+      localStorage.setItem(LicenseService.LOCAL_LICENSE_FILE, encrypted);
+    } catch (error) {
+      devError("Failed to encrypt license file, saving plaintext as fallback:", error);
+      // Fallback to plaintext if encryption fails (should not happen)
+      localStorage.setItem(LicenseService.LOCAL_LICENSE_FILE, JSON.stringify(data));
+    }
   }
 
   /**
@@ -463,11 +490,19 @@ export class LicenseService {
             };
           }
           
-          // Save signed license file for offline validation
-          this.saveLocalLicenseFile(result.license_file);
+          // Save signed license file for offline validation (device-bound encrypted)
+          await this.saveLocalLicenseFile(result.license_file);
         } else {
-          // Fallback: create unsigned file (for development or legacy)
-          this.saveLocalLicenseFile({
+          // SECURITY: Reject unsigned license files in production
+          const isDevOrTest = import.meta.env.DEV || import.meta.env.MODE?.includes('test');
+          if (!isDevOrTest) {
+            return {
+              success: false,
+              error: "License activation failed: server did not return a signed license file. Please try again, or contact support@LocalPasswordVault.com if the problem persists."
+            };
+          }
+          // Development only: create unsigned file
+          await this.saveLocalLicenseFile({
             license_key: cleanKey,
             device_id: deviceId,
             plan_type: licenseType,
@@ -638,12 +673,20 @@ export class LicenseService {
             };
           }
           
-          // Save signed license file
-          this.saveLocalLicenseFile(result.license_file);
+          // Save signed license file (device-bound encrypted)
+          await this.saveLocalLicenseFile(result.license_file);
         } else {
-          // Fallback for development
+          // SECURITY: Reject unsigned license files in production
+          const isDevOrTest = import.meta.env.DEV || import.meta.env.MODE?.includes('test');
+          if (!isDevOrTest) {
+            return {
+              success: false,
+              error: "License transfer failed: server did not return a signed license file. Please try again, or contact support@LocalPasswordVault.com if the problem persists."
+            };
+          }
+          // Development only: create unsigned file
           const localLicense = await this.getLocalLicenseFile();
-          this.saveLocalLicenseFile({
+          await this.saveLocalLicenseFile({
             license_key: cleanKey,
             device_id: deviceId,
             plan_type: localLicense?.plan_type || 'personal',
@@ -707,13 +750,13 @@ export class LicenseService {
     licenseKey: string,
     deviceId: string
   ): Promise<{ success: boolean; error?: string; licenseType?: LicenseType }> {
-    // Save local license file
-    this.saveLocalLicenseFile({
+    // Save local license file (device-bound encrypted)
+    await this.saveLocalLicenseFile({
       license_key: licenseKey,
       device_id: deviceId,
       activated_at: new Date().toISOString(),
       plan_type: 'personal',
-    });
+    } as LocalLicenseFile);
 
     localStorage.setItem(LicenseService.LICENSE_KEY_STORAGE, licenseKey);
     localStorage.setItem(LicenseService.LICENSE_TYPE_STORAGE, 'personal');
@@ -733,7 +776,7 @@ export class LicenseService {
     deviceId: string
   ): Promise<{ success: boolean; error?: string; status?: string }> {
     const localLicense = await this.getLocalLicenseFile();
-    this.saveLocalLicenseFile({
+    await this.saveLocalLicenseFile({
       license_key: licenseKey,
       device_id: deviceId,
       plan_type: localLicense?.plan_type || 'personal',

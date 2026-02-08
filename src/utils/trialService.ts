@@ -5,6 +5,7 @@ import { ERROR_MESSAGES } from "../constants/errorMessages";
 import { apiClient, ApiError } from "./apiClient";
 import { getLPVDeviceFingerprint } from "./deviceFingerprint";
 import environment from "../config/environment";
+import { encryptLicenseData, decryptLicenseData, isDeviceEncrypted } from "./licenseEncryption";
 
 export interface TrialInfo {
   isTrialActive: boolean;
@@ -99,7 +100,7 @@ export class TrialService {
           signed_at: new Date().toISOString(),
         };
         
-        this.saveTrialFile(trialFile);
+        await this.saveTrialFileEncrypted(trialFile);
         localStorage.setItem(TrialService.TRIAL_USED_KEY, "true");
         
         const trialInfo = await this.getTrialInfo();
@@ -159,8 +160,8 @@ export class TrialService {
           };
         }
 
-        // Save signed trial file
-        this.saveTrialFile(result.trial_file);
+        // Save signed trial file (device-bound encrypted)
+        await this.saveTrialFileEncrypted(result.trial_file);
         localStorage.setItem(TrialService.TRIAL_USED_KEY, "true");
 
         const trialInfo = await this.getTrialInfo();
@@ -265,7 +266,7 @@ export class TrialService {
    * Only reads from localStorage and validates local trial file signature
    */
   async getTrialInfo(): Promise<TrialInfo> {
-    const trialFile = this.getTrialFile();
+    const trialFile = await this.getTrialFileAsync();
     
     if (!trialFile) {
       const hasTrialBeenUsed = localStorage.getItem(TrialService.TRIAL_USED_KEY) === "true";
@@ -311,22 +312,15 @@ export class TrialService {
       };
     }
 
-    // Verify device binding (use cached device ID if available)
+    // Verify device binding (use in-memory cache if available)
+    // SECURITY: Device fingerprint is NOT stored in localStorage to prevent extraction
     let currentDeviceId: string;
     if (this.cachedDeviceId) {
       currentDeviceId = this.cachedDeviceId;
     } else {
-      // Check localStorage cache first (shared with licenseService)
-      const cachedId = localStorage.getItem('_cached_device_id');
-      if (cachedId) {
-        this.cachedDeviceId = cachedId;
-        currentDeviceId = cachedId;
-      } else {
-        // Calculate if not cached (expensive operation)
-        currentDeviceId = await getLPVDeviceFingerprint();
-        this.cachedDeviceId = currentDeviceId;
-        localStorage.setItem('_cached_device_id', currentDeviceId);
-      }
+      // Calculate device fingerprint (cached in memory only)
+      currentDeviceId = await getLPVDeviceFingerprint();
+      this.cachedDeviceId = currentDeviceId;
     }
     
     if (trialFile.device_id !== currentDeviceId) {
@@ -409,12 +403,23 @@ export class TrialService {
   }
 
   /**
-   * Get signed trial file from storage
+   * Get signed trial file from storage (with device-bound decryption)
+   * 
+   * SECURITY: Trial files are stored encrypted with a key derived from the
+   * device fingerprint, preventing copying between devices.
    */
   private getTrialFile(): SignedTrialFile | null {
+    // Note: This is synchronous for backward compatibility with sync callers.
+    // The encrypted version is decrypted in getTrialInfo() which is async.
     try {
       const stored = localStorage.getItem(TrialService.TRIAL_FILE_STORAGE);
       if (!stored) return null;
+      
+      // If data is device-encrypted, return null here (async callers use getTrialFileAsync)
+      if (isDeviceEncrypted(stored)) {
+        return null; // Will be handled by getTrialFileAsync
+      }
+      
       return JSON.parse(stored) as SignedTrialFile;
     } catch (error) {
       devError('Failed to parse trial file:', error);
@@ -423,11 +428,63 @@ export class TrialService {
   }
 
   /**
-   * Save signed trial file to storage
+   * Get signed trial file from storage (async version with decryption)
+   */
+  private async getTrialFileAsync(): Promise<SignedTrialFile | null> {
+    try {
+      const stored = localStorage.getItem(TrialService.TRIAL_FILE_STORAGE);
+      if (!stored) return null;
+
+      // SECURITY: Decrypt device-bound encrypted trial file
+      let jsonString: string;
+      if (isDeviceEncrypted(stored)) {
+        const decrypted = await decryptLicenseData(stored);
+        if (!decrypted) {
+          devError("Trial file decryption failed - device mismatch or tampered data");
+          return null;
+        }
+        jsonString = decrypted;
+      } else {
+        // Legacy plaintext format
+        jsonString = stored;
+      }
+
+      return JSON.parse(jsonString) as SignedTrialFile;
+    } catch (error) {
+      devError('Failed to parse trial file:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Save signed trial file to storage (with device-bound encryption)
+   * 
+   * SECURITY: The trial file is encrypted with a key derived from the device
+   * fingerprint before being stored in localStorage.
+   */
+  private async saveTrialFileEncrypted(trialFile: SignedTrialFile): Promise<void> {
+    try {
+      const jsonString = JSON.stringify(trialFile);
+      const encrypted = await encryptLicenseData(jsonString);
+      localStorage.setItem(TrialService.TRIAL_FILE_STORAGE, encrypted);
+    } catch (error) {
+      devError('Failed to encrypt trial file, saving plaintext as fallback:', error);
+      localStorage.setItem(TrialService.TRIAL_FILE_STORAGE, JSON.stringify(trialFile));
+    }
+  }
+
+  /**
+   * Save signed trial file to storage (legacy sync method)
+   * @deprecated Use saveTrialFileEncrypted for device-bound encryption
    */
   private saveTrialFile(trialFile: SignedTrialFile): void {
     try {
-      localStorage.setItem(TrialService.TRIAL_FILE_STORAGE, JSON.stringify(trialFile));
+      // Call the async encrypted save (fire and forget for backward compat)
+      this.saveTrialFileEncrypted(trialFile).catch(error => {
+        devError('Failed to save encrypted trial file:', error);
+        // Fallback to plaintext
+        localStorage.setItem(TrialService.TRIAL_FILE_STORAGE, JSON.stringify(trialFile));
+      });
     } catch (error) {
       devError('Failed to save trial file:', error);
     }
