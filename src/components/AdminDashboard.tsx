@@ -4,7 +4,7 @@ import { formatDateUSA, formatDateTimeUSA } from "../utils/dateFormat";
 import { ReleaseDistributionForm } from "./ReleaseDistributionForm";
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
-type TabId = "metrics" | "overview" | "recent" | "search" | "trials" | "customers" | "profile" | "webhooks" | "texas" | "scripts" | "release" | "releaseNotes" | "emails" | "orders" | "licenses" | "funnel" | "downloads" | "support" | "attribution" | "leads" | "playbooks" | "analytics" | "bugs" | "audit" | "policy" | "status" | "partners" | "builds" | "extras";
+type TabId = "metrics" | "overview" | "recent" | "search" | "trials" | "customers" | "profile" | "webhooks" | "texas" | "scripts" | "release" | "releaseNotes" | "emails" | "orders" | "licenses" | "funnel" | "downloads" | "support" | "attribution" | "leads" | "playbooks" | "analytics" | "bugs" | "audit" | "policy" | "status" | "partners" | "builds" | "extras" | "ops" | "infra" | "roadmap" | "selfservice";
 
 const TABS: { id: TabId; label: string }[] = [
   { id: "metrics", label: "Home" },
@@ -34,6 +34,10 @@ const TABS: { id: TabId; label: string }[] = [
   { id: "partners", label: "Partner Codes" },
   { id: "builds", label: "Build Artifacts" },
   { id: "extras", label: "Extras" },
+  { id: "ops", label: "🔧 Operations" },
+  { id: "infra", label: "🏗 Infrastructure" },
+  { id: "roadmap", label: "🗺 Roadmap" },
+  { id: "selfservice", label: "🛎 Self-Service Tools" },
 ];
 
 function authHeaders(token: string): HeadersInit {
@@ -4064,18 +4068,18 @@ export function AdminDashboard({ onClose }: { onClose: () => void }) {
         {tab === "scripts" && (
           <>
             <div style={cardStyle}>
-              <h3 style={{ ...sectionTitle, marginBottom: 12 }}>Key management (hot actions)</h3>
-              <p style={{ color: theme.textSecondary, fontSize: 13, marginBottom: 16 }}>Quick access to create, activate, move, or deactivate keys.</p>
+              <h3 style={{ ...sectionTitle, marginBottom: 12 }}>License management (hot actions)</h3>
+              <p style={{ color: theme.textSecondary, fontSize: 13, marginBottom: 16 }}>Quick access to create, activate, move, or deactivate licenses.</p>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 8 }}>
-                <button type="button" onClick={() => setTab("trials")} style={{ padding: "10px 16px", background: theme.buttonPrimaryBg, color: theme.buttonPrimaryText, border: "none", borderRadius: theme.radiusButton, fontWeight: 600, cursor: "pointer", fontSize: 13 }}>Create trial key</button>
-                <button type="button" onClick={() => setTab("trials")} style={{ padding: "10px 16px", background: theme.buttonPrimaryBg, color: theme.buttonPrimaryText, border: "none", borderRadius: theme.radiusButton, fontWeight: 600, cursor: "pointer", fontSize: 13 }}>Create license key</button>
+                <button type="button" onClick={() => setTab("trials")} style={{ padding: "10px 16px", background: theme.buttonPrimaryBg, color: theme.buttonPrimaryText, border: "none", borderRadius: theme.radiusButton, fontWeight: 600, cursor: "pointer", fontSize: 13 }}>Create trial license</button>
+                <button type="button" onClick={() => setTab("trials")} style={{ padding: "10px 16px", background: theme.buttonPrimaryBg, color: theme.buttonPrimaryText, border: "none", borderRadius: theme.radiusButton, fontWeight: 600, cursor: "pointer", fontSize: 13 }}>Create paid license</button>
                 <button type="button" onClick={() => setTab("trials")} style={{ padding: "10px 16px", background: "rgba(255,255,255,0.08)", color: theme.textPrimary, border: `1px solid ${theme.borderSubtle}`, borderRadius: theme.radiusButton, fontWeight: 600, cursor: "pointer", fontSize: 13 }}>Reset binding / Extend trial</button>
-                <button type="button" onClick={() => setTab("licenses")} style={{ padding: "10px 16px", background: "rgba(255,255,255,0.08)", color: theme.textPrimary, border: `1px solid ${theme.borderSubtle}`, borderRadius: theme.radiusButton, fontWeight: 600, cursor: "pointer", fontSize: 13 }}>Re-issue / Replace key</button>
+                <button type="button" onClick={() => setTab("licenses")} style={{ padding: "10px 16px", background: "rgba(255,255,255,0.08)", color: theme.textPrimary, border: `1px solid ${theme.borderSubtle}`, borderRadius: theme.radiusButton, fontWeight: 600, cursor: "pointer", fontSize: 13 }}>Re-issue / Replace license</button>
                 <button type="button" onClick={() => setTab("licenses")} style={{ padding: "10px 16px", background: "rgba(255,255,255,0.08)", color: theme.textPrimary, border: `1px solid ${theme.borderSubtle}`, borderRadius: theme.radiusButton, fontWeight: 600, cursor: "pointer", fontSize: 13 }}>Grant rebind exception</button>
                 <button type="button" onClick={() => setTab("licenses")} style={{ padding: "10px 16px", background: "rgba(255,255,255,0.08)", color: theme.textPrimary, border: `1px solid ${theme.borderSubtle}`, borderRadius: theme.radiusButton, fontWeight: 600, cursor: "pointer", fontSize: 13 }}>Reset device binding</button>
                 <button type="button" onClick={() => setTab("licenses")} style={{ padding: "10px 16px", background: theme.statusError, color: "#fff", border: "none", borderRadius: theme.radiusButton, fontWeight: 600, cursor: "pointer", fontSize: 13 }}>Revoke license</button>
               </div>
-              <p style={{ color: theme.textMuted, fontSize: 12 }}>Trials tab: Create keys, Reset binding, Extend trial. Licenses tab: Re-issue, Rebind exception, Reset binding, Revoke.</p>
+              <p style={{ color: theme.textMuted, fontSize: 12 }}>Trials tab: Create licenses, Reset binding, Extend trial. Licenses tab: Re-issue, Rebind exception, Reset binding, Revoke.</p>
             </div>
             <div style={cardStyle}>
               <h3 style={{ ...sectionTitle, marginBottom: 12 }}>Quick commands</h3>
@@ -4129,6 +4133,341 @@ export function AdminDashboard({ onClose }: { onClose: () => void }) {
             </div>
           </>
         )}
+
+        {/* ═══════════════════════════════════════════════════════════════ */}
+        {/* OPERATIONS TAB                                                 */}
+        {/* ═══════════════════════════════════════════════════════════════ */}
+        {tab === "ops" && (
+          <>
+            {/* License Process Overview */}
+            <div style={cardStyle}>
+              <h3 style={{ ...sectionTitle, marginBottom: 12 }}>LPV License Process</h3>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12, marginBottom: 16 }}>
+                {[
+                  { step: "1", title: "Customer signs up", desc: "Email entered on website or app" },
+                  { step: "2", title: "Server generates license", desc: "ECDSA P-256 signed .license file" },
+                  { step: "3", title: "Email sent", desc: ".license file attached via Brevo" },
+                  { step: "4", title: "Customer imports file", desc: "Drag-drop or file picker in app" },
+                  { step: "5", title: "App verifies + binds", desc: "Signature check → device fingerprint → local storage" },
+                  { step: "6", title: "100% offline forever", desc: "Zero internet calls after import" },
+                ].map((s) => (
+                  <div key={s.step} style={{ padding: 14, background: "rgba(255,255,255,0.03)", borderRadius: 10, border: `1px solid ${theme.borderSubtle}` }}>
+                    <div style={{ fontSize: 20, fontWeight: 700, color: theme.accentGold, marginBottom: 4 }}>{s.step}</div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: theme.textPrimary, marginBottom: 4 }}>{s.title}</div>
+                    <div style={{ fontSize: 12, color: theme.textMuted }}>{s.desc}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Server Commands */}
+            <div style={cardStyle}>
+              <h3 style={{ ...sectionTitle, marginBottom: 12 }}>Server Commands (HostArmada / Linode)</h3>
+              <p style={{ color: theme.textSecondary, fontSize: 13, marginBottom: 16 }}>SSH into your server and run these. Adjust paths for your deployment.</p>
+              {[
+                { label: "SSH into server", cmd: "ssh user@your-server-ip", note: "Replace with your HostArmada SSH details" },
+                { label: "Check backend status", cmd: "pm2 status", note: "Shows all PM2 processes" },
+                { label: "Restart backend", cmd: "pm2 restart lpv-api", note: "Restarts the LPV API server" },
+                { label: "View backend logs (live)", cmd: "pm2 logs lpv-api --lines 50", note: "Ctrl+C to exit" },
+                { label: "Check backend health", cmd: "curl -s https://api.localpasswordvault.com/health | jq .", note: "Should show status: ok" },
+                { label: "Run trial email job", cmd: "cd /var/www/lpv-api/Vault/backend && node jobs/trialEmails.js", note: "Sends expiring/expired trial emails" },
+                { label: "Generate new ECDSA key pair", cmd: "cd /var/www/lpv-api/Vault/backend && node scripts/generate-lpv-keys.js", note: "Outputs keys for .env files" },
+                { label: "Check disk space", cmd: "df -h", note: "Monitor server storage" },
+                { label: "Check memory", cmd: "free -m", note: "Monitor server RAM" },
+                { label: "View environment vars", cmd: "pm2 env lpv-api | grep -E '(SUPABASE|STRIPE|BREVO|LPV_SIGNING)'", note: "Verify secrets are loaded" },
+                { label: "Pull latest code", cmd: "cd /var/www/lpv-api/Vault && git pull origin main", note: "Then: pm2 restart lpv-api" },
+              ].map(({ label, cmd, note }, i) => (
+                <div key={i} style={{ marginBottom: 14 }}>
+                  <div style={{ fontSize: 13, color: theme.textSecondary, marginBottom: 4 }}>{label}</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                    <code style={{ flex: 1, minWidth: 200, padding: "8px 10px", background: theme.backgroundPage, border: `1px solid ${theme.borderSubtle}`, borderRadius: theme.radiusInput, fontSize: 13, color: theme.textPrimary, fontFamily: "monospace" }}>{cmd}</code>
+                    <button type="button" onClick={() => navigator.clipboard.writeText(cmd)} style={{ padding: "6px 12px", background: theme.buttonPrimaryBg, color: theme.buttonPrimaryText, border: "none", borderRadius: theme.radiusButton, cursor: "pointer", fontSize: 12, fontWeight: 600 }}>Copy</button>
+                  </div>
+                  {note && <div style={{ fontSize: 12, color: theme.textMuted, marginTop: 4 }}>{note}</div>}
+                </div>
+              ))}
+            </div>
+
+            {/* Supabase SQL for LPV */}
+            <div style={cardStyle}>
+              <h3 style={{ ...sectionTitle, marginBottom: 12 }}>Supabase SQL — LPV Queries</h3>
+              <p style={{ color: theme.textSecondary, fontSize: 13, marginBottom: 16 }}>Run in Supabase Dashboard → SQL Editor. Edit placeholders before running.</p>
+              {[
+                { label: "Find customer's license by email", sql: "SELECT id, license_key, plan_type, product_type, email, is_activated, hardware_hash, status, created_at\nFROM licenses\nWHERE email ILIKE '%customer@example.com%'\nORDER BY created_at DESC;" },
+                { label: "Find trial by email", sql: "SELECT id, trial_key, email, product_type, is_activated, expires_at, is_converted, created_at\nFROM trials\nWHERE email ILIKE '%customer@example.com%'\nORDER BY created_at DESC;" },
+                { label: "Active licenses count by plan", sql: "SELECT plan_type, product_type, COUNT(*) as total\nFROM licenses\nWHERE status = 'active'\nGROUP BY plan_type, product_type\nORDER BY total DESC;" },
+                { label: "Trials expiring in 48 hours", sql: "SELECT email, trial_key, expires_at, is_activated\nFROM trials\nWHERE expires_at > NOW()\n  AND expires_at < NOW() + INTERVAL '48 hours'\n  AND is_converted = false\nORDER BY expires_at;" },
+                { label: "Revenue summary", sql: "SELECT plan_type, product_type,\n  COUNT(*) as sales,\n  SUM(amount_paid) / 100.0 as revenue_usd\nFROM licenses\nWHERE status = 'active' AND amount_paid > 0\nGROUP BY plan_type, product_type\nORDER BY revenue_usd DESC;" },
+                { label: "Recent activations (last 7 days)", sql: "SELECT license_key, email, plan_type, hardware_hash, activated_at\nFROM licenses\nWHERE is_activated = true\n  AND activated_at > NOW() - INTERVAL '7 days'\nORDER BY activated_at DESC;" },
+                { label: "Failed webhook events", sql: "SELECT id, stripe_event_id, event_type, error_message, created_at\nFROM webhook_events\nWHERE processed = false\n  AND error_message IS NOT NULL\nORDER BY created_at DESC\nLIMIT 20;" },
+                { label: "Reset a customer's device binding", sql: "-- Replace 'PERS-XXXX-XXXX-XXXX' with actual license\nUPDATE licenses\nSET hardware_hash = NULL, current_device_id = NULL,\n    is_activated = false, updated_at = NOW()\nWHERE license_key = 'PERS-XXXX-XXXX-XXXX';" },
+                { label: "Extend a trial by 7 days", sql: "-- Replace email and check current expires_at first\nUPDATE trials\nSET expires_at = expires_at + INTERVAL '7 days'\nWHERE email = 'customer@example.com'\n  AND is_converted = false;" },
+                { label: "Resend trial (mark email flags reset)", sql: "UPDATE trials\nSET expiring_email_sent = false, expired_email_sent = false\nWHERE email = 'customer@example.com';" },
+              ].map(({ label, sql }, i) => (
+                <div key={`sql-${i}`} style={{ marginBottom: 14 }}>
+                  <div style={{ fontSize: 13, color: theme.textSecondary, marginBottom: 4 }}>{label}</div>
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: 8, flexWrap: "wrap" }}>
+                    <pre style={{ flex: 1, minWidth: 280, margin: 0, padding: "8px 10px", background: theme.backgroundPage, border: `1px solid ${theme.borderSubtle}`, borderRadius: theme.radiusInput, fontSize: 12, color: theme.textPrimary, whiteSpace: "pre-wrap", overflow: "auto", fontFamily: "monospace" }}>{sql}</pre>
+                    <button type="button" onClick={() => navigator.clipboard.writeText(sql)} style={{ padding: "6px 12px", background: theme.buttonPrimaryBg, color: theme.buttonPrimaryText, border: "none", borderRadius: theme.radiusButton, cursor: "pointer", fontSize: 12, fontWeight: 600, flexShrink: 0 }}>Copy</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Cron Jobs */}
+            <div style={cardStyle}>
+              <h3 style={{ ...sectionTitle, marginBottom: 12 }}>Scheduled Tasks / Cron Jobs</h3>
+              {[
+                { label: "Trial expiring emails (hourly)", cmd: "0 * * * * cd /var/www/lpv-api/Vault/backend && node jobs/trialEmails.js >> /var/log/lpv-trial-emails.log 2>&1", note: "Sends 24hr warning + expired discount emails. Add to crontab -e" },
+                { label: "Database backup (daily 2 AM)", cmd: "0 2 * * * /usr/local/bin/supabase-backup.sh >> /var/log/supabase-backup.log 2>&1", note: "Create a Supabase backup script or use Supabase dashboard backups" },
+              ].map(({ label, cmd, note }, i) => (
+                <div key={i} style={{ marginBottom: 14 }}>
+                  <div style={{ fontSize: 13, color: theme.textSecondary, marginBottom: 4 }}>{label}</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                    <code style={{ flex: 1, minWidth: 200, padding: "8px 10px", background: theme.backgroundPage, border: `1px solid ${theme.borderSubtle}`, borderRadius: theme.radiusInput, fontSize: 12, color: theme.textPrimary, fontFamily: "monospace", whiteSpace: "pre-wrap" }}>{cmd}</code>
+                    <button type="button" onClick={() => navigator.clipboard.writeText(cmd)} style={{ padding: "6px 12px", background: theme.buttonPrimaryBg, color: theme.buttonPrimaryText, border: "none", borderRadius: theme.radiusButton, cursor: "pointer", fontSize: 12, fontWeight: 600, flexShrink: 0 }}>Copy</button>
+                  </div>
+                  {note && <div style={{ fontSize: 12, color: theme.textMuted, marginTop: 4 }}>{note}</div>}
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* ═══════════════════════════════════════════════════════════════ */}
+        {/* INFRASTRUCTURE TAB                                             */}
+        {/* ═══════════════════════════════════════════════════════════════ */}
+        {tab === "infra" && (
+          <>
+            <div style={cardStyle}>
+              <h3 style={{ ...sectionTitle, marginBottom: 16 }}>Service Dashboards</h3>
+              <p style={{ color: theme.textSecondary, fontSize: 13, marginBottom: 16 }}>Quick links to all your infrastructure. Open in new tab.</p>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 12 }}>
+                {[
+                  { name: "Supabase", desc: "Database, Auth, Edge Functions", url: "https://supabase.com/dashboard", color: "#3ECF8E" },
+                  { name: "Stripe", desc: "Payments, Subscriptions, Webhooks", url: "https://dashboard.stripe.com", color: "#635BFF" },
+                  { name: "Brevo (Sendinblue)", desc: "Transactional emails, Templates", url: "https://app.brevo.com", color: "#0B996E" },
+                  { name: "HostArmada", desc: "Hosting, Server management, cPanel", url: "https://my.hostarmada.com", color: "#FF6B35" },
+                  { name: "GitHub — LPV Repo", desc: "Source code, Releases, CI/CD", url: "https://github.com/kwilhelm1967/LocalPasswordVault", color: "#F0F0F0" },
+                  { name: "GitHub — Releases", desc: "Download links for Windows/Mac/Linux", url: "https://github.com/kwilhelm1967/Vault/releases", color: "#F0F0F0" },
+                  { name: "Sentry", desc: "Backend error tracking (server-side only)", url: "https://sentry.io", color: "#362D59" },
+                  { name: "Google Search Console", desc: "SEO, indexing, search performance", url: "https://search.google.com/search-console", color: "#4285F4" },
+                  { name: "Namecheap / DNS", desc: "Domain management, DNS records", url: "https://ap.www.namecheap.com", color: "#DE3723" },
+                ].map((svc) => (
+                  <a
+                    key={svc.name}
+                    href={svc.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ display: "block", padding: 16, background: "rgba(255,255,255,0.03)", borderRadius: 10, border: `1px solid ${theme.borderSubtle}`, textDecoration: "none", transition: "all 0.15s" }}
+                    onMouseOver={(e) => { e.currentTarget.style.borderColor = svc.color; e.currentTarget.style.background = "rgba(255,255,255,0.06)"; }}
+                    onMouseOut={(e) => { e.currentTarget.style.borderColor = theme.borderSubtle; e.currentTarget.style.background = "rgba(255,255,255,0.03)"; }}
+                  >
+                    <div style={{ fontSize: 14, fontWeight: 600, color: svc.color, marginBottom: 4 }}>{svc.name} →</div>
+                    <div style={{ fontSize: 12, color: theme.textMuted }}>{svc.desc}</div>
+                  </a>
+                ))}
+              </div>
+            </div>
+
+            {/* Architecture Overview */}
+            <div style={cardStyle}>
+              <h3 style={{ ...sectionTitle, marginBottom: 12 }}>Architecture</h3>
+              <div style={{ padding: 16, background: theme.backgroundPage, borderRadius: 10, border: `1px solid ${theme.borderSubtle}`, fontSize: 13, color: theme.textSecondary, fontFamily: "monospace", whiteSpace: "pre-wrap", lineHeight: 1.8 }}>
+{`CUSTOMER DEVICE (Electron App)
+├── Vault encryption: AES-256-GCM + PBKDF2 (100k iterations)
+├── License validation: ECDSA P-256 signature (public key only)
+├── Device binding: SHA-256 hardware fingerprint
+└── Zero outbound calls after activation
+
+YOUR SERVER (HostArmada / Linode)
+├── Express.js API (PM2 managed)
+├── Routes: /api/lpv/license/* (LPV-specific, ECDSA signing)
+├── Routes: /api/trial/*, /api/checkout/*, /api/webhooks/* (shared)
+└── Services: lpvLicenseSigner.js, lpvEmail.js (LPV-only)
+
+SUPABASE (Database + Auth)
+├── Tables: customers, licenses, trials, device_activations
+├── Tables: webhook_events, support_tickets, ticket_messages
+├── Auth: Admin portal login (email/password)
+└── Edge Functions: Admin dashboard (if deployed)
+
+STRIPE (Payments)
+├── Checkout sessions → webhook → license generation
+├── Products: Personal ($49), Family ($79)
+└── Webhook: checkout.session.completed → email with .license file
+
+BREVO (Email)
+├── Trial welcome + .license file attachment
+├── Purchase confirmation + .license file attachment
+├── Trial expiring (24hr warning)
+└── Trial expired (discount offer)`}
+              </div>
+            </div>
+
+            {/* Environment Variables Reference */}
+            <div style={cardStyle}>
+              <h3 style={{ ...sectionTitle, marginBottom: 12 }}>Environment Variables</h3>
+              <p style={{ color: theme.textSecondary, fontSize: 13, marginBottom: 16 }}>All secrets required for LPV backend + frontend.</p>
+              <div style={{ fontSize: 12, color: theme.textSecondary }}>
+                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                  <thead>
+                    <tr style={{ borderBottom: `1px solid ${theme.borderSubtle}` }}>
+                      <th style={{ padding: "8px 4px", textAlign: "left", color: theme.textMuted, fontWeight: 600 }}>Variable</th>
+                      <th style={{ padding: "8px 4px", textAlign: "left", color: theme.textMuted, fontWeight: 600 }}>Where</th>
+                      <th style={{ padding: "8px 4px", textAlign: "left", color: theme.textMuted, fontWeight: 600 }}>Purpose</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      ["SUPABASE_URL", "Backend", "Database connection"],
+                      ["SUPABASE_SERVICE_KEY", "Backend", "Database auth (service role)"],
+                      ["LPV_SIGNING_PRIVATE_KEY", "Backend", "ECDSA license signing (LPV only)"],
+                      ["LICENSE_SIGNING_SECRET", "Backend", "HMAC signing (shared/legacy)"],
+                      ["STRIPE_SECRET_KEY", "Backend", "Stripe API"],
+                      ["STRIPE_WEBHOOK_SECRET", "Backend", "Webhook signature verification"],
+                      ["STRIPE_PRICE_PERSONAL", "Backend", "Personal plan Stripe price ID"],
+                      ["STRIPE_PRICE_FAMILY", "Backend", "Family plan Stripe price ID"],
+                      ["BREVO_API_KEY", "Backend", "Transactional email"],
+                      ["FROM_EMAIL", "Backend", "Sender email address"],
+                      ["SUPPORT_EMAIL", "Backend", "Support email address"],
+                      ["ADMIN_API_KEY", "Backend", "Admin API authentication"],
+                      ["VITE_LICENSE_PUBLIC_KEY", "Frontend", "ECDSA public key (signature verification)"],
+                      ["VITE_SUPABASE_URL", "Frontend", "Admin portal auth"],
+                      ["VITE_SUPABASE_ANON_KEY", "Frontend", "Admin portal auth"],
+                      ["VITE_LICENSE_SERVER_URL", "Frontend", "Backend API URL"],
+                      ["VITE_STRIPE_PUBLISHABLE_KEY", "Frontend", "Stripe checkout"],
+                    ].map(([name, where, purpose], i) => (
+                      <tr key={i} style={{ borderBottom: `1px solid rgba(255,255,255,0.04)` }}>
+                        <td style={{ padding: "6px 4px", fontFamily: "monospace", fontSize: 12, color: theme.accentGold }}>{name}</td>
+                        <td style={{ padding: "6px 4px" }}>{where}</td>
+                        <td style={{ padding: "6px 4px", color: theme.textMuted }}>{purpose}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* ═══════════════════════════════════════════════════════════════ */}
+        {/* ROADMAP TAB                                                    */}
+        {/* ═══════════════════════════════════════════════════════════════ */}
+        {tab === "roadmap" && (
+          <>
+            <div style={cardStyle}>
+              <h3 style={{ ...sectionTitle, marginBottom: 16 }}>Current Version: 1.2.0</h3>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10, marginBottom: 16 }}>
+                {["ECDSA license signing", "File-based activation", "Device fingerprint binding", "Offline-first operation", "AES-256-GCM vault encryption", "7-day trial with signed file", "Stripe checkout", "Brevo email delivery", "Floating panel + button", "Admin dashboard (27+ tabs)", "TOTP 2FA support", "CSV/JSON import/export"].map((f, i) => (
+                  <div key={i} style={{ padding: "8px 12px", background: "rgba(16, 185, 129, 0.08)", borderRadius: 8, border: "1px solid rgba(16, 185, 129, 0.2)", fontSize: 12, color: "#10B981" }}>✓ {f}</div>
+                ))}
+              </div>
+            </div>
+
+            <div style={cardStyle}>
+              <h3 style={{ ...sectionTitle, marginBottom: 16 }}>Future Features</h3>
+              {[
+                { priority: "P1", title: "Biometric Unlock (Windows Hello / Touch ID)", desc: "Allow users to unlock their vault with fingerprint or face recognition instead of typing master password every time. Uses OS-level biometric APIs through Electron.", status: "Planned", effort: "Medium" },
+                { priority: "P1", title: "Password Health Dashboard", desc: "Analyze all stored passwords for weakness, reuse, age, and breach exposure (via local haveibeenpwned hash check — k-anonymity, no password sent). Show health score.", status: "Planned", effort: "Medium" },
+                { priority: "P1", title: "Browser Extension (Auto-fill)", desc: "Chrome/Firefox/Edge extension that communicates with the Electron app via localhost socket. Auto-fills login forms. No cloud — extension talks only to the local app.", status: "Research", effort: "High" },
+                { priority: "P2", title: "Secure Password Sharing", desc: "Share a password with another LPV user via encrypted QR code or one-time link. End-to-end encrypted — server never sees the password. Link expires after first use or timeout.", status: "Planned", effort: "Medium" },
+                { priority: "P2", title: "Emergency Access / Dead Man's Switch", desc: "Designate a trusted contact who can request access after a configurable waiting period. If you don't deny within N days, they get a recovery key. Integrates with AfterPassing Guide.", status: "Planned", effort: "High" },
+                { priority: "P2", title: "Encrypted Vault Backup to USB", desc: "One-click export of encrypted vault to a USB drive. The backup file is AES-256 encrypted with the master password. Can be restored on any device with LPV installed.", status: "Planned", effort: "Low" },
+                { priority: "P2", title: "Secure Notes & Documents", desc: "Store encrypted notes, documents, and files alongside passwords. Each item encrypted individually. Support for markdown notes, PDF attachments, images.", status: "Planned", effort: "Medium" },
+                { priority: "P3", title: "Family Vault Sync (Local Network)", desc: "Family plan users can sync vault entries between devices on the same local network (Wi-Fi). No cloud. Uses mDNS discovery + TLS encrypted peer-to-peer transfer.", status: "Research", effort: "Very High" },
+                { priority: "P3", title: "Passkey / WebAuthn Support", desc: "Support storing and managing passkeys for passwordless login. Act as a FIDO2 authenticator for websites that support it.", status: "Research", effort: "High" },
+                { priority: "P3", title: "Mobile Companion (View Only)", desc: "Read-only mobile app that connects to LPV via QR code scan over local network. View passwords on phone without storing them on mobile. Auto-disconnects after timeout.", status: "Research", effort: "High" },
+                { priority: "P3", title: "Dark Web Monitoring (Local)", desc: "Periodic check of email addresses against known breach databases using k-anonymity (haveibeenpwned API). Only sends hash prefix — never the actual email. Fully privacy-preserving.", status: "Research", effort: "Medium" },
+                { priority: "P3", title: "Automatic Backup Scheduling", desc: "Configure automatic encrypted backups on a schedule — daily/weekly to a chosen folder or external drive. Rotates old backups. Sends desktop notification on success/failure.", status: "Planned", effort: "Low" },
+              ].map((feature, i) => (
+                <div key={i} style={{ padding: 16, marginBottom: 10, background: "rgba(255,255,255,0.02)", borderRadius: 10, border: `1px solid ${theme.borderSubtle}` }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                    <span style={{ padding: "2px 8px", borderRadius: 4, fontSize: 11, fontWeight: 700, background: feature.priority === "P1" ? "rgba(239, 68, 68, 0.15)" : feature.priority === "P2" ? "rgba(245, 158, 11, 0.15)" : "rgba(107, 114, 128, 0.15)", color: feature.priority === "P1" ? "#EF4444" : feature.priority === "P2" ? "#F59E0B" : "#6B7280" }}>{feature.priority}</span>
+                    <span style={{ fontSize: 14, fontWeight: 600, color: theme.textPrimary }}>{feature.title}</span>
+                    <span style={{ marginLeft: "auto", padding: "2px 8px", borderRadius: 4, fontSize: 11, background: feature.status === "Planned" ? "rgba(59, 130, 246, 0.15)" : "rgba(107, 114, 128, 0.1)", color: feature.status === "Planned" ? "#3B82F6" : "#6B7280" }}>{feature.status}</span>
+                  </div>
+                  <p style={{ margin: 0, fontSize: 13, color: theme.textSecondary, lineHeight: 1.6 }}>{feature.desc}</p>
+                  <div style={{ marginTop: 6, fontSize: 11, color: theme.textMuted }}>Effort: {feature.effort}</div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* ═══════════════════════════════════════════════════════════════ */}
+        {/* SELF-SERVICE TOOLS TAB                                         */}
+        {/* ═══════════════════════════════════════════════════════════════ */}
+        {tab === "selfservice" && (
+          <>
+            <div style={cardStyle}>
+              <h3 style={{ ...sectionTitle, marginBottom: 12 }}>Customer Self-Service Scenarios</h3>
+              <p style={{ color: theme.textSecondary, fontSize: 13, marginBottom: 16 }}>Common customer issues and how they resolve themselves — no call to you needed.</p>
+              {[
+                { problem: "Lost their license file", solution: "Search their email for 'Local Password Vault' — the .license file is attached. Or use Search tab above to find by email and resend.", action: "Search → Resend Email", tab: "search" as TabId },
+                { problem: "New computer / device transfer", solution: "Customer finds original .license file in email, imports it on new device. App re-binds automatically. No server call.", action: null, tab: null },
+                { problem: "Trial expired, wants to continue", solution: "Direct to localpasswordvault.com/pricing. After purchase, they get a new .license file. Their vault data is safe and waiting.", action: null, tab: null },
+                { problem: "Activation says 'signature failed'", solution: "File may be corrupted in transit. Resend the email from admin. If ECDSA key was rotated, old files won't verify — reissue license.", action: "Licenses → Re-issue", tab: "licenses" as TabId },
+                { problem: "Forgot master password", solution: "If they set up a recovery phrase during onboarding, they can use it. Otherwise, vault data cannot be recovered (by design). They can start fresh with their existing license.", action: null, tab: null },
+                { problem: "Want a refund", solution: "Process through Stripe dashboard. Then revoke the license in the Licenses tab to prevent continued use.", action: "Stripe Dashboard", tab: null },
+                { problem: "Family plan — need more devices", solution: "Each family plan comes with 5 license files. Customer imports one per device. Check Licenses tab for their activation count.", action: "Licenses → Device count", tab: "licenses" as TabId },
+                { problem: "App won't start / crashes", solution: "Check Downloads tab for latest version. Customer can reinstall — their vault.dat file persists in the user data folder. License file re-import re-activates.", action: "Downloads", tab: "downloads" as TabId },
+              ].map((item, i) => (
+                <div key={i} style={{ padding: 14, marginBottom: 8, background: "rgba(255,255,255,0.02)", borderRadius: 10, border: `1px solid ${theme.borderSubtle}` }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: theme.textPrimary, marginBottom: 4 }}>{item.problem}</div>
+                  <div style={{ fontSize: 12, color: theme.textSecondary, lineHeight: 1.6, marginBottom: item.action ? 8 : 0 }}>{item.solution}</div>
+                  {item.action && item.tab && (
+                    <button type="button" onClick={() => setTab(item.tab!)} style={{ padding: "6px 14px", background: theme.buttonPrimaryBg, color: theme.buttonPrimaryText, border: "none", borderRadius: theme.radiusButton, cursor: "pointer", fontSize: 12, fontWeight: 600 }}>{item.action}</button>
+                  )}
+                  {item.action && !item.tab && (
+                    <span style={{ fontSize: 12, color: theme.accentGold, fontWeight: 600 }}>{item.action}</span>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Email Templates for Common Responses */}
+            <div style={cardStyle}>
+              <h3 style={{ ...sectionTitle, marginBottom: 12 }}>Quick Reply Templates</h3>
+              <p style={{ color: theme.textSecondary, fontSize: 13, marginBottom: 16 }}>Copy-paste email responses for common support scenarios.</p>
+              {[
+                { label: "License file resent", text: "Hi!\n\nI've resent your license file to this email address. Please check your inbox (and spam folder) for an email from Local Password Vault with a .license file attached.\n\nTo activate:\n1. Open the app\n2. Click 'Import License File' (or drag-drop the file)\n3. You're all set — everything runs locally on your device\n\nLet me know if you need anything else!\n\nBest,\nLocal Password Vault Support" },
+                { label: "Trial expired — upgrade", text: "Hi!\n\nYour 7-day trial has ended, but your vault data is completely safe and still on your device.\n\nTo continue using Local Password Vault, you can purchase a lifetime license at:\nhttps://localpasswordvault.com/pricing\n\nAfter purchase, you'll receive a .license file via email. Just import it into the app and you're back in business — all your existing passwords will be right where you left them.\n\nLet me know if you have any questions!\n\nBest,\nLocal Password Vault Support" },
+                { label: "New computer / device transfer", text: "Hi!\n\nGreat news — transferring to a new computer is simple:\n\n1. Find the .license file in your original purchase/trial email\n2. Install Local Password Vault on your new computer\n3. Import the .license file when prompted\n4. If you have a vault backup, copy vault.dat from your old computer's app data folder\n\nNo internet connection needed — the app will bind to your new device automatically.\n\nLet me know if you need help locating your license file!\n\nBest,\nLocal Password Vault Support" },
+                { label: "Forgot master password", text: "Hi!\n\nI understand the frustration. For your security, Local Password Vault does not store or have access to your master password — it never leaves your device.\n\nOptions:\n1. If you set up a recovery phrase during initial setup, you can use it to reset your password (the app will prompt you)\n2. If no recovery phrase was set, unfortunately the vault data cannot be decrypted without the master password — this is by design to protect your data\n3. You can start fresh with your existing license — just create a new vault with a new master password\n\nYour license remains valid regardless. Only the vault data requires the master password.\n\nLet me know how you'd like to proceed.\n\nBest,\nLocal Password Vault Support" },
+              ].map(({ label, text }, i) => (
+                <div key={i} style={{ marginBottom: 16 }}>
+                  <div style={{ fontSize: 13, color: theme.textSecondary, marginBottom: 6, fontWeight: 600 }}>{label}</div>
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
+                    <pre style={{ flex: 1, margin: 0, padding: "10px 12px", background: theme.backgroundPage, border: `1px solid ${theme.borderSubtle}`, borderRadius: theme.radiusInput, fontSize: 12, color: theme.textPrimary, whiteSpace: "pre-wrap", lineHeight: 1.6, fontFamily: "inherit" }}>{text}</pre>
+                    <button type="button" onClick={() => navigator.clipboard.writeText(text)} style={{ padding: "8px 14px", background: theme.buttonPrimaryBg, color: theme.buttonPrimaryText, border: "none", borderRadius: theme.radiusButton, cursor: "pointer", fontSize: 12, fontWeight: 600, flexShrink: 0, alignSelf: "flex-start" }}>Copy</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Vault Data Location Reference */}
+            <div style={cardStyle}>
+              <h3 style={{ ...sectionTitle, marginBottom: 12 }}>App Data Locations (for customer support)</h3>
+              <p style={{ color: theme.textSecondary, fontSize: 13, marginBottom: 16 }}>Where the customer's data lives on their device. Useful when helping with backups or transfers.</p>
+              {[
+                { os: "Windows", path: "C:\\Users\\{username}\\AppData\\Roaming\\Local Password Vault\\", note: "Hidden folder — tell customer to type %appdata% in Explorer" },
+                { os: "macOS", path: "~/Library/Application Support/Local Password Vault/", note: "Hidden folder — Finder → Go → Go to Folder" },
+                { os: "Linux", path: "~/.config/Local Password Vault/", note: "Standard XDG config directory" },
+              ].map(({ os, path, note }, i) => (
+                <div key={i} style={{ marginBottom: 12 }}>
+                  <div style={{ fontSize: 13, color: theme.accentGold, fontWeight: 600, marginBottom: 4 }}>{os}</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <code style={{ flex: 1, padding: "8px 10px", background: theme.backgroundPage, border: `1px solid ${theme.borderSubtle}`, borderRadius: theme.radiusInput, fontSize: 12, color: theme.textPrimary, fontFamily: "monospace" }}>{path}</code>
+                    <button type="button" onClick={() => navigator.clipboard.writeText(path)} style={{ padding: "6px 12px", background: theme.buttonPrimaryBg, color: theme.buttonPrimaryText, border: "none", borderRadius: theme.radiusButton, cursor: "pointer", fontSize: 12, fontWeight: 600 }}>Copy</button>
+                  </div>
+                  <div style={{ fontSize: 12, color: theme.textMuted, marginTop: 4 }}>Files: vault.dat (encrypted), vault.backup.dat, vault.salt • {note}</div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
       </div>
     </div>
   );
