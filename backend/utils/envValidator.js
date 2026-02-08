@@ -38,12 +38,11 @@ const REQUIRED_VARS = {
     message: 'Must be a valid Supabase service role key',
   },
 
-  // License Signing — ECDSA P-256 private key (preferred) or HMAC secret (legacy)
-  // At least one of LICENSE_SIGNING_PRIVATE_KEY or LICENSE_SIGNING_SECRET must be set
-  LICENSE_SIGNING_PRIVATE_KEY: {
-    required: false, // Not strictly required if LICENSE_SIGNING_SECRET is set (legacy mode)
-    validate: (value) => value.length >= 100, // PKCS8 DER hex is ~200+ chars
-    message: 'Must be a valid ECDSA P-256 private key in hex format (generate with: node -e "require(\'./services/licenseSigner\').generateKeyPair()")',
+  // License Signing (replaces JWT - all validation uses signed files)
+  LICENSE_SIGNING_SECRET: {
+    required: true,
+    validate: (value) => value.length >= 32,
+    message: 'Must be at least 32 characters long',
   },
 
   // Stripe
@@ -132,15 +131,6 @@ function validateEnvironment() {
     if (value && config.validate && !config.validate(value)) {
       warnings.push(`Invalid ${key}: ${config.message}`);
     }
-  }
-
-  // License signing validation: at least one method must be configured
-  if (!process.env.LICENSE_SIGNING_PRIVATE_KEY && !process.env.LICENSE_SIGNING_SECRET) {
-    errors.push('Missing license signing key. Set LICENSE_SIGNING_PRIVATE_KEY (recommended) or LICENSE_SIGNING_SECRET (legacy).');
-  }
-
-  if (!process.env.LICENSE_SIGNING_PRIVATE_KEY && process.env.LICENSE_SIGNING_SECRET) {
-    warnings.push('Using legacy HMAC signing (LICENSE_SIGNING_SECRET). Upgrade to ECDSA P-256 (LICENSE_SIGNING_PRIVATE_KEY) for better security.');
   }
 
   // Production-specific checks

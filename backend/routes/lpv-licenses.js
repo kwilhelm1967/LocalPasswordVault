@@ -1,7 +1,8 @@
 const express = require('express');
 const db = require('../database/db');
-const { normalizeKey, isValidFormat } = require('../services/licenseGenerator');
-const { signLicenseFile } = require('../services/licenseSigner');
+const { normalizeKey, isValidFormat, generateTrialKey } = require('../services/licenseGenerator');
+const { signLpvLicenseFile: signLicenseFile } = require('../services/lpvLicenseSigner');
+const { sendLpvTrialEmail } = require('../services/lpvEmail');
 const logger = require('../utils/logger');
 
 const router = express.Router();
@@ -760,6 +761,162 @@ router.post('/devices/:key/deactivate', async (req, res) => {
     res.status(500).json({ 
       success: false,
       error: 'Failed to deactivate device' 
+    });
+  }
+});
+
+/**
+ * POST /trial/signup — LPV-SPECIFIC trial signup
+ * 
+ * This is the LPV version of trial signup. It:
+ * 1. Creates the trial record in Supabase (same as shared /api/trial/signup)
+ * 2. Generates a signed license file using the LPV signer (ECDSA)
+ * 3. Emails the signed .license file as an attachment
+ * 
+ * The customer imports the .license file into the app — no activation call needed.
+ * 
+ * Mounted at: /api/lpv/license/trial/signup
+ */
+router.post('/trial/signup', async (req, res) => {
+  try {
+    const { email } = req.body;
+    const TRIAL_DURATION_DAYS = 7;
+
+    if (!email) {
+      return res.status(400).json({ success: false, error: 'Email is required' });
+    }
+
+    const normalizedEmail = email.trim().toLowerCase();
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(normalizedEmail)) {
+      return res.status(400).json({ success: false, error: 'Invalid email format' });
+    }
+
+    // Check for existing LPV trial
+    const allTrials = await db.trials.findAllByEmail(normalizedEmail);
+    const existingTrial = allTrials?.find(trial => {
+      const trialProductType = trial.product_type || 'lpv';
+      return trialProductType === 'lpv';
+    });
+
+    if (existingTrial) {
+      const expiresAt = new Date(existingTrial.expires_at);
+      const now = new Date();
+
+      if (now < expiresAt) {
+        // Resend the signed license file for the existing trial
+        const trialFile = signLicenseFile({
+          trial_key: existingTrial.trial_key,
+          plan_type: 'trial',
+          product_type: 'lpv',
+          start_date: existingTrial.activated_at || existingTrial.created_at || now.toISOString(),
+          expires_at: existingTrial.expires_at,
+        });
+
+        const licenseFileContent = JSON.stringify(trialFile, null, 2);
+
+        try {
+          await sendLpvTrialEmail({
+            to: normalizedEmail,
+            trialKey: existingTrial.trial_key,
+            expiresAt,
+            licenseFileContent,
+          });
+        } catch (emailError) {
+          logger.emailError('lpv_trial_resend', normalizedEmail, emailError, {
+            operation: 'lpv_trial_signup',
+          });
+        }
+
+        return res.json({
+          success: true,
+          message: 'Trial license resent to your email',
+          trialKey: existingTrial.trial_key,
+          expiresAt: expiresAt.toISOString(),
+        });
+      }
+      // Expired — fall through to create a new one
+    }
+
+    // Prevent trial if customer already has a license
+    const existingLicense = await db.licenses.findByEmail(normalizedEmail);
+    if (existingLicense && existingLicense.length > 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'You already have a license. Please use your existing license key.',
+        hasLicense: true,
+      });
+    }
+
+    // Generate trial key and expiration
+    const trialKey = generateTrialKey('lpv');
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + TRIAL_DURATION_DAYS);
+
+    // Save trial record to database
+    try {
+      await db.trials.create({
+        email: normalizedEmail,
+        trial_key: trialKey,
+        expires_at: expiresAt.toISOString(),
+        product_type: 'lpv',
+      });
+    } catch (dbError) {
+      if (dbError.code === '23505' || dbError.message?.includes('unique')) {
+        return res.status(400).json({
+          success: false,
+          error: 'Trial already exists for this email',
+        });
+      }
+      throw dbError;
+    }
+
+    // Generate signed license file
+    const trialFile = signLicenseFile({
+      trial_key: trialKey,
+      plan_type: 'trial',
+      product_type: 'lpv',
+      start_date: new Date().toISOString(),
+      expires_at: expiresAt.toISOString(),
+    });
+
+    const licenseFileContent = JSON.stringify(trialFile, null, 2);
+
+    // Send email with signed license file attached
+    try {
+      await sendLpvTrialEmail({
+        to: normalizedEmail,
+        trialKey,
+        expiresAt,
+        licenseFileContent,
+      });
+      logger.email('lpv_trial_sent', normalizedEmail, {
+        operation: 'lpv_trial_signup',
+        trialKey,
+      });
+    } catch (emailError) {
+      logger.emailError('lpv_trial_send', normalizedEmail, emailError, {
+        operation: 'lpv_trial_signup',
+        trialKey,
+      });
+      // Don't fail — trial was created successfully
+    }
+
+    res.json({
+      success: true,
+      message: 'Trial license sent to your email',
+      trialKey,
+      expiresAt: expiresAt.toISOString(),
+    });
+
+  } catch (error) {
+    logger.error('LPV trial signup error', error, {
+      email: req.body?.email,
+      operation: 'lpv_trial_signup',
+    });
+    res.status(500).json({
+      success: false,
+      error: 'Failed to create trial. Please try again.',
     });
   }
 });

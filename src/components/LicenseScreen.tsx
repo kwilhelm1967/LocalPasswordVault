@@ -770,16 +770,16 @@ const LicenseScreenComponent: React.FC<LicenseScreenProps> = ({
     setTrialSignupKey(null);
     try {
       const res = await apiClient.post<{ success?: boolean; trialKey?: string; error?: string; message?: string }>(
-        "/api/trial/signup",
-        { email, product_type: "lpv" }
+        "/api/lpv/license/trial/signup",
+        { email }
       );
       const data = res.data;
       if (data?.success && data.trialKey) {
-        setTrialSignupSuccess("Trial key sent! Check your email, or use it below:");
+        setTrialSignupSuccess("License file sent! Check your email and import the .license file into the app.");
         setTrialSignupKey(data.trialKey);
         setTrialKey(data.trialKey);
       } else if (data?.success) {
-        setTrialSignupSuccess("Check your email for your trial key.");
+        setTrialSignupSuccess("Check your email for your trial license file.");
       } else {
         setTrialSignupError(data?.error || data?.message || "Could not create trial. Please try again.");
       }
@@ -1167,6 +1167,75 @@ const LicenseScreenComponent: React.FC<LicenseScreenProps> = ({
                         </>
                       )}
                     </button>
+
+                  {/* Divider */}
+                  <div className="flex items-center gap-3 my-1">
+                    <div className="flex-1 h-px bg-slate-700" />
+                    <span className="text-xs text-slate-500 uppercase tracking-wider">or</span>
+                    <div className="flex-1 h-px bg-slate-700" />
+                  </div>
+
+                  {/* File Import */}
+                  <div
+                    className="relative border-2 border-dashed border-slate-600 hover:border-blue-500/50 rounded-lg p-4 text-center transition-all cursor-pointer group"
+                    onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); e.currentTarget.classList.add('border-blue-400', 'bg-blue-500/5'); }}
+                    onDragLeave={(e) => { e.preventDefault(); e.stopPropagation(); e.currentTarget.classList.remove('border-blue-400', 'bg-blue-500/5'); }}
+                    onDrop={async (e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      e.currentTarget.classList.remove('border-blue-400', 'bg-blue-500/5');
+                      const file = e.dataTransfer.files[0];
+                      if (file) {
+                        try {
+                          setIsActivating(true);
+                          setError(null);
+                          const text = await file.text();
+                          const result = await licenseService.importLicenseFile(text);
+                          if (result.success) {
+                            onLicenseValid();
+                          } else {
+                            setError(result.error || "Failed to import license file.");
+                          }
+                        } catch (err) {
+                          setError("Failed to read license file.");
+                        } finally {
+                          setIsActivating(false);
+                        }
+                      }
+                    }}
+                    onClick={() => {
+                      const input = document.createElement('input');
+                      input.type = 'file';
+                      input.accept = '.license,.txt,.json';
+                      input.onchange = async (e) => {
+                        const file = (e.target as HTMLInputElement).files?.[0];
+                        if (file) {
+                          try {
+                            setIsActivating(true);
+                            setError(null);
+                            const text = await file.text();
+                            const result = await licenseService.importLicenseFile(text);
+                            if (result.success) {
+                              onLicenseValid();
+                            } else {
+                              setError(result.error || "Failed to import license file.");
+                            }
+                          } catch (err) {
+                            setError("Failed to read license file.");
+                          } finally {
+                            setIsActivating(false);
+                          }
+                        }
+                      };
+                      input.click();
+                    }}
+                  >
+                    <Shield className="w-5 h-5 text-slate-500 group-hover:text-blue-400 mx-auto mb-1.5 transition-colors" />
+                    <p className="text-sm text-slate-400 group-hover:text-slate-300 transition-colors">
+                      <span className="font-medium text-blue-400">Import license file</span> from email
+                    </p>
+                    <p className="text-xs text-slate-600 mt-1">Drop .license file here or click to browse</p>
+                  </div>
 
                   <div className="text-center">
                     <button

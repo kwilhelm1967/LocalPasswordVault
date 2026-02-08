@@ -882,6 +882,107 @@ export class LicenseService {
   }
 
   /**
+   * Import a license file directly (offline activation — no server call).
+   * 
+   * This is the primary activation path for LPV:
+   * 1. Customer receives .license file via email (trial or purchase)
+   * 2. Customer imports file into the app (drag-drop or file picker)
+   * 3. App verifies signature locally (public key only)
+   * 4. App binds to this device locally
+   * 5. No internet call needed
+   * 
+   * @param fileContent - Raw JSON string from the .license file
+   * @returns Result with success status
+   */
+  async importLicenseFile(fileContent: string): Promise<{
+    success: boolean;
+    error?: string;
+    licenseType?: LicenseType;
+    isTrial?: boolean;
+  }> {
+    try {
+      // Parse the file
+      let licenseData: Record<string, unknown>;
+      try {
+        licenseData = JSON.parse(fileContent);
+      } catch {
+        return { success: false, error: "Invalid license file. The file could not be read." };
+      }
+
+      // Must have a signature
+      if (!licenseData.signature && !import.meta.env.DEV) {
+        return { success: false, error: "This license file is not signed. It may be corrupted or invalid." };
+      }
+
+      // Verify signature locally (ECDSA or HMAC)
+      const isValidSignature = await verifyLicenseSignature(licenseData as import("./licenseValidator").SignedLicenseFile);
+      if (!isValidSignature) {
+        return { success: false, error: "License signature verification failed. The file may be corrupted or tampered with." };
+      }
+
+      // Determine if trial or full license
+      const isTrial = licenseData.plan_type === 'trial' || !!licenseData.trial_key;
+
+      if (isTrial) {
+        // --- Trial license file ---
+        // Check expiration
+        if (licenseData.expires_at) {
+          const expiresAt = new Date(licenseData.expires_at as string);
+          if (new Date() >= expiresAt) {
+            return { success: false, error: "This trial has expired. Please purchase a lifetime license to continue." };
+          }
+        }
+
+        // Save as trial file (trialService format)
+        const deviceId = await this.getDeviceId();
+        const trialFile = {
+          ...licenseData,
+          device_id: deviceId, // Bind to this device locally
+        };
+
+        localStorage.setItem('lpv_trial_file', JSON.stringify(trialFile));
+        localStorage.setItem('trial_used', 'true');
+
+        // Also set license storage keys for compatibility
+        const trialKey = (licenseData.trial_key || licenseData.license_key || '') as string;
+        localStorage.setItem(LicenseService.LICENSE_KEY_STORAGE, trialKey);
+        localStorage.setItem(LicenseService.LICENSE_TYPE_STORAGE, 'trial');
+        localStorage.setItem(LicenseService.LICENSE_ACTIVATED_STORAGE, new Date().toISOString());
+        localStorage.setItem(LicenseService.DEVICE_ID_STORAGE, deviceId);
+
+        return { success: true, licenseType: 'trial', isTrial: true };
+      } else {
+        // --- Full license file (purchase) ---
+        const deviceId = await this.getDeviceId();
+        const planType = (licenseData.plan_type || 'personal') as LicenseType;
+        const licenseKey = (licenseData.license_key || '') as string;
+
+        // Save local license file with device binding
+        const localFile = {
+          ...licenseData,
+          device_id: deviceId, // Bind to this device locally
+        };
+
+        this.saveLocalLicenseFile(localFile as LocalLicenseFile);
+
+        // Update localStorage
+        localStorage.setItem(LicenseService.LICENSE_KEY_STORAGE, licenseKey);
+        localStorage.setItem(LicenseService.LICENSE_TYPE_STORAGE, planType);
+        localStorage.setItem(LicenseService.LICENSE_ACTIVATED_STORAGE, new Date().toISOString());
+        localStorage.setItem(LicenseService.DEVICE_ID_STORAGE, deviceId);
+
+        // End any active trial
+        trialService.endTrial();
+
+        return { success: true, licenseType: planType, isTrial: false };
+      }
+    } catch (error) {
+      devError("License file import error:", error);
+      return { success: false, error: "Failed to import license file. Please try again." };
+    }
+  }
+
+  /**
    * Reset everything (for testing)
    */
   resetAll(): void {

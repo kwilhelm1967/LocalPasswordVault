@@ -41,13 +41,11 @@ nano .env
 NODE_ENV=production
 PORT=3001
 
-# License Signing — ECDSA P-256 (Recommended)
-# Generate key pair: node -e "require('./services/licenseSigner').generateKeyPair()"
-# Private key stays here. Public key goes in frontend VITE_LICENSE_PUBLIC_KEY.
-LICENSE_SIGNING_PRIVATE_KEY=[PASTE_PRIVATE_KEY_HEX]
-
-# Legacy HMAC-SHA256 (deprecated — only if not using ECDSA above)
-# LICENSE_SIGNING_SECRET=[PASTE_HEX_STRING]
+# License Signing Secret (Required - generate: openssl rand -hex 32)
+# Used to sign license files and trial files for offline validation
+# All validation uses HMAC-SHA256 signed files (not JWT)
+# Same secret must be set in frontend VITE_LICENSE_SIGNING_SECRET
+LICENSE_SIGNING_SECRET=[PASTE_HEX_STRING]
 
 # Stripe (from Stripe Dashboard → Developers → API keys)
 STRIPE_SECRET_KEY=[YOUR_STRIPE_SECRET_KEY]
