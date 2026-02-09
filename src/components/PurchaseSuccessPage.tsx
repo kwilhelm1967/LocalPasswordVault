@@ -758,146 +758,140 @@ export const PurchaseSuccessPage: React.FC = () => {
                   : `Your ${planName} is ready. Download the application below.`)}
             </p>
 
-          {/* Trial Success UI */}
+          {/* Trial Success UI — 2-Column Layout */}
           {!isLoading && !error && isTrial && licenseKeys.length > 0 && (
-            <div className="text-left space-y-6">
-              {/* Trial License Code Section */}
-              <div className="space-y-3">
-                <p className="text-sm font-semibold uppercase tracking-wider" style={{ color: colors.textMuted }}>
-                  Your Trial License Code
-                </p>
-                <div className="flex items-center gap-3">
-                  <code
-                    className="text-lg md:text-xl font-mono tracking-wider select-all px-4 py-3 rounded-lg flex-1"
-                    style={{ 
-                      color: '#06b6d4',
-                      fontFamily: "'Space Grotesk', monospace",
-                      fontWeight: 700,
-                      background: 'rgba(6, 182, 212, 0.1)',
-                      border: `1px solid ${colors.cyanDark}`,
-                    }}
-                  >
-                    {licenseKeys[0]}
-                  </code>
-                  <button
-                    onClick={() => handleCopyKey(licenseKeys[0], 0)}
-                    className="px-4 py-3 rounded-lg flex items-center gap-2 transition-all hover:scale-105 font-semibold text-sm"
-                    style={{
-                      background: copiedIndex === 0 ? colors.green : colors.gradientCyan,
-                      color: colors.bgDarker,
-                      boxShadow: copiedIndex === 0 ? `0 4px 12px rgba(16, 185, 129, 0.3)` : `0 8px 24px ${colors.cyanGlow}`,
-                    }}
-                  >
-                    {copiedIndex === 0 ? (
-                      <>
-                        <Check className="w-4 h-4" />
-                        <span>Copied!</span>
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="w-4 h-4" />
-                        <span>Copy</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-                <p className="text-xs flex items-center gap-1.5" style={{ color: colors.green }}>
-                  <CheckCircle className="w-4 h-4" />
-                  A license file has been sent to your email.
-                </p>
-              </div>
+            <div className="grid md:grid-cols-2 gap-5 text-left max-w-4xl mx-auto">
 
-              {/* Download Section */}
-              <div className="space-y-3">
-                <h2 className="text-lg font-semibold" style={{ color: colors.textPrimary, fontFamily: "'Space Grotesk', sans-serif" }}>
-                  Step 1: Download the App
-                </h2>
-                <div className="grid grid-cols-3 gap-3">
-                  {getSortedPlatforms(defaultWebsiteUrl, appType).map((platform) => (
-                    <button
-                      key={platform.id}
-                      onClick={() => handleDownload(platform)}
-                      className={`flex flex-col items-center gap-2 p-4 rounded-xl transition-all ${
-                        detectedOS === platform.id ? 'ring-2' : ''
-                      }`}
+              {/* LEFT COLUMN: License + Download */}
+              <div className="space-y-4">
+                {/* License File Card */}
+                <div
+                  className="rounded-xl p-5"
+                  style={{
+                    background: 'rgba(6, 182, 212, 0.06)',
+                    border: `1px solid rgba(6, 182, 212, 0.2)`,
+                  }}
+                >
+                  <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: colors.cyan }}>
+                    Your Trial License
+                  </p>
+                  <div className="flex items-center gap-2 mb-3">
+                    <code
+                      className="text-base font-mono tracking-wider select-all px-3 py-2 rounded-lg flex-1"
                       style={{
-                        backgroundColor: detectedOS === platform.id ? colors.bgDarker : colors.bgCard,
-                        border: `1px solid ${detectedOS === platform.id ? colors.cyanDark : colors.borderSubtle}`,
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.borderColor = colors.cyanDark;
-                        e.currentTarget.style.transform = 'translateY(-3px)';
-                        e.currentTarget.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.3)';
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.borderColor = detectedOS === platform.id ? colors.cyanDark : colors.borderSubtle;
-                        e.currentTarget.style.transform = 'translateY(0)';
-                        e.currentTarget.style.boxShadow = 'none';
+                        color: '#06b6d4',
+                        fontFamily: "'Space Grotesk', monospace",
+                        fontWeight: 700,
+                        background: 'rgba(6, 182, 212, 0.08)',
+                        border: `1px solid rgba(6, 182, 212, 0.15)`,
                       }}
                     >
-                      <div style={{ color: colors.cyan, width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        {platform.icon}
-                      </div>
-                      <span className="font-semibold text-sm" style={{ color: colors.textPrimary }}>
-                        {platform.name}
-                      </span>
-                      <span className="text-xs" style={{ color: colors.textMuted }}>
-                        {platform.fileType}
-                      </span>
+                      {licenseKeys[0]}
+                    </code>
+                    <button
+                      onClick={() => handleCopyKey(licenseKeys[0], 0)}
+                      className="px-3 py-2 rounded-lg flex items-center gap-1.5 transition-all hover:scale-105 font-semibold text-xs flex-shrink-0"
+                      style={{
+                        background: copiedIndex === 0 ? colors.green : colors.gradientCyan,
+                        color: colors.bgDarker,
+                      }}
+                    >
+                      {copiedIndex === 0 ? <><Check className="w-3.5 h-3.5" /><span>Copied</span></> : <><Copy className="w-3.5 h-3.5" /><span>Copy</span></>}
                     </button>
-                  ))}
+                  </div>
+                  <p className="text-xs flex items-center gap-1.5" style={{ color: colors.green }}>
+                    <CheckCircle className="w-3.5 h-3.5" />
+                    License file sent to your email
+                  </p>
+                </div>
+
+                {/* Download Buttons */}
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: colors.textMuted }}>
+                    Download the App
+                  </p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {getSortedPlatforms(defaultWebsiteUrl, appType).map((platform) => (
+                      <button
+                        key={platform.id}
+                        onClick={() => handleDownload(platform)}
+                        className="flex flex-col items-center gap-1.5 p-3 rounded-xl transition-all"
+                        style={{
+                          backgroundColor: detectedOS === platform.id ? colors.bgDarker : colors.bgCard,
+                          border: `1px solid ${detectedOS === platform.id ? colors.cyanDark : colors.borderSubtle}`,
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.borderColor = colors.cyanDark; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.borderColor = detectedOS === platform.id ? colors.cyanDark : colors.borderSubtle; e.currentTarget.style.transform = 'translateY(0)'; }}
+                      >
+                        <div style={{ color: colors.cyan, width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          {platform.icon}
+                        </div>
+                        <span className="font-semibold text-xs" style={{ color: colors.textPrimary }}>{platform.name}</span>
+                        <span className="text-[10px]" style={{ color: colors.textMuted }}>{platform.fileType}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Upgrade CTA */}
+                <div className="text-center pt-1">
+                  <a
+                    href={`${defaultWebsiteUrl}/pricing`}
+                    className="inline-block px-6 py-2.5 rounded-lg font-semibold text-sm transition-all hover:scale-105"
+                    style={{ background: colors.gradientCyan, color: colors.bgDarker }}
+                  >
+                    Upgrade to Lifetime License
+                  </a>
                 </div>
               </div>
 
-              {/* Quick Setup Guide */}
-              <div className="space-y-3">
-                <h3 className="text-sm font-semibold uppercase tracking-wider" style={{ color: colors.textMuted }}>
-                  Quick Setup Guide
-                </h3>
-                <div className="space-y-3">
+              {/* RIGHT COLUMN: Setup Steps */}
+              <div
+                className="rounded-xl p-5"
+                style={{
+                  background: colors.bgCard,
+                  border: `1px solid ${colors.borderSubtle}`,
+                }}
+              >
+                <p className="text-xs font-semibold uppercase tracking-widest mb-4" style={{ color: colors.textMuted }}>
+                  Quick Setup
+                </p>
+                <div className="space-y-4">
                   {[
-                    { num: 1, title: "Download and Install", desc: "Choose your operating system above and install the app." },
-                    { num: 2, title: "Import Your License", desc: "Drag the .license file from your email into the app, or paste the code above." },
-                    { num: 3, title: "Create Your Master Password", desc: "Choose a strong, memorable password. This is the only password you need to remember." },
-                    { num: 4, title: "Start Adding Passwords", desc: "You're ready! Begin storing your passwords securely." },
+                    { num: 1, title: "Download & Install", desc: "Choose your OS on the left and install the app." },
+                    { num: 2, title: "Import Your License", desc: "Drag the .license file from your email into the app." },
+                    { num: 3, title: "Create Master Password", desc: "This is the only password you'll need to remember." },
+                    { num: 4, title: "Start Adding Passwords", desc: "You're all set. Everything stays local on your device." },
                   ].map((step) => (
-                    <div key={step.num} className="flex gap-3">
+                    <div key={step.num} className="flex gap-3 items-start">
                       <div
-                        className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 font-bold text-sm"
-                        style={{
-                          background: colors.gradientCyan,
-                          color: colors.bgDarker,
-                        }}
+                        className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 font-bold text-xs"
+                        style={{ background: colors.gradientCyan, color: colors.bgDarker }}
                       >
                         {step.num}
                       </div>
-                      <div className="flex-1">
-                        <strong className="block text-sm mb-1" style={{ color: colors.textPrimary }}>
-                          {step.title}
-                        </strong>
-                        <p className="text-xs" style={{ color: colors.textSecondary }}>
-                          {step.desc}
-                        </p>
+                      <div className="flex-1 pt-0.5">
+                        <strong className="block text-sm mb-0.5" style={{ color: colors.textPrimary }}>{step.title}</strong>
+                        <p className="text-xs leading-relaxed" style={{ color: colors.textSecondary }}>{step.desc}</p>
                       </div>
                     </div>
                   ))}
                 </div>
+
+                {/* Security Note */}
+                <div className="mt-5 pt-4" style={{ borderTop: `1px solid ${colors.borderSubtle}` }}>
+                  <div className="flex gap-2 items-start">
+                    <Shield className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: colors.cyan }} />
+                    <div>
+                      <p className="text-xs font-semibold mb-0.5" style={{ color: colors.textPrimary }}>100% Local & Private</p>
+                      <p className="text-[11px] leading-relaxed" style={{ color: colors.textMuted }}>
+                        After importing your license, the app never contacts the internet. Your passwords are encrypted on your device only.
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              {/* Upgrade CTA */}
-              <div className="pt-2">
-                <p className="text-sm text-center" style={{ color: colors.textSecondary }}>
-                  Loving the trial?{" "}
-                  <a
-                    href={`${defaultWebsiteUrl}/pricing`}
-                    className="font-semibold hover:underline"
-                    style={{ color: colors.cyan }}
-                  >
-                    Upgrade anytime
-                  </a>
-                  {" "}for lifetime access.
-                </p>
-              </div>
             </div>
           )}
 
