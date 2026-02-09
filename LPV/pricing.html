@@ -310,7 +310,7 @@
           <li>Local backup/restore</li>
           <li>All future updates</li>
         </ul>
-        <a href="#" class="cta">Get Personal Vault</a>
+        <a href="#" class="cta" onclick="buyLicense('personal'); return false;">Get Personal Vault</a>
       </div>
 
       <div class="pricing-card best-value">
@@ -326,7 +326,7 @@
           <li>All future updates</li>
           <li>Save $166 vs. 5 licenses</li>
         </ul>
-        <a href="#" class="cta">Get Family Vault</a>
+        <a href="#" class="cta" onclick="buyLicense('family'); return false;">Get Family Vault</a>
       </div>
     </div>
 
@@ -449,6 +449,42 @@
       </div>
     </div>
   </footer>
+
+<script>
+  const API_URL = 'https://api.localpasswordvault.com';
+
+  async function buyLicense(planType) {
+    const btn = event.target;
+    const originalText = btn.textContent;
+    btn.textContent = 'Connecting to checkout...';
+    btn.style.opacity = '0.7';
+    btn.style.pointerEvents = 'none';
+
+    try {
+      const res = await fetch(API_URL + '/api/checkout/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ planType: planType }),
+      });
+
+      const data = await res.json();
+
+      if (data.success && data.url) {
+        window.location.href = data.url;
+      } else {
+        alert('Checkout failed: ' + (data.error || 'Please try again or contact support@localpasswordvault.com'));
+        btn.textContent = originalText;
+        btn.style.opacity = '1';
+        btn.style.pointerEvents = 'auto';
+      }
+    } catch (err) {
+      alert('Unable to connect to checkout. Please check your internet connection and try again, or contact support@localpasswordvault.com');
+      btn.textContent = originalText;
+      btn.style.opacity = '1';
+      btn.style.pointerEvents = 'auto';
+    }
+  }
+</script>
 </body>
 </html>
 
