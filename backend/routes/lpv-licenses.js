@@ -831,7 +831,7 @@ router.post('/trial/signup', async (req, res) => {
         return res.json({
           success: true,
           message: 'Trial license resent to your email',
-          trialKey: existingTrial.trial_key,
+          licenseCode: existingTrial.trial_key,
           expiresAt: expiresAt.toISOString(),
         });
       }
@@ -843,7 +843,7 @@ router.post('/trial/signup', async (req, res) => {
     if (existingLicense && existingLicense.length > 0) {
       return res.status(400).json({
         success: false,
-        error: 'You already have a license. Please use your existing license key.',
+        error: 'You already have a license. Check your email for your .license file.',
         hasLicense: true,
       });
     }
@@ -905,7 +905,7 @@ router.post('/trial/signup', async (req, res) => {
     res.json({
       success: true,
       message: 'Trial license sent to your email',
-      trialKey,
+      licenseCode: trialKey,
       expiresAt: expiresAt.toISOString(),
     });
 

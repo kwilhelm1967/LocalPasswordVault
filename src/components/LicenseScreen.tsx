@@ -774,15 +774,15 @@ const LicenseScreenComponent: React.FC<LicenseScreenProps> = ({
     setTrialSignupSuccess(null);
     setTrialSignupKey(null);
     try {
-      const res = await apiClient.post<{ success?: boolean; trialKey?: string; error?: string; message?: string }>(
+      const res = await apiClient.post<{ success?: boolean; licenseCode?: string; error?: string; message?: string }>(
         "/api/lpv/license/trial/signup",
         { email }
       );
       const data = res.data;
-      if (data?.success && data.trialKey) {
+      if (data?.success && data.licenseCode) {
         setTrialSignupSuccess("License file sent! Check your email and import the .license file into the app.");
-        setTrialSignupKey(data.trialKey);
-        setTrialKey(data.trialKey);
+        setTrialSignupKey(data.licenseCode);
+        setTrialKey(data.licenseCode);
       } else if (data?.success) {
         setTrialSignupSuccess("Check your email for your trial license file.");
       } else {
