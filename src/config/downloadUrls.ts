@@ -15,7 +15,7 @@ export interface DownloadUrls {
 
 const LPV_DOWNLOAD_URLS: DownloadUrls = {
   windows: `https://github.com/${LPV_GITHUB_REPO}/releases/download/${LPV_RELEASE_TAG}/Local.Password.Vault.Setup.${LPV_VERSION}.zip`,
-  macos: `https://github.com/${LPV_GITHUB_REPO}/releases/download/${LPV_RELEASE_TAG}/Local.Password.Vault-${LPV_VERSION}-mac.dmg`,
+  macos: `https://github.com/${LPV_GITHUB_REPO}/releases/download/${LPV_RELEASE_TAG}/Local.Password.Vault-${LPV_VERSION}.AppImage`,
   linux: `https://github.com/${LPV_GITHUB_REPO}/releases/download/${LPV_RELEASE_TAG}/Local.Password.Vault-${LPV_VERSION}.AppImage`,
 };
 

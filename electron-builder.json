@@ -124,6 +124,7 @@
     ],
     "icon": "assets/icons/png",
     "category": "Utility",
+    "maintainer": "support@localpasswordvault.com",
     "artifactName": "${productName}-${version}-linux-${arch}.${ext}",
     "desktop": {
       "Name": "Local Password Vault",
