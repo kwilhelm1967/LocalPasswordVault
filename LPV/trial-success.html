@@ -387,20 +387,18 @@
         <h1 class="animate delay-1">You're All Set!</h1>
         <p class="subtitle animate delay-2">Your 7-day trial is ready. Here's everything you need to get started.</p>
         
-        <!-- Trial License -->
+        <!-- License File Notice -->
         <div class="trial-key-section animate delay-2">
-          <p class="trial-key-label">Your Trial License File</p>
-          <div class="trial-key-display">
-            <span class="trial-key" id="trialKey">TRIAL-XXXX-XXXX-XXXX</span>
-            <button class="copy-btn" onclick="copyKey()">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-              Copy
-            </button>
+          <p class="trial-key-label">Your Trial License</p>
+          <div style="padding: 20px; text-align: center;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#06b6d4" stroke-width="1.5" style="width: 40px; height: 40px; margin-bottom: 12px;">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            <p style="color: #f1f5f9; font-size: 16px; font-weight: 600; margin: 0 0 8px;">Check your email for your license file</p>
+            <p style="color: #94a3b8; font-size: 13px; margin: 0;">A <strong>.license</strong> file has been sent to your inbox. Check your spam folder if you don't see it.</p>
           </div>
-          <p class="key-note">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-            A license file has been sent to your email. Check your inbox (and spam folder).
-          </p>
         </div>
 
         <!-- Download Section -->
@@ -455,7 +453,7 @@
               <span class="step-number">2</span>
               <div class="step-content">
                 <strong>Import Your License</strong>
-                <p>Drag the .license file from your email into the app, or paste the code above.</p>
+                <p>Drag the .license file from your email into the app.</p>
               </div>
             </div>
             <div class="step-item">
@@ -494,34 +492,7 @@
       document.querySelectorAll('.animate').forEach(el => observer.observe(el));
     });
     
-    // Generate a demo trial key (in production, this would come from backend)
-    function generateTrialKey() {
-      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-      const segments = [];
-      for (let i = 0; i < 3; i++) {
-        let segment = '';
-        for (let j = 0; j < 4; j++) {
-          segment += chars.charAt(Math.floor(Math.random() * chars.length));
-        }
-        segments.push(segment);
-      }
-      return 'TRIAL-' + segments.join('-');
-    }
-
-    // Set the trial key on page load
-    document.getElementById('trialKey').textContent = generateTrialKey();
-
-    // Copy key to clipboard
-    function copyKey() {
-      const key = document.getElementById('trialKey').textContent;
-      navigator.clipboard.writeText(key).then(() => {
-        const btn = document.querySelector('.copy-btn');
-        btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Copied!';
-        setTimeout(() => {
-          btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy';
-        }, 2000);
-      });
-    }
+    // No key generation needed — license file is emailed to the customer
   </script>
 </body>
 </html>
