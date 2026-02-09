@@ -324,7 +324,7 @@
         </div>
         
         <div class="trial-form-section">
-          <form class="trial-form" action="trial-success.html" method="GET" id="trialForm">
+          <form class="trial-form" id="trialForm" onsubmit="return false;">
             <div class="form-group">
               <label for="email">Email Address</label>
               <input type="email" id="email" name="email" placeholder="you@example.com" required>
@@ -365,8 +365,45 @@
   </section>
 
   <script>
-    // Simple animation on load
     document.querySelectorAll('.animate').forEach(el => el.classList.add('visible'));
+
+    const API_URL = 'https://api.localpasswordvault.com';
+
+    document.getElementById('trialForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      const email = document.getElementById('email').value.trim();
+      if (!email) return;
+
+      const btn = document.querySelector('.btn-trial');
+      const originalText = btn.textContent;
+      btn.textContent = 'Creating your trial...';
+      btn.disabled = true;
+      btn.style.opacity = '0.7';
+
+      try {
+        const res = await fetch(API_URL + '/api/lpv/license/trial/signup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email }),
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+          window.location.href = 'trial-success.html';
+        } else {
+          alert(data.error || 'Could not create trial. Please try again.');
+          btn.textContent = originalText;
+          btn.disabled = false;
+          btn.style.opacity = '1';
+        }
+      } catch (err) {
+        alert('Unable to connect. Please check your internet and try again, or email support@localpasswordvault.com');
+        btn.textContent = originalText;
+        btn.disabled = false;
+        btn.style.opacity = '1';
+      }
+    });
   </script>
 </body>
 </html>
