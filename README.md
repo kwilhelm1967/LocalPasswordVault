@@ -206,7 +206,7 @@ npm run lint          # Run ESLint
 |------|-------|------|---------|
 | **Free Trial** | $0 | — | 1 (7 days) |
 | **Personal Vault** | $49 | 1 | 1 (lifetime) |
-| **Family Vault** | $79 | 5 | 5 (lifetime) |
+| **Family Vault** | $89 | 3| 3 (lifetime) |
 
 All paid plans are **one-time lifetime purchases** — no subscriptions, no recurring fees.
 
