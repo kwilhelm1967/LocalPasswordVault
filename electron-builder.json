@@ -55,9 +55,7 @@
     "entitlementsInherit": "build/entitlements.mac.plist",
     "artifactName": "${productName}-${version}-mac.${ext}",
     "darkModeSupport": true,
-    "notarize": {
-      "teamId": "${APPLE_TEAM_ID}"
-    }
+    "notarize": false
   },
   
   "dmg": {
@@ -91,9 +89,10 @@
     ],
     "icon": "assets/icons/icon.ico",
     "requestedExecutionLevel": "asInvoker",
-    "publisherName": "Local Password Vault"
+    "publisherName": "Local Password Vault",
+    "forceCodeSigning": false
   },
-  
+
   "nsis": {
     "oneClick": false,
     "allowToChangeInstallationDirectory": true,
